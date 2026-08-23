@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { Role } from "@/lib/rbac";
+import { getTenantRecordForHost, normalizeHost } from "@/lib/tenants";
 
 const DASHBOARD_ROLES: Record<string, Role[]> = {
   admin: ["ADMIN", "BUREAU_RW"],
@@ -13,11 +14,12 @@ const DASHBOARD_ROLES: Record<string, Role[]> = {
   quran:       ["ADMIN", "QURAN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
   qada:        ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
   media:       ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
-  volunteer:   ["ADMIN", "BUREAU", "BUREAU_RW", "SECTION_ADMIN"],
-  member:      ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL", "EDUCATIONAL", "SOCIAL", "QURAN", "MEMBER", "BAHT_IJTIMA3I_TEAM"],
+  volunteer: ["ADMIN", "BUREAU", "BUREAU_RW", "SECTION_ADMIN"],
+  platform: ["ADMIN"],
+  member: ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL", "EDUCATIONAL", "SOCIAL", "QURAN", "MEMBER", "BAHT_IJTIMA3I_TEAM"],
 };
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
 
   // Allow marketing + auth + public routes
@@ -29,13 +31,28 @@ export default auth((req) => {
     pathname.startsWith("/p/") ||
     pathname.startsWith("/start") ||
     pathname.startsWith("/pricing") ||
+    pathname.startsWith("/suspended") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/signup") ||
     pathname.startsWith("/api/invite") ||
     pathname.startsWith("/api/public") ||
-    pathname.startsWith("/api/start")
+    pathname.startsWith("/api/start") ||
+    pathname.startsWith("/api/webhooks")
   ) {
     return NextResponse.next();
+  }
+
+  // Tenant lifecycle gate: non-ACTIVE tenants (pending provisioning,
+  // provision failure, suspension for non-payment) can only reach billing
+  // — that's how they pay to come back. Everything else bounces to
+  // /suspended, which explains the state. Platform hosts have no tenant
+  // record, so the lookup returns null and this never fires there.
+  const host = normalizeHost(req.headers.get("host"));
+  if (host && !pathname.startsWith("/billing") && !pathname.startsWith("/api/billing")) {
+    const tenant = await getTenantRecordForHost(host);
+    if (tenant && tenant.status !== "ACTIVE") {
+      return NextResponse.redirect(new URL(`/suspended?status=${tenant.status.toLowerCase()}`, req.url));
+    }
   }
 
   // Redirect unauthenticated users to login

@@ -998,11 +998,48 @@ model Tenant {
   trialEndsAt        DateTime?    @map("trial_ends_at")
   provisionedAt      DateTime?    @map("provisioned_at")
   lastProvisionError String?      @map("last_provision_error")
+  // Paid subscription window (null while on free/trial)
+  currentPeriodEnd   DateTime?    @map("current_period_end")
   createdAt          DateTime     @default(now()) @map("created_at")
   updatedAt          DateTime     @updatedAt @map("updated_at")
 
+  payments TenantPayment[]
+
   @@index([status])
   @@map("tenants")
+}
+
+enum TenantPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+// Subscription invoices created before redirecting the payer to YouCan Pay.
+// Lives in the PLATFORM database only (like Tenant).
+model TenantPayment {
+  id            String             @id @default(cuid())
+  tenantId      String             @map("tenant_id")
+  plan          TenantPlan
+  amount        Decimal            @db.Decimal(10, 2)
+  currency      String             @default("MAD")
+  months        Int                @default(1)
+  provider      String             @default("youcanpay")
+  // Our unique reference sent as order_id to the gateway; echoed back in webhooks.
+  orderId       String             @unique @map("order_id")
+  tokenId       String?            @map("token_id")
+  transactionId String?            @map("transaction_id")
+  status        TenantPaymentStatus @default(PENDING)
+  periodStart   DateTime?          @map("period_start")
+  periodEnd     DateTime?          @map("period_end")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("tenant_payments")
 }
 
 // ==================== AUDIT LOG ====================

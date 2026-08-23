@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
+import { checkMemberCap } from "@/lib/plan-enforce";
 import { isAdmin, isBureauRW } from "@/lib/permissions";
 import type { Gender, MemberType } from "@prisma/client";
 
@@ -70,6 +71,12 @@ export async function POST(req: NextRequest) {
   const { rows, dryRun }: { rows: ImportRow[]; dryRun?: boolean } = await req.json();
   if (!Array.isArray(rows)) {
     return NextResponse.json({ error: "rows must be array" }, { status: 400 });
+  }
+
+  // Plan limit: block early when the batch would exceed the tier's member cap.
+  if (!dryRun) {
+    const cap = await checkMemberCap(rows.length);
+    if (!cap.ok) return NextResponse.json({ error: cap.message, code: cap.code }, { status: 402 });
   }
 
   const errors: { index: number; reason: string }[] = [];

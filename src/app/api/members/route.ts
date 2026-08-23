@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { isAdmin, isBureauRW, hasBureauRead, isFinancial } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
+import { checkMemberCap } from "@/lib/plan-enforce";
 
 const CREATABLE_FIELDS = [
   "memberType", "fullName", "dateOfBirth", "placeOfBirth", "gender",
@@ -125,6 +126,10 @@ export async function POST(req: NextRequest) {
   if (!isAdmin(session.user.roles) && !(await isBureauRW(session))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Plan limit: FREE/STARTER tiers cap active members.
+  const cap = await checkMemberCap(1);
+  if (!cap.ok) return NextResponse.json({ error: cap.message, code: cap.code }, { status: 402 });
 
   const body = await req.json();
   const { sections: sectionList } = body;

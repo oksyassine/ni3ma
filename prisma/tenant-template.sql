@@ -64,6 +64,9 @@ CREATE TYPE "TenantStatus" AS ENUM ('PENDING_PROVISIONING', 'ACTIVE', 'SUSPENDED
 -- CreateEnum
 CREATE TYPE "TenantPlan" AS ENUM ('FREE', 'STARTER', 'PRO', 'CUSTOM');
 
+-- CreateEnum
+CREATE TYPE "TenantPaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'CANCELLED');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -691,10 +694,32 @@ CREATE TABLE "tenants" (
     "trial_ends_at" TIMESTAMP(3),
     "provisioned_at" TIMESTAMP(3),
     "last_provision_error" TEXT,
+    "current_period_end" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "tenants_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "tenant_payments" (
+    "id" TEXT NOT NULL,
+    "tenant_id" TEXT NOT NULL,
+    "plan" "TenantPlan" NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'MAD',
+    "months" INTEGER NOT NULL DEFAULT 1,
+    "provider" TEXT NOT NULL DEFAULT 'youcanpay',
+    "order_id" TEXT NOT NULL,
+    "token_id" TEXT,
+    "transaction_id" TEXT,
+    "status" "TenantPaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "period_start" TIMESTAMP(3),
+    "period_end" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "tenant_payments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -880,6 +905,12 @@ CREATE UNIQUE INDEX "tenants_custom_domain_key" ON "tenants"("custom_domain");
 
 -- CreateIndex
 CREATE INDEX "tenants_status_idx" ON "tenants"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tenant_payments_order_id_key" ON "tenant_payments"("order_id");
+
+-- CreateIndex
+CREATE INDEX "tenant_payments_tenant_id_status_idx" ON "tenant_payments"("tenant_id", "status");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_entity_entity_id_idx" ON "audit_logs"("entity", "entity_id");
@@ -1081,6 +1112,9 @@ ALTER TABLE "bureau_permissions" ADD CONSTRAINT "bureau_permissions_member_id_fk
 
 -- AddForeignKey
 ALTER TABLE "bureau_permissions" ADD CONSTRAINT "bureau_permissions_granted_by_fkey" FOREIGN KEY ("granted_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tenant_payments" ADD CONSTRAINT "tenant_payments_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

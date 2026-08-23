@@ -84,11 +84,11 @@ Tenant resolution: `{slug}.neimaa.ma` subdomains + custom domain mapping (CNAME)
 - [x] Marketing landing page `/` with pricing (AR; FR in Phase 3)
 - [x] Self-serve signup `/start` + slug checker + inline provisioning (smoke-tested end-to-end incl. login on tenant subdomain)
 
-### Phase 2 — Monetization (week 3–4)
-- [ ] Plans/trial enforcement middleware (member count cap, feature flags)
-- [ ] YouCan Pay integration (payment links + webhooks; CashPlus support)
-- [ ] Invoice/receipt generation (already have donation receipt page — generalize)
-- [ ] Admin control panel for you (suspend/resume tenants, usage stats)
+### Phase 2 — Monetization (week 3–4) ✅ implemented & smoke-tested
+- [x] Plan enforcement: member caps per tier (`src/lib/plan-enforce.ts`) wired into member create/import/public signup; expired paid periods degrade to FREE limits; suspension gate in proxy + `/suspended` page
+- [x] YouCan Pay integration (`src/lib/payments/youcan.ts`): tokenize → hosted payment-form redirect, HMAC-SHA256 webhook verification, idempotent activation (`/api/webhooks/youcan`), annual prepay pricing
+- [ ] Invoice/receipt generation (TenantPayment rows recorded; PDF receipts pending)
+- [x] Platform owner console `/platform` (apex-only): tenant list, suspend/activate/retry-provision; `/billing` page with usage meter & upgrades
 
 ### Phase 3 — Market fit (month 2)
 - [ ] French i18n layer

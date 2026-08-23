@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { checkMemberCap } from "@/lib/plan-enforce";
 
 // Self-signup endpoint — public (no auth). Creates a Member with isActive=false
 // pending admin approval. Allowlist + parsing mirrors /api/members POST so
@@ -41,6 +42,15 @@ export async function POST(req: NextRequest) {
   }
   const body = await req.json();
   const memberType = body.memberType;
+
+  // Plan limit: public signups also count against the tenant's member cap.
+  const cap = await checkMemberCap(1);
+  if (!cap.ok) {
+    return NextResponse.json(
+      { error: "عذرا، الجمعية بلغت الحد الأقصى للتسجيلات في خطتها الحالية. تواصلوا مع إدارة الجمعية." },
+      { status: 402 }
+    );
+  }
 
   if (!body.fullName?.trim()) {
     return NextResponse.json({ error: "الاسم الكامل مطلوب" }, { status: 400 });

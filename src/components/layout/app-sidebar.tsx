@@ -32,6 +32,8 @@ import {
   QrCode,
   Target,
   ListChecks,
+  CreditCard,
+  Building,
 } from "lucide-react";
 import type { Role } from "@/lib/rbac";
 import {
@@ -63,6 +65,18 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
+  {
+    title: "الاشتراك والفاتورة",
+    href: "/billing",
+    roles: ["ADMIN", "BUREAU", "BUREAU_RW"],
+    children: [{ title: "الاشتراك والفاتورة", href: "/billing", icon: CreditCard }],
+  },
+  {
+    title: "لوحة المنصة",
+    href: "/platform",
+    roles: ["ADMIN"],
+    children: [{ title: "إدارة الفضاءات", href: "/platform", icon: Building }],
+  },
   {
     title: "لوحة الإدارة",
     href: "/admin",
@@ -181,7 +195,15 @@ export function AppSidebar() {
 
   const accessibleItems = navItems.filter((item) =>
     userRoles.some((role) => item.roles.includes(role))
-  );
+  ).filter((item) => {
+    // /platform is the SaaS owner console — only meaningful on the root
+    // domain, never inside a tenant subdomain.
+    if (item.href === "/platform" && typeof window !== "undefined") {
+      const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "";
+      return !root || window.location.hostname.endsWith(root);
+    }
+    return true;
+  });
 
   return (
     <Sidebar side="right" collapsible="icon">

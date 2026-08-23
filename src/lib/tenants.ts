@@ -27,6 +27,17 @@ export type TenantRecord = {
   dbUrl: string;
 };
 
+export type TenantContext = {
+  id: string;
+  name: string;
+  slug: string;
+  city: string | null;
+  plan: "FREE" | "STARTER" | "PRO" | "CUSTOM";
+  status: string;
+  trialEndsAt: Date | null;
+  currentPeriodEnd: Date | null;
+};
+
 type CacheEntry<T> = { value: T; expiresAt: number };
 const POSITIVE_TTL_MS = 30_000;   // tenant → dbUrl mapping
 const NEGATIVE_TTL_MS = 5_000;    // unknown host — retry soon so new tenants appear quickly
@@ -136,4 +147,48 @@ export function buildTenantDbUrl(slug: string): string {
 
 export function rootDomain(): string {
   return ROOT_DOMAIN;
+}
+
+// ---- Full-record lookups (plan enforcement, suspension gating) ----
+// Separate cache from routing: includes non-ACTIVE tenants, shorter TTL.
+
+const recordCache = new Map<string, CacheEntry<TenantContext | null>>();
+
+/**
+ * Full tenant context for a host (any status). Null when host belongs to the
+ * platform itself (apex/www) or no tenant matches.
+ */
+export async function getTenantRecordForHost(host: string): Promise<TenantContext | null> {
+  const cached = recordCache.get(host);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) return cached.value;
+  let ctx: TenantContext | null = null;
+  try {
+    const slug = slugFromHost(host);
+    const where = slug ? { slug } : { customDomain: host };
+    const t = await control.tenant.findFirst({
+      where,
+      select: {
+        id: true, name: true, slug: true, city: true, plan: true,
+        status: true, trialEndsAt: true, currentPeriodEnd: true,
+      },
+    });
+    ctx = t ?? null;
+  } catch {
+    ctx = null;
+  }
+  recordCache.set(host, { value: ctx, expiresAt: now + 15_000 });
+  return ctx;
+}
+
+/** Tenant context for the CURRENT request; null on the platform apex. */
+export async function getTenantContext(): Promise<TenantContext | null> {
+  try {
+    const h = await headers();
+    const host = normalizeHost(h.get("host"));
+    if (!host) return null;
+    return getTenantRecordForHost(host);
+  } catch {
+    return null;
+  }
 }
