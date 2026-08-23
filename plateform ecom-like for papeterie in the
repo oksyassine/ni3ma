@@ -1,0 +1,19 @@
+plateform ecom-like for papeterie in the fsjes in Meknes, Morocco. The products can be organized into packs based on the semester, making it easier for students to find what they need for their courses or to purchase individual items. The workflow for the platform is as follows:
+workflow:
+in first instance I will give you excel spreadsheet with the list of products, their details, and prices, and also the catalog that contains the list of contents of each book and first page of the book. 
+You will need to create a database to store this information and develop a user interface for browsing and purchasing the products. The user interface should be intuitive and user-friendly, allowing users to easily navigate through the product catalog and make purchases.
+user -> browse products (rassa2il: page de garde tban flwl omoraha details ychof lfahras ID) -> add to cart or buy now option -> checkout  -> order confirmation sent to user via wtsp
+
+in the checkout step:
+the user can choose the quantity and any customization options (if available) for the product. and also if they need only part of the book not the whole book, they can select the specific pages they want to purchase. The user can also choose the type of binding for the book, such as spiral or traditional binding.
+The cart will show a summary of the selected items, including the total price.
+chno chkl dyal lghlaf lktab wach spiral ot7t les choix dyal lghlaf lktab, kayn 3 options:
+1. Spiral: This option allows the user to choose a spiral binding for their notebook. They can select the color and size of the spiral, as well as the number of pages they want in
+wach ghadi yji 3nd lktab llmktaba awla cash on delivery (COD) option available for the user to choose from during checkout. If the user selects COD, they will be required to provide their address and contact information for delivery. or on arrival at the store for pickup. The user will receive a confirmation message with the details of their order and the expected delivery or pickup time.
+
+naw3iya dyal tb3a dyal lktab wahc 2 pages f whda wla page whda fkola page owach A4 wla A5 
+ odima fkola choice dir m3a custom bach yzid m3ah msg
+
+in case COD then it will be added for delivery 45 MAD as a delivery fee out of Meknes city or 10 MAD in case of inside Meknes, and the user will be informed about this additional cost during the checkout process. The user can then proceed to confirm their order and complete the purchase.
+ 
+apres khass order twsl ll kiosk bach agent ghi twslo commande tkon app deja 3ndha access lga3 lkotob likaynin flocal pc oghy acceder bl ID llktab libghah client apres ytlança print lktab w oydar print akhr bles infos dlclient otemplate dyal tag lighaytlss9 flktab mnin ytb3hom oysali lktab awla ga3 lktoba lichra apres ylancer lserver mn khilal frontend bach ysift msg f wtsp li fih details dlcommande m3a ID dyal commande li ttb3 otaman likhtar agent lakan custommnin ytetb3 lktab odar ticket mnin tkon wajda twslo wtsp msg bli commande wajda bach yji yakhdha awla bli tdf3at llivreur.. otmarka order as completed
