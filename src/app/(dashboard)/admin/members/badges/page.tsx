@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import QRCode from "qrcode";
 import { headers } from "next/headers";
+import { getT } from "@/lib/i18n/server";
 
 async function ensureTokens() {
   const missing = await prisma.member.findMany({
@@ -31,6 +32,7 @@ export default async function BadgesPage({
 
   const sp = await searchParams;
   await ensureTokens();
+  const { t } = await getT();
 
   const where: Record<string, unknown> = { isActive: true };
   if (sp.ids) {
@@ -70,8 +72,8 @@ export default async function BadgesPage({
     <div className="space-y-4 print:space-y-0">
       <div className="flex justify-between items-center print:hidden">
         <div>
-          <h1 className="text-2xl font-bold">شارات المنخرطين</h1>
-          <p className="text-muted-foreground">{badges.length} شارة — استخدم Ctrl+P للطباعة</p>
+          <h1 className="text-2xl font-bold">{t("members.badges.title")}</h1>
+          <p className="text-muted-foreground">{t("members.badges.count", { count: badges.length })}</p>
         </div>
       </div>
 
@@ -90,7 +92,7 @@ export default async function BadgesPage({
             className="border-2 border-primary rounded-xl p-3 bg-white text-center break-inside-avoid"
             style={{ pageBreakInside: "avoid" }}
           >
-            <div className="text-xs font-bold text-primary mb-1">جمعية النعمة - مكناس</div>
+            <div className="text-xs font-bold text-primary mb-1">{t("members.badges.org")}</div>
             {b.photoUrl ? (
               <img src={b.photoUrl} alt={b.fullName} className="w-16 h-16 rounded-full object-cover mx-auto mb-2" />
             ) : (
@@ -99,13 +101,13 @@ export default async function BadgesPage({
               </div>
             )}
             <div className="text-sm font-bold leading-tight">{b.fullName}</div>
-            <div className="text-xs text-muted-foreground">رقم {b.registrationNumber}</div>
+            <div className="text-xs text-muted-foreground">{t("members.badges.number", { number: b.registrationNumber })}</div>
             <img src={b.qr} alt="QR" className="w-32 h-32 mx-auto mt-2" />
-            <div className="text-[10px] text-muted-foreground mt-1">امسح لتسجيل الحضور</div>
+            <div className="text-[10px] text-muted-foreground mt-1">{t("members.badges.scanToCheckin")}</div>
           </div>
         ))}
         {badges.length === 0 && (
-          <p className="col-span-full text-center text-muted-foreground py-8">لا توجد شارات</p>
+          <p className="col-span-full text-center text-muted-foreground py-8">{t("members.badges.none")}</p>
         )}
       </div>
     </div>

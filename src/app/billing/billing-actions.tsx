@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/components/i18n/provider";
 
 type PlanCard = { key: string; label: string; priceMad: number; features: string[] };
 
@@ -13,6 +14,7 @@ export function BillingActions({
   currentPlan: string;
   youcanConfigured: boolean;
 }) {
+  const { t } = useT();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -32,10 +34,10 @@ export function BillingActions({
         window.location.href = json.payUrl;
         return;
       }
-      if (json.manual) setNotice(json.error);
-      else setError(json.error ?? "تعذر بدء عملية الدفع");
+      if (json.manual) setNotice(t("billing.manualNotice"));
+      else setError(t("billing.checkoutFail"));
     } catch {
-      setError("تعذر الاتصال بالخادم، أعد المحاولة");
+      setError(t("common.error"));
     } finally {
       setBusy(null);
     }
@@ -50,7 +52,7 @@ export function BillingActions({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold">{p.label}</h3>
               {p.key === currentPlan && (
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">خطتكم الحالية</span>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{t("billing.currentBadge")}</span>
               )}
             </div>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -64,14 +66,14 @@ export function BillingActions({
                 disabled={busy !== null}
                 className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                {busy === p.key + "1" ? "..." : `${p.priceMad} درهم / شهريا`}
+                {busy === p.key + "1" ? "..." : t("billing.payMonthly", { price: p.priceMad })}
               </button>
               <button
                 onClick={() => checkout(p.key, 12)}
                 disabled={busy !== null}
                 className="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
               >
-                {busy === p.key + "12" ? "..." : `سنويا (${p.priceMad * 10} درهم)`}
+                {busy === p.key + "12" ? "..." : t("billing.payAnnual", { price: p.priceMad * 10 })}
               </button>
             </div>
           </div>
@@ -79,8 +81,7 @@ export function BillingActions({
 
       {!youcanConfigured && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 lg:col-span-2">
-          بوابة الدفع الإلكتروني غير مهيأة حاليا. لتجديد الاشتراك، حوّلوا المبلغ عبر التحويل البنكي أو CashPlus
-          وتواصلوا مع فريق المنصة — سيتم تفعيل خطتكم يدويا.
+          {t("billing.manualNotice")}
         </div>
       )}
       {error && <p className="text-sm text-red-600 lg:col-span-2">{error}</p>}

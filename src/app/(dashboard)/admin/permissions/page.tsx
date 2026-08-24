@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n/provider";
 
 type Subj = { id: string; fullName: string; username: string | null } | null;
 
@@ -27,24 +28,24 @@ type BureauGrant = {
   grantedAt: string;
 };
 
-const SECTIONS = [
-  { value: "EDUCATIONAL", label: "تربوي" },
-  { value: "SOCIAL", label: "اجتماعي" },
-  { value: "QURAN", label: "قرآن" },
-  { value: "QUDAT", label: "مركز تأهيل القادة" },
-  { value: "MEDIA", label: "إعلامي" },
-];
-const SECTION_LEVELS = [
-  { value: "READ", label: "قراءة" },
-  { value: "RW", label: "قراءة + كتابة" },
-  { value: "ADMIN", label: "مدير القسم" },
-];
-const BUREAU_LEVELS = [
-  { value: "READ", label: "قراءة" },
-  { value: "RW", label: "قراءة + كتابة" },
-];
+const SECTIONS = ["EDUCATIONAL", "SOCIAL", "QURAN", "QUDAT", "MEDIA"] as const;
+const SECTION_LABEL_KEYS: Record<string, string> = {
+  EDUCATIONAL: "admin.permissions.section.educational",
+  SOCIAL: "admin.permissions.section.social",
+  QURAN: "admin.permissions.section.quran",
+  QUDAT: "admin.permissions.section.qudat",
+  MEDIA: "admin.permissions.section.media",
+};
+const SECTION_LEVELS = ["READ", "RW", "ADMIN"] as const;
+const BUREAU_LEVELS = ["READ", "RW"] as const;
+const LEVEL_LABEL_KEYS: Record<string, string> = {
+  READ: "admin.permissions.level.read",
+  RW: "admin.permissions.level.rw",
+  ADMIN: "admin.permissions.level.admin",
+};
 
 export default function PermissionsPage() {
+  const { t } = useT();
   const [section, setSection] = useState<SectionGrant[]>([]);
   const [bureau, setBureau] = useState<BureauGrant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,21 +72,21 @@ export default function PermissionsPage() {
 
   // Live search members
   useEffect(() => {
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       if (!memberQ.trim()) { setMemberHits([]); return; }
       const r = await fetch(`/api/members?search=${encodeURIComponent(memberQ)}&limit=8`).then((r) => r.json());
       setMemberHits(r.members ?? []);
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [memberQ]);
 
   const grant = async () => {
-    if (!picked) return toast.error("اختر منخرطا أولا");
+    if (!picked) return toast.error(t("admin.permissions.toastPickFirst"));
     if (grantKind === "baht") {
       const r = await fetch(`/api/members/${picked.id}/baht-team`, { method: "PUT" });
       const data = await r.json().catch(() => ({}));
-      if (r.ok) { toast.success("تم تعيينه في فريق البحث الاجتماعي"); load(); }
-      else toast.error(data.error ?? "فشل");
+      if (r.ok) { toast.success(t("admin.permissions.toastBahtAssigned")); load(); }
+      else toast.error(data.error ?? t("admin.permissions.toastFailed"));
       return;
     }
     const body: Record<string, unknown> = {
@@ -94,36 +95,43 @@ export default function PermissionsPage() {
     if (grantKind === "section") body.section = grantSection;
     const r = await fetch("/api/permissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
-    if (r.ok) { toast.success("تم منح الصلاحية"); load(); }
-    else toast.error(data.error ?? "فشل");
+    if (r.ok) { toast.success(t("admin.permissions.toastGranted")); load(); }
+    else toast.error(data.error ?? t("admin.permissions.toastFailed"));
   };
 
   const revokeSection = async (g: SectionGrant) => {
-    if (!confirm("سحب الصلاحية؟")) return;
+    if (!confirm(t("admin.permissions.confirmRevoke"))) return;
     const subj = g.member ? { subjectType: "member", subjectId: g.member.id } : { subjectType: "user", subjectId: g.user!.id };
     const r = await fetch("/api/permissions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "section", section: g.section, ...subj }) });
-    if (r.ok) { toast.success("تم"); load(); } else toast.error("فشل");
+    if (r.ok) { toast.success(t("admin.permissions.toastDone")); load(); } else toast.error(t("admin.permissions.toastFailed"));
   };
 
   const revokeBureau = async (g: BureauGrant) => {
-    if (!confirm("سحب الصلاحية؟")) return;
+    if (!confirm(t("admin.permissions.confirmRevoke"))) return;
     const subj = g.member ? { subjectType: "member", subjectId: g.member.id } : { subjectType: "user", subjectId: g.user!.id };
     const r = await fetch("/api/permissions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "bureau", ...subj }) });
     const data = await r.json().catch(() => ({}));
-    if (r.ok) { toast.success("تم"); load(); }
+    if (r.ok) { toast.success(t("admin.permissions.toastDone")); load(); }
     else if (data.code === "LAST_BUREAU_RW") {
-      if (confirm(data.error + "\n\nالاستمرار رغم ذلك (force)؟")) {
+      if (confirm(t("admin.permissions.confirmForce", { error: data.error }))) {
         const r2 = await fetch("/api/permissions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "bureau", force: true, ...subj }) });
-        if (r2.ok) { toast.success("تم"); load(); } else toast.error("فشل");
+        if (r2.ok) { toast.success(t("admin.permissions.toastDone")); load(); } else toast.error(t("admin.permissions.toastFailed"));
       }
-    } else toast.error(data.error ?? "فشل");
+    } else toast.error(data.error ?? t("admin.permissions.toastFailed"));
   };
 
   const subjectName = (g: SectionGrant | BureauGrant) =>
     g.user?.fullName ?? g.member?.fullName ?? "—";
 
-  const sectionLabel = (s: string) =>
-    SECTIONS.find((x) => x.value === s)?.label ?? s;
+  const sectionLabel = (s: string) => {
+    const k = SECTION_LABEL_KEYS[s];
+    return k ? t(k) : s;
+  };
+
+  const levelLabel = (l: string) => {
+    const k = LEVEL_LABEL_KEYS[l];
+    return k ? t(k) : l;
+  };
 
   const groupedSection = section.reduce((acc, g) => {
     (acc[g.section] = acc[g.section] ?? []).push(g);
@@ -133,21 +141,21 @@ export default function PermissionsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold">الصلاحيات الموسعة</h1>
-        <p className="text-muted-foreground">إدارة صلاحيات المكتب والأقسام وفريق البحث الاجتماعي</p>
+        <h1 className="text-2xl font-bold">{t("admin.permissions.title")}</h1>
+        <p className="text-muted-foreground">{t("admin.permissions.subtitle")}</p>
       </div>
 
       {/* Grant card */}
       <Card>
-        <CardHeader><CardTitle>منح صلاحية جديدة</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("admin.permissions.grantNew")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>المنخرط</Label>
-            <Input value={memberQ} onChange={(e) => setMemberQ(e.target.value)} placeholder="ابحث بالاسم..." />
+            <Label>{t("admin.permissions.memberLabel")}</Label>
+            <Input value={memberQ} onChange={(e) => setMemberQ(e.target.value)} placeholder={t("admin.permissions.searchPlaceholder")} />
             {picked && (
               <div className="flex items-center gap-2 text-sm">
                 <Badge>{picked.fullName}</Badge>
-                <Button size="sm" variant="ghost" onClick={() => setPicked(null)}>تغيير</Button>
+                <Button size="sm" variant="ghost" onClick={() => setPicked(null)}>{t("admin.permissions.change")}</Button>
               </div>
             )}
             {!picked && memberHits.length > 0 && (
@@ -163,55 +171,55 @@ export default function PermissionsPage() {
 
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1">
-              <Label>نوع الصلاحية</Label>
+              <Label>{t("admin.permissions.grantKind")}</Label>
               <select className="border rounded-md w-full h-9 px-2 text-sm" value={grantKind} onChange={(e) => {
                 const next = e.target.value as "section" | "bureau" | "baht";
                 setGrantKind(next);
                 // Bureau only allows READ/RW — reset if "ADMIN" was selected for a section.
                 if (next === "bureau" && grantLevel === "ADMIN") setGrantLevel("READ");
               }}>
-                <option value="section">صلاحية قسم</option>
-                <option value="bureau">صلاحية مكتب</option>
-                <option value="baht">فريق البحث الاجتماعي</option>
+                <option value="section">{t("admin.permissions.kindSection")}</option>
+                <option value="bureau">{t("admin.permissions.kindBureau")}</option>
+                <option value="baht">{t("admin.permissions.kindBaht")}</option>
               </select>
             </div>
             {grantKind === "section" && (
               <div className="space-y-1">
-                <Label>القسم</Label>
+                <Label>{t("admin.permissions.sectionLabel")}</Label>
                 <select className="border rounded-md w-full h-9 px-2 text-sm" value={grantSection} onChange={(e) => setGrantSection(e.target.value)}>
-                  {SECTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  {SECTIONS.map((s) => <option key={s} value={s}>{t(SECTION_LABEL_KEYS[s])}</option>)}
                 </select>
               </div>
             )}
             {grantKind !== "baht" && (
               <div className="space-y-1">
-                <Label>المستوى</Label>
+                <Label>{t("admin.permissions.levelLabel")}</Label>
                 <select className="border rounded-md w-full h-9 px-2 text-sm" value={grantLevel} onChange={(e) => setGrantLevel(e.target.value)}>
-                  {(grantKind === "bureau" ? BUREAU_LEVELS : SECTION_LEVELS).map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                  {(grantKind === "bureau" ? BUREAU_LEVELS : SECTION_LEVELS).map((l) => <option key={l} value={l}>{t(LEVEL_LABEL_KEYS[l])}</option>)}
                 </select>
               </div>
             )}
           </div>
 
-          <Button onClick={grant} disabled={!picked}>منح</Button>
+          <Button onClick={grant} disabled={!picked}>{t("admin.permissions.grantBtn")}</Button>
         </CardContent>
       </Card>
 
       {/* Bureau grants */}
       <Card>
-        <CardHeader><CardTitle>صلاحيات المكتب المسير</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("admin.permissions.bureauGrants")}</CardTitle></CardHeader>
         <CardContent className="divide-y p-0">
-          {loading && <p className="p-4 text-sm text-muted-foreground">جاري التحميل...</p>}
-          {!loading && bureau.length === 0 && <p className="p-4 text-sm text-muted-foreground">لا توجد صلاحيات مسجلة</p>}
+          {loading && <p className="p-4 text-sm text-muted-foreground">{t("admin.loading")}</p>}
+          {!loading && bureau.length === 0 && <p className="p-4 text-sm text-muted-foreground">{t("admin.permissions.noGrants")}</p>}
           {bureau.map((g) => (
             <div key={g.id} className="flex items-center justify-between p-3 text-sm">
               <div>
                 <span className="font-medium">{subjectName(g)}</span>
                 <Badge variant={g.level === "RW" ? "default" : "secondary"} className="mx-2">
-                  {g.level === "RW" ? "قراءة + كتابة" : "قراءة"}
+                  {g.level === "RW" ? t("admin.permissions.level.rw") : t("admin.permissions.level.read")}
                 </Badge>
               </div>
-              <Button size="sm" variant="destructive" onClick={() => revokeBureau(g)}>سحب</Button>
+              <Button size="sm" variant="destructive" onClick={() => revokeBureau(g)}>{t("admin.permissions.revoke")}</Button>
             </div>
           ))}
         </CardContent>
@@ -219,18 +227,18 @@ export default function PermissionsPage() {
 
       {/* Section grants */}
       {SECTIONS.map((s) => (
-        <Card key={s.value}>
-          <CardHeader><CardTitle>صلاحيات قسم {s.label}</CardTitle></CardHeader>
+        <Card key={s}>
+          <CardHeader><CardTitle>{t("admin.permissions.sectionCardTitle", { section: sectionLabel(s) })}</CardTitle></CardHeader>
           <CardContent className="divide-y p-0">
             {loading && <p className="p-4 text-sm text-muted-foreground">...</p>}
-            {!loading && (groupedSection[s.value] ?? []).length === 0 && <p className="p-4 text-sm text-muted-foreground">لا توجد صلاحيات</p>}
-            {(groupedSection[s.value] ?? []).map((g) => (
+            {!loading && (groupedSection[s] ?? []).length === 0 && <p className="p-4 text-sm text-muted-foreground">{t("admin.permissions.noGrantsSection")}</p>}
+            {(groupedSection[s] ?? []).map((g) => (
               <div key={g.id} className="flex items-center justify-between p-3 text-sm">
                 <div>
                   <span className="font-medium">{subjectName(g)}</span>
-                  <Badge className="mx-2">{SECTION_LEVELS.find((l) => l.value === g.level)?.label ?? g.level}</Badge>
+                  <Badge className="mx-2">{levelLabel(g.level)}</Badge>
                 </div>
-                <Button size="sm" variant="destructive" onClick={() => revokeSection(g)}>سحب</Button>
+                <Button size="sm" variant="destructive" onClick={() => revokeSection(g)}>{t("admin.permissions.revoke")}</Button>
               </div>
             ))}
           </CardContent>

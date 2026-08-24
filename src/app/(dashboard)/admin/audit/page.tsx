@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AUDIT_ACTION_LABELS, AUDIT_ENTITY_LABELS } from "@/lib/audit";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getT } from "@/lib/i18n/server";
 
 export default async function AuditPage({
   searchParams,
@@ -13,6 +14,7 @@ export default async function AuditPage({
   const session = await auth();
   if (!session) redirect("/login");
   if (!session.user.roles.includes("ADMIN")) redirect("/unauthorized");
+  const { t } = await getT();
 
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp.page ?? "1") || 1);
@@ -35,39 +37,39 @@ export default async function AuditPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">سجل المراجعة</h1>
-        <p className="text-muted-foreground">جميع التعديلات على بيانات الجمعية ({total})</p>
+        <h1 className="text-2xl font-bold">{t("admin.audit.title")}</h1>
+        <p className="text-muted-foreground">{t("admin.audit.subtitle", { count: total })}</p>
       </div>
 
       <form className="flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-xs text-muted-foreground">الكيان</label>
+          <label className="text-xs text-muted-foreground">{t("admin.audit.entity")}</label>
           <select
             name="entity"
             defaultValue={sp.entity ?? ""}
             className="w-full h-9 px-3 rounded-md border bg-background text-sm"
           >
-            <option value="">الكل</option>
+            <option value="">{t("admin.audit.all")}</option>
             {Object.entries(AUDIT_ENTITY_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="text-xs text-muted-foreground">العملية</label>
+          <label className="text-xs text-muted-foreground">{t("admin.audit.action")}</label>
           <select
             name="action"
             defaultValue={sp.action ?? ""}
             className="w-full h-9 px-3 rounded-md border bg-background text-sm"
           >
-            <option value="">الكل</option>
+            <option value="">{t("admin.audit.all")}</option>
             {Object.entries(AUDIT_ACTION_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
         </div>
         <button type="submit" className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">
-          تصفية
+          {t("admin.audit.filter")}
         </button>
       </form>
 
@@ -94,7 +96,7 @@ export default async function AuditPage({
           </Card>
         ))}
         {logs.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">لا توجد سجلات</p>
+          <p className="text-center text-muted-foreground py-8">{t("admin.audit.empty")}</p>
         )}
       </div>
 
@@ -105,7 +107,7 @@ export default async function AuditPage({
               href={`?${new URLSearchParams({ ...sp, page: String(page - 1) }).toString()}`}
               className="px-3 py-1 border rounded-md text-sm"
             >
-              السابق
+              {t("admin.audit.prev")}
             </a>
           )}
           <span className="text-sm text-muted-foreground">{page} / {Math.ceil(total / pageSize)}</span>
@@ -114,7 +116,7 @@ export default async function AuditPage({
               href={`?${new URLSearchParams({ ...sp, page: String(page + 1) }).toString()}`}
               className="px-3 py-1 border rounded-md text-sm"
             >
-              التالي
+              {t("admin.audit.next")}
             </a>
           )}
         </div>

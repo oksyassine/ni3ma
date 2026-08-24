@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useT } from "@/components/i18n/provider";
 import { toast } from "sonner";
 
 type MemberDetail = {
@@ -41,9 +42,9 @@ type MemberDetail = {
 };
 
 const SECTION_LABELS: Record<string, string> = {
-  EDUCATIONAL: "القسم التربوي",
-  SOCIAL: "القسم الاجتماعي",
-  QURAN: "قسم القرآن الكريم",
+  EDUCATIONAL: "members.sectionFull.EDUCATIONAL",
+  SOCIAL: "members.sectionFull.SOCIAL",
+  QURAN: "members.sectionFull.QURAN",
 };
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
@@ -59,8 +60,11 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { t, locale } = useT();
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const dateLocale = locale === "fr" ? "fr-MA" : "ar-MA";
 
   useEffect(() => {
     fetch(`/api/members/${id}`)
@@ -80,16 +84,16 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
     });
     if (res.ok) {
       setMember({ ...member, isActive: !member.isActive });
-      toast.success(member.isActive ? "تم تعطيل العضوية" : "تم تفعيل العضوية");
+      toast.success(member.isActive ? t("members.deactivatedToast") : t("members.activatedToast"));
     }
   };
 
-  if (loading) return <div className="text-center py-12">جاري التحميل...</div>;
-  if (!member) return <div className="text-center py-12">لم يتم العثور على المنخرط</div>;
+  if (loading) return <div className="text-center py-12">{t("members.loading")}</div>;
+  if (!member) return <div className="text-center py-12">{t("members.notFound")}</div>;
 
   const formatDate = (d: string | null) => {
     if (!d) return null;
-    return new Date(d).toLocaleDateString("ar-MA");
+    return new Date(d).toLocaleDateString(dateLocale);
   };
 
   return (
@@ -109,20 +113,20 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           <div>
             <h1 className="text-2xl font-bold">{member.fullName}</h1>
             <p className="text-muted-foreground">
-              رقم التسجيل: {member.registrationNumber} |{" "}
-              {member.memberType === "CHILD" ? "طفل" : "كبير / منخرط"}
+              {t("members.regNumberLabel")} {member.registrationNumber} |{" "}
+              {member.memberType === "CHILD" ? t("members.type.CHILD") : t("members.tab.adult")}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => router.push(`/admin/members/${id}/edit`)}>
-            تعديل البيانات
+            {t("members.editData")}
           </Button>
           <Button variant="outline" onClick={toggleActive}>
-            {member.isActive ? "تعطيل العضوية" : "تفعيل العضوية"}
+            {member.isActive ? t("members.deactivate") : t("members.activate")}
           </Button>
           <Button variant="outline" onClick={() => router.back()}>
-            رجوع
+            {t("members.back")}
           </Button>
         </div>
       </div>
@@ -131,14 +135,14 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
         {/* Personal Info */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">المعلومات الشخصية</CardTitle>
+            <CardTitle className="text-lg">{t("members.personalInfoCard")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="الاسم الكامل" value={member.fullName} />
-            <InfoRow label="تاريخ الازدياد" value={formatDate(member.dateOfBirth)} />
-            <InfoRow label="مكان الازدياد" value={member.placeOfBirth} />
-            <InfoRow label="الجنس" value={member.gender === "MALE" ? "ذكر" : member.gender === "FEMALE" ? "أنثى" : null} />
-            <InfoRow label="المستوى الدراسي" value={member.educationalLevel} />
+            <InfoRow label={t("members.col.fullName")} value={member.fullName} />
+            <InfoRow label={t("members.dateOfBirth")} value={formatDate(member.dateOfBirth)} />
+            <InfoRow label={t("members.placeOfBirth")} value={member.placeOfBirth} />
+            <InfoRow label={t("members.gender")} value={member.gender === "MALE" ? t("members.gender.MALE") : member.gender === "FEMALE" ? t("members.gender.FEMALE") : null} />
+            <InfoRow label={t("members.educationalLevel")} value={member.educationalLevel} />
           </CardContent>
         </Card>
 
@@ -146,27 +150,27 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              {member.memberType === "CHILD" ? "معلومات الأسرة" : "معلومات إضافية"}
+              {member.memberType === "CHILD" ? t("members.familyInfoCard") : t("members.additionalInfoCard")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {member.memberType === "CHILD" ? (
               <>
-                <InfoRow label="اسم الأب" value={member.fatherName} />
-                <InfoRow label="هاتف الأب" value={member.fatherPhone} />
-                <InfoRow label="اسم الأم" value={member.motherName} />
-                <InfoRow label="هاتف الأم" value={member.motherPhone} />
-                <InfoRow label="رقم ب.و.ت للولي" value={member.parentCin} />
-                <InfoRow label="عدد الإخوة" value={member.siblingsCount != null ? String(member.siblingsCount) : null} />
-                <InfoRow label="الرتبة بين الإخوة" value={member.siblingOrder != null ? String(member.siblingOrder) : null} />
-                <InfoRow label="الحالة الصحية" value={member.healthConditions} />
+                <InfoRow label={t("members.fatherName")} value={member.fatherName} />
+                <InfoRow label={t("members.fatherPhone")} value={member.fatherPhone} />
+                <InfoRow label={t("members.motherName")} value={member.motherName} />
+                <InfoRow label={t("members.motherPhone")} value={member.motherPhone} />
+                <InfoRow label={t("members.parentCinShort")} value={member.parentCin} />
+                <InfoRow label={t("members.siblingsCount")} value={member.siblingsCount != null ? String(member.siblingsCount) : null} />
+                <InfoRow label={t("members.siblingOrder")} value={member.siblingOrder != null ? String(member.siblingOrder) : null} />
+                <InfoRow label={t("members.healthCondition")} value={member.healthConditions} />
               </>
             ) : (
               <>
-                <InfoRow label="رقم ب.و.ت" value={member.cin} />
-                <InfoRow label="المهنة" value={member.profession} />
-                <InfoRow label="الدور في الجمعية" value={member.associationRole} />
-                <InfoRow label="الاهتمامات" value={member.interests} />
+                <InfoRow label={t("members.cin")} value={member.cin} />
+                <InfoRow label={t("members.profession")} value={member.profession} />
+                <InfoRow label={t("members.assocRole")} value={member.associationRole} />
+                <InfoRow label={t("members.interestsCard")} value={member.interests} />
               </>
             )}
           </CardContent>
@@ -175,36 +179,36 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
         {/* Contact */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">الاتصال</CardTitle>
+            <CardTitle className="text-lg">{t("members.contactCard")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="الهاتف" value={member.phone} />
-            <InfoRow label="العنوان" value={member.address} />
+            <InfoRow label={t("members.col.phone")} value={member.phone} />
+            <InfoRow label={t("members.address")} value={member.address} />
           </CardContent>
         </Card>
 
         {/* Enrollment */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">التسجيل</CardTitle>
+            <CardTitle className="text-lg">{t("members.enrollmentCard")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="تاريخ التسجيل" value={formatDate(member.registrationDate)} />
-            <InfoRow label="مبلغ الانخراط" value={member.subscriptionAmount ? `${member.subscriptionAmount} درهم` : null} />
+            <InfoRow label={t("members.reg.date")} value={formatDate(member.registrationDate)} />
+            <InfoRow label={t("members.subscriptionAmountPlain")} value={member.subscriptionAmount ? `${member.subscriptionAmount} ${t("members.dh")}` : null} />
             <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground text-sm">الحالة</span>
+              <span className="text-muted-foreground text-sm">{t("members.col.status")}</span>
               <Badge variant={member.isActive ? "default" : "destructive"}>
-                {member.isActive ? "نشط" : "غير نشط"}
+                {member.isActive ? t("members.active") : t("members.inactive")}
               </Badge>
             </div>
             <div className="py-2">
-              <span className="text-muted-foreground text-sm block mb-2">الأقسام</span>
+              <span className="text-muted-foreground text-sm block mb-2">{t("members.col.sections")}</span>
               <div className="flex gap-1 flex-wrap">
                 {member.sections
                   .filter((s) => s.isActive)
                   .map((s) => (
                     <Badge key={s.id} variant="secondary">
-                      {SECTION_LABELS[s.section]}
+                      {t(SECTION_LABELS[s.section])}
                     </Badge>
                   ))}
               </div>
@@ -221,13 +225,13 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       {member.contributions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">آخر المساهمات</CardTitle>
+            <CardTitle className="text-lg">{t("members.recentContributions")}</CardTitle>
           </CardHeader>
           <CardContent>
             {member.contributions.map((c) => (
               <div key={c.id} className="flex justify-between py-2 border-b last:border-0">
                 <span>{formatDate(c.weekStart)}</span>
-                <span className="font-medium">{c.amount} درهم</span>
+                <span className="font-medium">{c.amount} {t("members.dh")}</span>
               </div>
             ))}
           </CardContent>
@@ -247,6 +251,8 @@ type Note = {
 };
 
 function NotesPanel({ memberId }: { memberId: string }) {
+  const { t, locale } = useT();
+  const noteDateLocale = locale === "fr" ? "fr-MA" : "ar-MA";
   const [notes, setNotes] = useState<Note[]>([]);
   const [content, setContent] = useState("");
   const [isPrivate, setIsPrivate] = useState(true);
@@ -271,8 +277,8 @@ function NotesPanel({ memberId }: { memberId: string }) {
     if (r.ok) {
       setContent("");
       load();
-      toast.success("تم إضافة الملاحظة");
-    } else toast.error("فشل");
+      toast.success(t("members.noteAdded"));
+    } else toast.error(t("members.failed"));
   };
 
   const saveEdit = async (id: string) => {
@@ -284,41 +290,41 @@ function NotesPanel({ memberId }: { memberId: string }) {
     if (r.ok) {
       setEditingId(null);
       load();
-      toast.success("تم");
-    } else toast.error("فشل");
+      toast.success(t("members.done"));
+    } else toast.error(t("members.failed"));
   };
 
   const del = async (id: string) => {
-    if (!confirm("حذف الملاحظة؟")) return;
+    if (!confirm(t("members.deleteNoteConfirm"))) return;
     const r = await fetch(`/api/notes/${id}`, { method: "DELETE" });
     if (r.ok) {
       load();
-      toast.success("تم الحذف");
+      toast.success(t("members.deleted"));
     }
   };
 
   return (
     <Card>
-      <CardHeader><CardTitle className="text-lg">الملاحظات</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-lg">{t("members.notesCard")}</CardTitle></CardHeader>
       <CardContent className="space-y-3">
         <form onSubmit={create} className="space-y-2 border rounded-lg p-3 bg-muted/20">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="أضف ملاحظة جديدة..."
+            placeholder={t("members.notePlaceholder")}
             className="w-full min-h-[60px] p-2 rounded-md border bg-background text-sm"
           />
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-xs">
               <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
-              ملاحظة خاصة (للإدارة فقط)
+              {t("members.notePrivate")}
             </label>
-            <Button type="submit" size="sm" disabled={!content.trim()}>إضافة</Button>
+            <Button type="submit" size="sm" disabled={!content.trim()}>{t("members.add")}</Button>
           </div>
         </form>
 
         {notes.length === 0 ? (
-          <p className="text-center text-muted-foreground text-sm py-2">لا توجد ملاحظات</p>
+          <p className="text-center text-muted-foreground text-sm py-2">{t("members.noNotes")}</p>
         ) : (
           notes.map((note) => (
             <div key={note.id} className="p-3 bg-muted rounded-lg">
@@ -330,8 +336,8 @@ function NotesPanel({ memberId }: { memberId: string }) {
                     className="w-full min-h-[60px] p-2 rounded-md border bg-background text-sm"
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => saveEdit(note.id)}>حفظ</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>إلغاء</Button>
+                    <Button size="sm" onClick={() => saveEdit(note.id)}>{t("members.save")}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>{t("members.cancel")}</Button>
                   </div>
                 </div>
               ) : (
@@ -339,14 +345,14 @@ function NotesPanel({ memberId }: { memberId: string }) {
                   <p className="whitespace-pre-wrap">{note.content}</p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-muted-foreground">
-                      {note.author.fullName} · {new Date(note.createdAt).toLocaleDateString("ar-MA")}
-                      {note.isPrivate && " · خاصة"}
+                      {note.author.fullName} · {new Date(note.createdAt).toLocaleDateString(noteDateLocale)}
+                      {note.isPrivate && ` · ${t("members.privateTag")}`}
                     </p>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingId(note.id); setEditContent(note.content); }} title="تعديل">
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingId(note.id); setEditContent(note.content); }} title={t("members.editTitle")}>
                         ✎
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => del(note.id)} title="حذف">
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => del(note.id)} title={t("members.deleteTitle")}>
                         ×
                       </Button>
                     </div>

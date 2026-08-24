@@ -36,6 +36,7 @@ import {
   Building,
 } from "lucide-react";
 import type { Role } from "@/lib/rbac";
+import { useT } from "@/components/i18n/provider";
 import {
   Sidebar,
   SidebarContent,
@@ -66,123 +67,123 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    title: "الاشتراك والفاتورة",
+    title: "nav.billing",
     href: "/billing",
     roles: ["ADMIN", "BUREAU", "BUREAU_RW"],
-    children: [{ title: "الاشتراك والفاتورة", href: "/billing", icon: CreditCard }],
+    children: [{ title: "nav.billing", href: "/billing", icon: CreditCard }],
   },
   {
-    title: "لوحة المنصة",
+    title: "nav.platform",
     href: "/platform",
     roles: ["ADMIN"],
-    children: [{ title: "إدارة الفضاءات", href: "/platform", icon: Building }],
+    children: [{ title: "nav.platform.tenants", href: "/platform", icon: Building }],
   },
   {
-    title: "لوحة الإدارة",
+    title: "nav.admin",
     href: "/admin",
     roles: ["ADMIN", "BUREAU_RW"],
     children: [
-      { title: "نظرة عامة", href: "/admin", icon: LayoutDashboard },
-      { title: "المنخرطين", href: "/admin/members", icon: Users },
-      { title: "استيراد المنخرطين", href: "/admin/members/import", icon: Upload },
-      { title: "إدارة الوصول", href: "/admin/users", icon: Shield },
-      { title: "الصلاحيات الموسعة", href: "/admin/permissions", icon: Shield },
-      { title: "السنوات الدراسية", href: "/admin/academic-years", icon: CalendarDays },
-      { title: "الروابط العائلية", href: "/admin/family-links", icon: Users2 },
-      { title: "شارات QR", href: "/admin/members/badges", icon: QrCode },
-      { title: "سجل المراجعة", href: "/admin/audit", icon: ScrollText },
-      { title: "معلومات الجمعية", href: "/admin/association", icon: Settings },
+      { title: "nav.overview", href: "/admin", icon: LayoutDashboard },
+      { title: "nav.members", href: "/admin/members", icon: Users },
+      { title: "nav.membersImport", href: "/admin/members/import", icon: Upload },
+      { title: "nav.accessControl", href: "/admin/users", icon: Shield },
+      { title: "nav.extendedPermissions", href: "/admin/permissions", icon: Shield },
+      { title: "nav.academicYears", href: "/admin/academic-years", icon: CalendarDays },
+      { title: "nav.familyLinks", href: "/admin/family-links", icon: Users2 },
+      { title: "nav.qrBadges", href: "/admin/members/badges", icon: QrCode },
+      { title: "nav.auditLog", href: "/admin/audit", icon: ScrollText },
+      { title: "nav.associationInfo", href: "/admin/association", icon: Settings },
     ],
   },
   {
-    title: "المكتب المسير",
+    title: "nav.bureau",
     href: "/bureau",
     roles: ["ADMIN", "BUREAU", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/bureau", icon: Building2 },
+      { title: "nav.overview", href: "/bureau", icon: Building2 },
     ],
   },
   {
-    title: "المالية",
+    title: "nav.financial",
     href: "/financial",
     roles: ["ADMIN", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/financial", icon: Wallet },
-      { title: "المساهمات الأسبوعية", href: "/financial/contributions", icon: Coins },
-      { title: "المصاريف", href: "/financial/expenses", icon: Receipt },
-      { title: "التبرعات", href: "/financial/donations", icon: Gift },
-      { title: "تقارير وإحصائيات", href: "/financial/reports", icon: BarChart3 },
+      { title: "nav.overview", href: "/financial", icon: Wallet },
+      { title: "nav.weeklyContributions", href: "/financial/contributions", icon: Coins },
+      { title: "nav.auto1", href: "/financial/expenses", icon: Receipt },
+      { title: "nav.auto2", href: "/financial/donations", icon: Gift },
+      { title: "nav.auto3", href: "/financial/reports", icon: BarChart3 },
     ],
   },
   {
-    title: "القسم التربوي",
+    title: "nav.auto4",
     href: "/educational",
     roles: ["ADMIN", "EDUCATIONAL", "BUREAU", "BUREAU_RW", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/educational", icon: GraduationCap },
-      { title: "البرامج والأنشطة", href: "/educational/programs", icon: ClipboardList },
-      { title: "الحضور", href: "/educational/attendance", icon: CalendarCheck },
+      { title: "nav.overview", href: "/educational", icon: GraduationCap },
+      { title: "nav.auto5", href: "/educational/programs", icon: ClipboardList },
+      { title: "nav.auto6", href: "/educational/attendance", icon: CalendarCheck },
     ],
   },
   {
-    title: "القسم الاجتماعي",
+    title: "nav.auto7",
     href: "/social",
     roles: ["ADMIN", "SOCIAL", "BAHT_IJTIMA3I_TEAM", "BUREAU", "BUREAU_RW", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/social", icon: HeartHandshake },
-      { title: "المشاريع والأنشطة", href: "/social/projects", icon: Target },
-      { title: "الحالات الاجتماعية", href: "/social/cases", icon: HeartHandshake, roles: ["ADMIN", "BAHT_IJTIMA3I_TEAM"] },
-      { title: "البرامج", href: "/social/programs", icon: ClipboardList },
-      { title: "الحضور", href: "/social/attendance", icon: CalendarCheck },
-      { title: "تحليلات", href: "/social/analytics", icon: BarChart3 },
+      { title: "nav.overview", href: "/social", icon: HeartHandshake },
+      { title: "nav.auto8", href: "/social/projects", icon: Target },
+      { title: "nav.auto9", href: "/social/cases", icon: HeartHandshake, roles: ["ADMIN", "BAHT_IJTIMA3I_TEAM"] },
+      { title: "nav.auto10", href: "/social/programs", icon: ClipboardList },
+      { title: "nav.auto6", href: "/social/attendance", icon: CalendarCheck },
+      { title: "nav.auto11", href: "/social/analytics", icon: BarChart3 },
     ],
   },
   {
-    title: "قسم القرآن الكريم",
+    title: "nav.auto12",
     href: "/quran",
     roles: ["ADMIN", "QURAN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/quran", icon: BookOpen },
-      { title: "البرامج والأنشطة", href: "/quran/programs", icon: ClipboardList },
-      { title: "الحضور", href: "/quran/attendance", icon: CalendarCheck },
-      { title: "تتبع الحفظ والتجويد", href: "/quran/progress", icon: Activity },
+      { title: "nav.overview", href: "/quran", icon: BookOpen },
+      { title: "nav.auto5", href: "/quran/programs", icon: ClipboardList },
+      { title: "nav.auto6", href: "/quran/attendance", icon: CalendarCheck },
+      { title: "nav.auto13", href: "/quran/progress", icon: Activity },
     ],
   },
   {
-    title: "مركز تأهيل القادة",
+    title: "nav.auto14",
     href: "/qada",
     roles: ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/qada", icon: GraduationCap },
-      { title: "البرامج والأنشطة", href: "/qada/programs", icon: ClipboardList },
+      { title: "nav.overview", href: "/qada", icon: GraduationCap },
+      { title: "nav.auto5", href: "/qada/programs", icon: ClipboardList },
     ],
   },
   {
-    title: "القسم الإعلامي",
+    title: "nav.auto15",
     href: "/media",
     roles: ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
     children: [
-      { title: "نظرة عامة", href: "/media", icon: ClipboardList },
-      { title: "📋 لوحة المهام", href: "/media/tasks", icon: ListChecks },
+      { title: "nav.overview", href: "/media", icon: ClipboardList },
+      { title: "nav.auto16", href: "/media/tasks", icon: ListChecks },
     ],
   },
   {
-    title: "ساعات التطوع",
+    title: "nav.auto17",
     href: "/volunteer",
     roles: ["ADMIN", "BUREAU", "BUREAU_RW", "SECTION_ADMIN"],
     children: [
-      { title: "ساعات التطوع", href: "/volunteer", icon: HandHeart },
+      { title: "nav.auto17", href: "/volunteer", icon: HandHeart },
     ],
   },
   {
-    title: "فضاء المنخرط",
+    title: "nav.auto18",
     href: "/member",
     roles: ["ADMIN", "BUREAU", "FINANCIAL", "EDUCATIONAL", "SOCIAL", "QURAN", "MEMBER"],
     children: [
-      { title: "الملف الشخصي", href: "/member", icon: UserRound },
-      { title: "تعديل بياناتي", href: "/member/profile", icon: UserRound },
-      { title: "أبنائي", href: "/member/family", icon: Users2 },
-      { title: "تطوعي", href: "/member/volunteer", icon: Heart },
+      { title: "nav.auto19", href: "/member", icon: UserRound },
+      { title: "nav.auto20", href: "/member/profile", icon: UserRound },
+      { title: "nav.auto21", href: "/member/family", icon: Users2 },
+      { title: "nav.auto22", href: "/member/volunteer", icon: Heart },
     ],
   },
 ];
@@ -191,6 +192,7 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+  const { t } = useT();
   const userRoles = (session?.user?.roles ?? []) as Role[];
 
   const accessibleItems = navItems.filter((item) =>
@@ -214,7 +216,7 @@ export function AppSidebar() {
           </div>
           <div className="group-data-[collapsible=icon]:hidden min-w-0">
             <h2 className="font-bold text-sm leading-tight truncate">جمعية النعمة</h2>
-            <p className="text-xs text-muted-foreground">نظام التسيير</p>
+            <p className="text-xs text-muted-foreground">{t("sidebar.tagline")}</p>
           </div>
         </Link>
       </SidebarHeader>
@@ -223,7 +225,7 @@ export function AppSidebar() {
         {accessibleItems.map((item) => (
           <SidebarGroup key={item.href}>
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden text-xs">
-              {item.title}
+              {t(item.title)}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -234,11 +236,11 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         render={<Link href={child.href} onClick={() => setOpenMobile(false)} />}
                         isActive={pathname === child.href}
-                        tooltip={child.title}
+                        tooltip={t(child.title)}
                       >
                         <Icon className="shrink-0" size={16} />
                         <span className="group-data-[collapsible=icon]:hidden">
-                          {child.title}
+                          {t(child.title)}
                         </span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

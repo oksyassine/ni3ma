@@ -13,13 +13,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ROLE_LABELS } from "@/lib/rbac";
+import { roleLabel } from "@/lib/rbac";
 import { Badge } from "@/components/ui/badge";
 import type { Role } from "@/lib/rbac";
+import { useT } from "@/components/i18n/provider";
+import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
 
 export function TopBar() {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
+  const { locale, t } = useT();
   const user = session?.user;
   const initials = user?.fullName
     ?.split(" ")
@@ -33,13 +36,16 @@ export function TopBar() {
         <SidebarTrigger />
         <div className="flex-1" />
 
+        {/* Language switcher */}
+        <LocaleSwitcher locale={locale} />
+
         {/* Dark mode toggle */}
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-foreground"
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          title={resolvedTheme === "dark" ? "الوضع النهاري" : "الوضع الليلي"}
+          title={resolvedTheme === "dark" ? t("topbar.lightMode") : t("topbar.darkMode")}
         >
           {resolvedTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </Button>
@@ -63,14 +69,14 @@ export function TopBar() {
               <div className="flex flex-wrap gap-1 mt-2">
                 {(user?.roles as Role[])?.map((role) => (
                   <Badge key={role} variant="secondary" className="text-xs">
-                    {ROLE_LABELS[role]}
+                    {roleLabel(role, locale as "ar" | "fr")}
                   </Badge>
                 ))}
               </div>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
-              تسجيل الخروج
+              {t("topbar.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

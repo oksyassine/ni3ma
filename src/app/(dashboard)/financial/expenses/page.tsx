@@ -30,20 +30,21 @@ import {
 } from "@/components/ui/select";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n/provider";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  EDUCATIONAL: "تربوي",
-  SOCIAL: "اجتماعي",
-  QURAN: "قرآن كريم",
-  ADMINISTRATIVE: "إداري",
-  MAINTENANCE: "صيانة",
-  OTHER: "أخرى",
+const CATEGORY_KEYS: Record<string, string> = {
+  EDUCATIONAL: "financial.cat.educational",
+  SOCIAL: "financial.cat.social",
+  QURAN: "financial.cat.quran",
+  ADMINISTRATIVE: "financial.cat.administrative",
+  MAINTENANCE: "financial.cat.maintenance",
+  OTHER: "financial.cat.other",
 };
 
-const SECTION_LABELS: Record<string, string> = {
-  EDUCATIONAL: "تربوي",
-  SOCIAL: "اجتماعي",
-  QURAN: "قرآن كريم",
+const SECTION_KEYS: Record<string, string> = {
+  EDUCATIONAL: "financial.cat.educational",
+  SOCIAL: "financial.cat.social",
+  QURAN: "financial.cat.quran",
 };
 
 type ExpenseItem = {
@@ -66,6 +67,9 @@ type ProjectLite = {
 };
 
 export default function ExpensesPage() {
+  const { t, locale } = useT();
+  const categoryLabel = (value: string) => t(CATEGORY_KEYS[value] ?? "financial.cat.other");
+  const sectionLabel = (value: string) => t(SECTION_KEYS[value] ?? "financial.cat.other");
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -104,14 +108,14 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("حذف هذا المصروف؟")) return;
+    if (!confirm(t("financial.deleteExpenseConfirm"))) return;
     const r = await fetch(`/api/expenses/${id}`, { method: "DELETE" });
     if (r.ok) {
-      toast.success("تم الحذف");
+      toast.success(t("financial.deleted"));
       fetchExpenses();
     } else {
       const data = await r.json().catch(() => ({}));
-      toast.error(data.error ?? "فشل الحذف");
+      toast.error(data.error ?? t("financial.deleteFailed"));
     }
   };
 
@@ -154,7 +158,7 @@ export default function ExpensesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.category || !form.description || !form.amount || !form.expenseDate) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error(t("financial.fillRequired"));
       return;
     }
 
@@ -172,12 +176,12 @@ export default function ExpensesPage() {
         });
 
     if (res.ok) {
-      toast.success(editingId ? "تم تعديل المصروف" : "تم تسجيل المصروف بنجاح");
+      toast.success(editingId ? t("financial.expenseUpdated") : t("financial.expenseCreated"));
       setDialogOpen(false);
       resetForm();
       fetchExpenses();
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("common.error"));
     }
     setSubmitting(false);
   };
@@ -188,61 +192,61 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">المصاريف</h1>
+          <h1 className="text-2xl font-bold">{t("financial.expensesTitle")}</h1>
           <p className="text-muted-foreground">
-            الإجمالي: {total.toFixed(2)} درهم
+            {t("financial.totalWithAmount", { total: total.toFixed(2) })}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
           <DialogTrigger>
-            <Button>إضافة مصروف</Button>
+            <Button>{t("financial.addExpense")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingId ? "تعديل المصروف" : "مصروف جديد"}</DialogTitle>
+              <DialogTitle>{editingId ? t("financial.editExpense") : t("financial.newExpense")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>الصنف *</Label>
+                <Label>{t("financial.category")} *</Label>
                 <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v ?? "" })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر الصنف">
-                      {form.category ? (CATEGORY_LABELS as Record<string, string>)[form.category] : "اختر الصنف"}
+                    <SelectValue placeholder={t("financial.selectCategory")}>
+                      {form.category ? categoryLabel(form.category) : t("financial.selectCategory")}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    {Object.entries(CATEGORY_KEYS).map(([value, key]) => (
+                      <SelectItem key={value} value={value}>{t(key)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>القسم</Label>
+                <Label>{t("common.section")}</Label>
                 <Select value={form.section} onValueChange={(v) => setForm({ ...form, section: v ?? "" })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر القسم (اختياري)">
-                      {form.section ? (SECTION_LABELS as Record<string, string>)[form.section] : "اختر القسم (اختياري)"}
+                    <SelectValue placeholder={t("financial.selectSectionOptional")}>
+                      {form.section ? sectionLabel(form.section) : t("financial.selectSectionOptional")}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(SECTION_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    {Object.entries(SECTION_KEYS).map(([value, key]) => (
+                      <SelectItem key={value} value={value}>{t(key)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>الوصف *</Label>
+                <Label>{t("common.description")} *</Label>
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="وصف المصروف"
+                  placeholder={t("financial.expenseDescPlaceholder")}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>المبلغ (درهم) *</Label>
+                <Label>{t("financial.amountMadRequired")}</Label>
                 <Input
                   type="number"
                   value={form.amount}
@@ -255,7 +259,7 @@ export default function ExpensesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>التاريخ *</Label>
+                <Label>{t("common.date")} *</Label>
                 <Input
                   type="date"
                   value={form.expenseDate}
@@ -265,14 +269,14 @@ export default function ExpensesPage() {
                 />
               </div>
               <div className="space-y-2 border-t pt-3">
-                <Label className="text-sm font-bold">ربط بمشروع (اختياري)</Label>
-                <p className="text-[11px] text-muted-foreground">إذا كان هذا المصروف ينتمي إلى ميزانية مشروع، اختره هنا لتتبع الميزانية</p>
+                <Label className="text-sm font-bold">{t("financial.linkProject")}</Label>
+                <p className="text-[11px] text-muted-foreground">{t("financial.linkProjectHint")}</p>
                 <select
                   value={form.projectId}
                   onChange={(e) => setForm({ ...form, projectId: e.target.value, planId: "", planLineItemId: "" })}
                   className="w-full h-9 px-3 rounded-md border bg-background text-sm"
                 >
-                  <option value="">— غير مرتبط —</option>
+                  <option value="">{t("financial.unlinked")}</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
@@ -286,7 +290,7 @@ export default function ExpensesPage() {
                       onChange={(e) => setForm({ ...form, planId: e.target.value, planLineItemId: "" })}
                       className="w-full h-9 px-3 rounded-md border bg-background text-sm"
                     >
-                      <option value="">— الخطة (اختياري) —</option>
+                      <option value="">{t("financial.planOptional")}</option>
                       {project.plans.map((pl) => (
                         <option key={pl.id} value={pl.id}>{pl.name}</option>
                       ))}
@@ -303,7 +307,7 @@ export default function ExpensesPage() {
                       onChange={(e) => setForm({ ...form, planLineItemId: e.target.value })}
                       className="w-full h-9 px-3 rounded-md border bg-background text-sm"
                     >
-                      <option value="">— البند (اختياري) —</option>
+                      <option value="">{t("financial.lineItemOptional")}</option>
                       {plan.lineItems.map((li) => (
                         <option key={li.id} value={li.id}>{li.name}</option>
                       ))}
@@ -312,7 +316,7 @@ export default function ExpensesPage() {
                 })()}
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "جاري الحفظ..." : editingId ? "حفظ التعديلات" : "حفظ المصروف"}
+                {submitting ? t("common.saving") : editingId ? t("financial.savingChanges") : t("financial.saveExpense")}
               </Button>
             </form>
           </DialogContent>
@@ -323,49 +327,49 @@ export default function ExpensesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>التاريخ</TableHead>
-              <TableHead>الصنف</TableHead>
-              <TableHead>القسم</TableHead>
-              <TableHead>الوصف</TableHead>
-              <TableHead>المبلغ</TableHead>
-              <TableHead>سجلها</TableHead>
-              <TableHead className="w-24">إجراءات</TableHead>
+              <TableHead>{t("common.date")}</TableHead>
+              <TableHead>{t("financial.category")}</TableHead>
+              <TableHead>{t("common.section")}</TableHead>
+              <TableHead>{t("common.description")}</TableHead>
+              <TableHead>{t("common.amount")}</TableHead>
+              <TableHead>{t("financial.recordedBy")}</TableHead>
+              <TableHead className="w-24">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">جاري التحميل...</TableCell>
+                <TableCell colSpan={7} className="text-center py-8">{t("common.loading")}</TableCell>
               </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  لا توجد مصاريف مسجلة
+                  {t("financial.noExpenses")}
                 </TableCell>
               </TableRow>
             ) : (
               expenses.map((expense) => (
                 <TableRow key={expense.id}>
-                  <TableCell>{new Date(expense.expenseDate).toLocaleDateString("ar-MA")}</TableCell>
+                  <TableCell>{new Date(expense.expenseDate).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA")}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{CATEGORY_LABELS[expense.category]}</Badge>
+                    <Badge variant="outline">{categoryLabel(expense.category)}</Badge>
                   </TableCell>
                   <TableCell>
                     {expense.section ? (
-                      <Badge variant="secondary">{SECTION_LABELS[expense.section]}</Badge>
+                      <Badge variant="secondary">{sectionLabel(expense.section)}</Badge>
                     ) : "-"}
                   </TableCell>
                   <TableCell className="max-w-xs truncate">{expense.description}</TableCell>
-                  <TableCell className="font-medium">{parseFloat(expense.amount).toFixed(2)} د.م</TableCell>
+                  <TableCell className="font-medium">{parseFloat(expense.amount).toFixed(2)} {t("financial.mad")}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {expense.recorder?.fullName ?? "-"}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(expense)} title="تعديل">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(expense)} title={t("common.edit")}>
                         <Pencil size={13} />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(expense.id)} title="حذف">
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(expense.id)} title={t("common.delete")}>
                         <Trash2 size={13} />
                       </Button>
                     </div>

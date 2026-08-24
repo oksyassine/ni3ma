@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n/provider";
 
 export type TenantRow = {
   id: string;
@@ -26,12 +27,13 @@ const STATUS_STYLES: Record<string, string> = {
   SUSPENDED: "bg-gray-200 text-gray-700",
 };
 
-function fmt(d: string | null): string {
+function fmt(d: string | null, locale: string): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("ar-MA");
+  return new Date(d).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA");
 }
 
 export function PlatformTenantsTable({ initial }: { initial: TenantRow[] }) {
+  const { t, locale } = useT();
   const [rows, setRows] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +48,10 @@ export function PlatformTenantsTable({ initial }: { initial: TenantRow[] }) {
         body: JSON.stringify({ tenantId, action }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "فشل تنفيذ العملية");
+      if (!res.ok) throw new Error(json.error ?? t("platform.actionFailed"));
       setRows((prev) => prev.map((r) => (r.id === tenantId ? { ...r, ...json.tenant } : r)));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "خطأ غير متوقع");
+      setError(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setBusy(null);
     }
@@ -62,56 +64,56 @@ export function PlatformTenantsTable({ initial }: { initial: TenantRow[] }) {
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-right text-xs text-muted-foreground">
             <tr>
-              <th className="p-3">الجمعية</th>
-              <th className="p-3">العنوان</th>
-              <th className="p-3">الخطة</th>
-              <th className="p-3">الحالة</th>
-              <th className="p-3">التجربة</th>
-              <th className="p-3">الاشتراك حتى</th>
-              <th className="p-3">إجراءات</th>
+              <th className="p-3">{t("platform.table.association")}</th>
+              <th className="p-3">{t("platform.table.slug")}</th>
+              <th className="p-3">{t("platform.table.plan")}</th>
+              <th className="p-3">{t("platform.table.status")}</th>
+              <th className="p-3">{t("platform.table.trial")}</th>
+              <th className="p-3">{t("platform.table.paidUntil")}</th>
+              <th className="p-3">{t("platform.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((t) => (
-              <tr key={t.id} className="border-t align-top">
+            {rows.map((tr) => (
+              <tr key={tr.id} className="border-t align-top">
                 <td className="p-3">
-                  <div className="font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.city}</div>
-                  {(t.contactName || t.contactPhone) && (
+                  <div className="font-semibold">{tr.name}</div>
+                  <div className="text-xs text-muted-foreground">{tr.city}</div>
+                  {(tr.contactName || tr.contactPhone) && (
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {t.contactName} {t.contactPhone ? `· ${t.contactPhone}` : ""}
+                      {tr.contactName} {tr.contactPhone ? `· ${tr.contactPhone}` : ""}
                     </div>
                   )}
                 </td>
-                <td dir="ltr" className="p-3 text-left text-xs">{t.slug}</td>
-                <td className="p-3">{t.plan}</td>
+                <td dir="ltr" className="p-3 text-left text-xs">{tr.slug}</td>
+                <td className="p-3">{tr.plan}</td>
                 <td className="p-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[t.status] ?? ""}`}>
-                    {t.status}
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[tr.status] ?? ""}`}>
+                    {tr.status}
                   </span>
-                  {t.lastProvisionError && (
-                    <div dir="ltr" className="mt-1 max-w-[220px] truncate text-left text-[10px] text-red-500" title={t.lastProvisionError}>
-                      {t.lastProvisionError}
+                  {tr.lastProvisionError && (
+                    <div dir="ltr" className="mt-1 max-w-[220px] truncate text-left text-[10px] text-red-500" title={tr.lastProvisionError}>
+                      {tr.lastProvisionError}
                     </div>
                   )}
                 </td>
-                <td className="p-3 text-xs">{fmt(t.trialEndsAt)}</td>
-                <td className="p-3 text-xs">{fmt(t.currentPeriodEnd)}</td>
+                <td className="p-3 text-xs">{fmt(tr.trialEndsAt, locale)}</td>
+                <td className="p-3 text-xs">{fmt(tr.currentPeriodEnd, locale)}</td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-1.5">
-                    {t.status !== "ACTIVE" && (
-                      <Button size="xs" disabled={busy !== null} onClick={() => act(t.id, "activate")}>
-                        تفعيل
+                    {tr.status !== "ACTIVE" && (
+                      <Button size="xs" disabled={busy !== null} onClick={() => act(tr.id, "activate")}>
+                        {t("platform.action.activate")}
                       </Button>
                     )}
-                    {t.status === "ACTIVE" && (
-                      <Button size="xs" variant="destructive" disabled={busy !== null} onClick={() => act(t.id, "suspend")}>
-                        إيقاف
+                    {tr.status === "ACTIVE" && (
+                      <Button size="xs" variant="destructive" disabled={busy !== null} onClick={() => act(tr.id, "suspend")}>
+                        {t("platform.action.suspend")}
                       </Button>
                     )}
-                    {(t.status === "PENDING_PROVISIONING" || t.status === "PROVISION_FAILED") && (
-                      <Button size="xs" variant="outline" disabled={busy !== null} onClick={() => act(t.id, "retry-provision")}>
-                        إعادة المحاولة
+                    {(tr.status === "PENDING_PROVISIONING" || tr.status === "PROVISION_FAILED") && (
+                      <Button size="xs" variant="outline" disabled={busy !== null} onClick={() => act(tr.id, "retry-provision")}>
+                        {t("platform.action.retryProvision")}
                       </Button>
                     )}
                   </div>

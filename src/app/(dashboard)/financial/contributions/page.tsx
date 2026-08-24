@@ -16,7 +16,8 @@ import {
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { startOfWeek, format, addWeeks, subWeeks } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, fr } from "date-fns/locale";
+import { useT } from "@/components/i18n/provider";
 
 type MemberItem = {
   id: string;
@@ -31,6 +32,7 @@ type ContributionItem = {
 };
 
 export default function ContributionsPage() {
+  const { t, locale } = useT();
   const [members, setMembers] = useState<MemberItem[]>([]);
   const [contributions, setContributions] = useState<Map<string, { id: string; amount: string }>>(new Map());
   const [currentWeek, setCurrentWeek] = useState(() =>
@@ -93,9 +95,9 @@ export default function ContributionsPage() {
     if (res.ok) {
       const created = await res.json();
       setContributions((prev) => new Map(prev).set(memberId, { id: created.id, amount }));
-      toast.success("تم حفظ المساهمة");
+      toast.success(t("financial.contributionSaved"));
     } else {
-      toast.error("خطأ في الحفظ");
+      toast.error(t("financial.saveError"));
     }
     setSaving(false);
   };
@@ -103,7 +105,7 @@ export default function ContributionsPage() {
   const deleteContribution = async (memberId: string) => {
     const c = contributions.get(memberId);
     if (!c) return;
-    if (!confirm("حذف هذه المساهمة؟")) return;
+    if (!confirm(t("financial.deleteContributionConfirm"))) return;
     const r = await fetch(`/api/contributions/${c.id}`, { method: "DELETE" });
     if (r.ok) {
       setContributions((prev) => {
@@ -116,10 +118,10 @@ export default function ContributionsPage() {
         next.delete(memberId);
         return next;
       });
-      toast.success("تم الحذف");
+      toast.success(t("financial.deleted"));
     } else {
       const data = await r.json().catch(() => ({}));
-      toast.error(data.error ?? "فشل الحذف");
+      toast.error(data.error ?? t("financial.deleteFailed"));
     }
   };
 
@@ -129,15 +131,15 @@ export default function ContributionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">المساهمات الأسبوعية</h1>
-        <p className="text-muted-foreground">تتبع المساهمات المالية الأسبوعية للمنخرطين</p>
+        <h1 className="text-2xl font-bold">{t("financial.weeklyContributions")}</h1>
+        <p className="text-muted-foreground">{t("financial.contributionsSubtitle")}</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المنخرطين</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("financial.totalMembers")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{members.length}</div>
@@ -145,7 +147,7 @@ export default function ContributionsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">دفعوا هذا الأسبوع</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("financial.paidThisWeek")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{contributions.size}</div>
@@ -153,7 +155,7 @@ export default function ContributionsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">لم يدفعوا</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("financial.notPaid")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">{members.length - contributions.size}</div>
@@ -165,35 +167,35 @@ export default function ContributionsPage() {
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle>
-              أسبوع {format(currentWeek, "dd MMMM yyyy", { locale: ar })}
+              {t("financial.weekOf", { date: format(currentWeek, "dd MMMM yyyy", { locale: locale === "fr" ? fr : ar }) })}
             </CardTitle>
             <div className="flex gap-2">
               <Link href="/admin/members/new">
                 <Button variant="outline" size="sm">
-                  + إضافة منخرط جديد
+                  {t("financial.addMember")}
                 </Button>
               </Link>
               <Button variant="outline" size="sm" onClick={prevWeek}>
-                الأسبوع السابق
+                {t("financial.prevWeek")}
               </Button>
               <Button variant="outline" size="sm" onClick={nextWeek}>
-                الأسبوع التالي
+                {t("financial.nextWeek")}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t("common.loading")}</div>
           ) : (
             <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16">الرقم</TableHead>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead className="w-32">المبلغ (درهم)</TableHead>
-                    <TableHead className="w-24">الحالة</TableHead>
+                    <TableHead className="w-16">{t("financial.regNumber")}</TableHead>
+                    <TableHead>{t("common.name")}</TableHead>
+                    <TableHead className="w-32">{t("financial.amountMad")}</TableHead>
+                    <TableHead className="w-24">{t("common.status")}</TableHead>
                     <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -217,9 +219,9 @@ export default function ContributionsPage() {
                         </TableCell>
                         <TableCell>
                           {paid ? (
-                            <span className="text-green-600 text-sm font-medium">مدفوع</span>
+                            <span className="text-green-600 text-sm font-medium">{t("financial.paid")}</span>
                           ) : (
-                            <span className="text-muted-foreground text-sm">غير مدفوع</span>
+                            <span className="text-muted-foreground text-sm">{t("financial.unpaid")}</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -231,14 +233,14 @@ export default function ContributionsPage() {
                               disabled={saving || !amounts.get(member.id)}
                               className="h-7 text-xs"
                             >
-                              {paid ? "تعديل" : "حفظ"}
+                              {paid ? t("common.edit") : t("common.save")}
                             </Button>
                             {paid && (
                               <Button
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => deleteContribution(member.id)}
-                                title="حذف"
+                                title={t("common.delete")}
                                 className="h-7 w-7 text-destructive hover:text-destructive"
                               >
                                 <Trash2 size={13} />

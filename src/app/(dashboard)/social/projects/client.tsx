@@ -32,6 +32,7 @@ import {
   PROJECT_STATUS_VARIANT,
 } from "@/lib/project";
 import { Plus, Calendar, MapPin, Users, ChevronDown, Target, ListChecks } from "lucide-react";
+import { useT } from "@/components/i18n/provider";
 
 type Project = {
   id: string;
@@ -70,6 +71,7 @@ const initial = {
 };
 
 export function ProjectsListClient() {
+  const { t } = useT();
   const router = useRouter();
   const perms = usePermissions();
   const canWrite = perms.canWriteSection("SOCIAL");
@@ -104,7 +106,7 @@ export function ProjectsListClient() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast.error("الاسم مطلوب");
+      toast.error(t("social.nameRequired"));
       return;
     }
     setSaving(true);
@@ -115,11 +117,11 @@ export function ProjectsListClient() {
     });
     if (r.ok) {
       const created = await r.json();
-      toast.success("تم الإنشاء");
+      toast.success(t("social.createdToast"));
       setOpenCreate(null);
       setForm(initial);
       router.push(`/social/projects/${created.id}`);
-    } else toast.error("فشل الإنشاء");
+    } else toast.error(t("social.createFailed"));
     setSaving(false);
   };
 
@@ -129,51 +131,51 @@ export function ProjectsListClient() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">المشاريع والأنشطة الاجتماعية</h1>
-          <p className="text-muted-foreground">تتبع تنفيذ المشاريع، الأنشطة، التبرعات والمهام</p>
+          <h1 className="text-2xl font-bold">{t("social.projectsTitle")}</h1>
+          <p className="text-muted-foreground">{t("social.projectsSubtitle")}</p>
         </div>
         {canWrite && (
           <DropdownMenu>
             <DropdownMenuTrigger render={
               <Button>
-                <Plus size={16} />جديد
+                <Plus size={16} />{t("social.new")}
                 <ChevronDown size={14} />
               </Button>
             } />
             <DropdownMenuContent>
               <DropdownMenuItem onClick={() => { setOpenCreate("NACHAT"); setForm({ ...initial, kind: "NACHAT" }); }}>
-                📅 نشاط جديد
+                📅 {t("social.newActivity")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => { setOpenCreate("MACHROO3"); setForm({ ...initial, kind: "MACHROO3" }); }}>
-                🎯 مشروع جديد
+                🎯 {t("social.newProject")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
         {!canWrite && perms.hasSectionRead("SOCIAL") && (
-          <Badge variant="outline">قراءة فقط</Badge>
+          <Badge variant="outline">{t("social.readOnlyBadge")}</Badge>
         )}
       </div>
 
       <Card>
         <CardContent className="flex flex-wrap gap-3 py-4">
           <div className="flex gap-1">
-            <Button size="sm" variant={filterKind === "" ? "default" : "outline"} onClick={() => setFilterKind("")}>الكل</Button>
-            <Button size="sm" variant={filterKind === "NACHAT" ? "default" : "outline"} onClick={() => setFilterKind("NACHAT")}>أنشطة</Button>
-            <Button size="sm" variant={filterKind === "MACHROO3" ? "default" : "outline"} onClick={() => setFilterKind("MACHROO3")}>مشاريع</Button>
+            <Button size="sm" variant={filterKind === "" ? "default" : "outline"} onClick={() => setFilterKind("")}>{t("common.all")}</Button>
+            <Button size="sm" variant={filterKind === "NACHAT" ? "default" : "outline"} onClick={() => setFilterKind("NACHAT")}>{t("social.activitiesFilter")}</Button>
+            <Button size="sm" variant={filterKind === "MACHROO3" ? "default" : "outline"} onClick={() => setFilterKind("MACHROO3")}>{t("social.projectsFilter")}</Button>
           </div>
           <div className="flex gap-1">
-            <Button size="sm" variant={filterStatus === "" ? "default" : "outline"} onClick={() => setFilterStatus("")}>كل الحالات</Button>
-            <Button size="sm" variant={filterStatus === "ACTIVE" ? "default" : "outline"} onClick={() => setFilterStatus("ACTIVE")}>نشطة</Button>
-            <Button size="sm" variant={filterStatus === "COMPLETED" ? "default" : "outline"} onClick={() => setFilterStatus("COMPLETED")}>منجزة</Button>
+            <Button size="sm" variant={filterStatus === "" ? "default" : "outline"} onClick={() => setFilterStatus("")}>{t("social.allStatuses")}</Button>
+            <Button size="sm" variant={filterStatus === "ACTIVE" ? "default" : "outline"} onClick={() => setFilterStatus("ACTIVE")}>{t("social.activeFilter")}</Button>
+            <Button size="sm" variant={filterStatus === "COMPLETED" ? "default" : "outline"} onClick={() => setFilterStatus("COMPLETED")}>{t("social.completedFilter")}</Button>
           </div>
         </CardContent>
       </Card>
 
       {loading ? (
-        <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>
+        <p className="text-center py-8 text-muted-foreground">{t("common.loading")}</p>
       ) : projects.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground">لا توجد مشاريع بعد</CardContent></Card>
+        <Card><CardContent className="py-12 text-center text-muted-foreground">{t("social.noProjectsYet")}</CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
@@ -202,14 +204,14 @@ export function ProjectsListClient() {
                   {p.targetAmount && (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1 text-muted-foreground"><Target size={11} />جمع التبرعات</span>
+                        <span className="flex items-center gap-1 text-muted-foreground"><Target size={11} />{t("social.donationCollection")}</span>
                         <span className="font-medium">
-                          {p.summary.totalCollected.toFixed(0)} / {Number(p.targetAmount).toFixed(0)} د.م
+                          {p.summary.totalCollected.toFixed(0)} / {Number(p.targetAmount).toFixed(0)} {t("social.mad")}
                         </span>
                       </div>
                       <Progress value={p.summary.progressPct ?? 0} indicatorClassName="bg-green-600" />
                       {p.summary.inKindEstimated > 0 && (
-                        <p className="text-[10px] text-muted-foreground">منها عيني: {p.summary.inKindEstimated.toFixed(0)} د.م</p>
+                        <p className="text-[10px] text-muted-foreground">{t("social.inKindPart", { amount: p.summary.inKindEstimated.toFixed(0) })} {t("social.mad")}</p>
                       )}
                     </div>
                   )}
@@ -217,7 +219,7 @@ export function ProjectsListClient() {
                   {p.summary.tasksTotal > 0 && (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1 text-muted-foreground"><ListChecks size={11} />تنفيذ المهام</span>
+                        <span className="flex items-center gap-1 text-muted-foreground"><ListChecks size={11} />{t("social.taskExecution")}</span>
                         <span className="font-medium">{p.summary.tasksDone}/{p.summary.tasksTotal}</span>
                       </div>
                       <Progress
@@ -229,7 +231,7 @@ export function ProjectsListClient() {
 
                   {p.expectedBeneficiaries && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Users size={11} />المستفيدون المتوقعون: {p.expectedBeneficiaries}
+                      <Users size={11} />{t("social.expectedBeneficiariesCount", { count: p.expectedBeneficiaries })}
                     </div>
                   )}
                 </CardContent>
@@ -243,60 +245,60 @@ export function ProjectsListClient() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              البطاقة التقنية — {isNachat ? "نشاط جديد" : "مشروع جديد"}
+              {t("social.techCardTitle")} — {isNachat ? t("social.newActivity") : t("social.newProject")}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <Label>الاسم *</Label>
+              <Label>{t("social.fullNameLabel")}</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
-              <Label>الهدف</Label>
-              <Textarea value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} placeholder="الهدف الأساسي من هذا النشاط/المشروع" />
+              <Label>{t("social.objectiveLabel")}</Label>
+              <Textarea value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} placeholder={t("social.objectivePlaceholder")} />
             </div>
             <div>
-              <Label>الوصف</Label>
+              <Label>{t("common.description")}</Label>
               <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>الفئة المستهدفة</Label>
-                <Input value={form.targetAudience} onChange={(e) => setForm({ ...form, targetAudience: e.target.value })} placeholder="مثلا: أطفال، أسر، طلبة..." />
+                <Label>{t("social.targetAudienceLabel")}</Label>
+                <Input value={form.targetAudience} onChange={(e) => setForm({ ...form, targetAudience: e.target.value })} placeholder={t("social.audiencePlaceholder")} />
               </div>
               <div>
-                <Label>عدد المستفيدين المتوقع</Label>
+                <Label>{t("social.expectedBeneficiariesLabel")}</Label>
                 <Input type="number" value={form.expectedBeneficiaries} onChange={(e) => setForm({ ...form, expectedBeneficiaries: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>المكان</Label>
+                <Label>{t("social.locationLabel")}</Label>
                 <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
               </div>
               <div>
-                <Label>الشركاء</Label>
-                <Input value={form.partners} onChange={(e) => setForm({ ...form, partners: e.target.value })} placeholder="جمعيات، مؤسسات..." />
+                <Label>{t("social.partnersLabel")}</Label>
+                <Input value={form.partners} onChange={(e) => setForm({ ...form, partners: e.target.value })} placeholder={t("social.partnersPlaceholder")} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label>{isNachat ? "تاريخ النشاط" : "تاريخ البداية"}</Label>
+                <Label>{isNachat ? t("social.activityDateLabel") : t("social.startDateLabel")}</Label>
                 <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
               </div>
               {!isNachat && (
                 <div>
-                  <Label>تاريخ النهاية</Label>
+                  <Label>{t("social.endDateLabel")}</Label>
                   <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
                 </div>
               )}
               <div>
-                <Label>الميزانية المستهدفة (د.م)</Label>
+                <Label>{t("social.budgetLabel")}</Label>
                 <Input type="number" step="0.01" value={form.targetAmount} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })} />
               </div>
             </div>
             <Button type="submit" disabled={saving} className="w-full">
-              {saving ? "..." : "إنشاء"}
+              {saving ? "..." : t("social.createBtn")}
             </Button>
           </form>
         </DialogContent>

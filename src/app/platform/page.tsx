@@ -4,6 +4,7 @@ import { normalizeHost, rootDomain } from "@/lib/tenants";
 import { redirect } from "next/navigation";
 import { control } from "@/lib/tenants";
 import { PlatformTenantsTable } from "./table";
+import { getT } from "@/lib/i18n/server";
 
 // Control panel for the PLATFORM OWNER. Only reachable when:
 //  1. the request host is the root domain (not a tenant subdomain), and
@@ -15,6 +16,7 @@ export default async function PlatformPage() {
   const host = normalizeHost(h.get("host"));
   if (!host || !host.endsWith(rootDomain())) redirect("/unauthorized");
   if (!(session.user.roles as string[]).includes("ADMIN")) redirect("/unauthorized");
+  const { t } = await getT();
 
   const tenants = await control.tenant.findMany({
     orderBy: { createdAt: "desc" },
@@ -28,8 +30,8 @@ export default async function PlatformPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-2xl font-extrabold">لوحة المنصة</h1>
-      <p className="mt-1 text-sm text-muted-foreground">إدارة فضاءات الجمعيات المشتركة</p>
+      <h1 className="text-2xl font-extrabold">{t("platform.title")}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{t("platform.subtitle")}</p>
       <PlatformTenantsTable
         initial={tenants.map((t) => ({
           ...t,

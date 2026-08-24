@@ -1,0 +1,26 @@
+export const suspended = {
+  ar: {
+    "suspended.pending.title": "فضاء جمعيتكم قيد التهيئة",
+    "suspended.pending.body": "نشاطكم قيد الإعداد النهائي. سيتوفر الفضاء خلال ساعات العمل — شكرا لصبركم.",
+    "suspended.failed.title": "تعذّر إتمام تهيئة الفضاء",
+    "suspended.failed.body": "حدث خطأ تقني أثناء تجهيز فضاء الجمعية. فريقنا يعمل على حل المشكل وسيتواصل معكم.",
+    "suspended.suspended.title": "الحساب موقوف مؤقتا",
+    "suspended.suspended.body": "توقف الاشتراك أو طلبته الإدارة. يمكنكم تجديد الاشتراك من صفحة الفاتورة لإعادة تفعيل الفضاء فورا، أو التواصل معنا.",
+    "suspended.generic.title": "الفضاء غير متاح حاليا",
+    "suspended.generic.body": "تواصلوا مع إدارة المنصة لمزيد من المعلومات.",
+    "suspended.cta.billing": "صفحة الاشتراك والفاتورة",
+    "suspended.cta.home": "العودة إلى الصفحة الرئيسية",
+  },
+  fr: {
+    "suspended.pending.title": "Votre espace est en cours de configuration",
+    "suspended.pending.body": "Finalisation de votre espace en cours. Il sera disponible sous peu — merci de votre patience.",
+    "suspended.failed.title": "Impossible de finaliser la configuration",
+    "suspended.failed.body": "Une erreur technique est survenue lors de la préparation de l'espace. Notre équipe travaille à la résoudre et vous contactera.",
+    "suspended.suspended.title": "Compte temporairement suspendu",
+    "suspended.suspended.body": "Abonnement expiré ou suspension demandée par l'administration. Renouvelez depuis la page de facturation pour réactiver immédiatement, ou contactez-nous.",
+    "suspended.generic.title": "Espace actuellement indisponible",
+    "suspended.generic.body": "Contactez l'administration de la plateforme pour plus d'informations.",
+    "suspended.cta.billing": "Page d'abonnement et facturation",
+    "suspended.cta.home": "Retour à la page d'accueil",
+  },
+} as const;

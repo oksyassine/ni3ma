@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PROJECT_KIND_LABELS, PROJECT_STATUS_LABELS } from "@/lib/project";
 import type { ProjectKind, ProjectStatus } from "@prisma/client";
+import { useT } from "@/components/i18n/provider";
 import { Trophy, Target } from "lucide-react";
 
 type Project = {
@@ -35,6 +36,7 @@ export function AnalyticsClient({
   leaderboard: { name: string; hours: number }[];
 }) {
   const total = projects.length;
+  const { t } = useT();
   const active = projects.filter((p) => p.status === "ACTIVE").length;
   const completed = projects.filter((p) => p.status === "COMPLETED").length;
   const cancelled = projects.filter((p) => p.status === "CANCELLED").length;
@@ -58,8 +60,8 @@ export function AnalyticsClient({
     .filter((p) => p.targetAmount > 0)
     .map((p) => ({
       name: p.name.length > 20 ? p.name.slice(0, 20) + "…" : p.name,
-      جمع: p.collected,
-      هدف: p.targetAmount,
+      collected: p.collected,
+      target: p.targetAmount,
     }))
     .slice(0, 10);
 
@@ -70,44 +72,44 @@ export function AnalyticsClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">تحليلات تنفيذ المشاريع</h1>
-        <p className="text-muted-foreground">إحصائيات شاملة للمشاريع والأنشطة الاجتماعية</p>
+        <h1 className="text-2xl font-bold">{t("social.analyticsTitle")}</h1>
+        <p className="text-muted-foreground">{t("social.analyticsSubtitle")}</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
         <Card>
           <CardContent className="py-3">
-            <p className="text-xs text-muted-foreground">إجمالي المشاريع</p>
+            <p className="text-xs text-muted-foreground">{t("social.totalProjects")}</p>
             <p className="text-2xl font-bold">{total}</p>
-            <p className="text-[10px] text-muted-foreground">{active} نشط · {completed} منجز</p>
+            <p className="text-[10px] text-muted-foreground">{t("social.statActiveDone", { active, completed })}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3">
-            <p className="text-xs text-muted-foreground">جمع التبرعات</p>
-            <p className="text-2xl font-bold text-green-600">{totalCollected.toFixed(0)} د.م</p>
-            {totalTarget > 0 && <p className="text-[10px] text-muted-foreground">من هدف {totalTarget.toFixed(0)}</p>}
+            <p className="text-xs text-muted-foreground">{t("social.donationCollection")}</p>
+            <p className="text-2xl font-bold text-green-600">{totalCollected.toFixed(0)} {t("social.mad")}</p>
+            {totalTarget > 0 && <p className="text-[10px] text-muted-foreground">{t("social.fromTarget", { target: totalTarget.toFixed(0) })}</p>}
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3">
-            <p className="text-xs text-muted-foreground">معدل الإنجاز</p>
+            <p className="text-xs text-muted-foreground">{t("social.completionRate")}</p>
             <p className="text-2xl font-bold">{completionRate}%</p>
-            <p className="text-[10px] text-muted-foreground">{cancelled} ملغى</p>
+            <p className="text-[10px] text-muted-foreground">{t("social.cancelledCount", { cancelled })}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3">
-            <p className="text-xs text-muted-foreground">المستفيدون</p>
+            <p className="text-xs text-muted-foreground">{t("social.beneficiaries")}</p>
             <p className="text-2xl font-bold">{totalBeneficiaries}</p>
-            <p className="text-[10px] text-muted-foreground">{totalHours.toFixed(0)} ساعة تطوع</p>
+            <p className="text-[10px] text-muted-foreground">{t("social.volunteerHoursCount", { hours: totalHours.toFixed(0) })}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="text-base">حالة المشاريع</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{t("social.projectStatusChart")}</CardTitle></CardHeader>
           <CardContent style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -122,7 +124,7 @@ export function AnalyticsClient({
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">حسب النوع</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{t("social.byKind")}</CardTitle></CardHeader>
           <CardContent style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byKind}>
@@ -139,7 +141,7 @@ export function AnalyticsClient({
 
       {collectionData.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">جمع التبرعات مقابل الأهداف</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{t("social.collectionVsTargets")}</CardTitle></CardHeader>
           <CardContent style={{ height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={collectionData}>
@@ -148,8 +150,8 @@ export function AnalyticsClient({
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="هدف" fill="#94a3b8" />
-                <Bar dataKey="جمع" fill="#10b981" />
+                <Bar dataKey="target" name={t("social.seriesTarget")} fill="#94a3b8" />
+                <Bar dataKey="collected" name={t("social.seriesCollected")} fill="#10b981" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -159,10 +161,10 @@ export function AnalyticsClient({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Trophy size={16} />أكثر المتطوعين ساعات</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Trophy size={16} />{t("social.topVolunteers")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {leaderboard.length === 0 && <p className="text-center text-muted-foreground py-4 text-sm">لا توجد ساعات مسجلة بعد</p>}
+            {leaderboard.length === 0 && <p className="text-center text-muted-foreground py-4 text-sm">{t("social.noHoursYet")}</p>}
             <div className="space-y-2">
               {leaderboard.map((m, i) => (
                 <div key={m.name} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
@@ -170,7 +172,7 @@ export function AnalyticsClient({
                     <span className="text-muted-foreground w-6">#{i + 1}</span>
                     <span className="font-medium">{m.name}</span>
                   </span>
-                  <span className="font-mono">{m.hours.toFixed(1)} ساعة</span>
+                  <span className="font-mono">{m.hours.toFixed(1)} {t("social.hour")}</span>
                 </div>
               ))}
             </div>
@@ -179,16 +181,16 @@ export function AnalyticsClient({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Target size={16} />متوسط تقييم المشاريع المنجزة</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Target size={16} />{t("social.avgProjectRating")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center py-6">
               <p className="text-5xl">{avgScore > 0 ? "⭐".repeat(Math.round(avgScore)) : "—"}</p>
               <p className="text-sm text-muted-foreground mt-2">
-                {avgScore > 0 ? `${avgScore.toFixed(1)} / 5` : "لم تُقيَّم مشاريع بعد"}
+                {avgScore > 0 ? `${avgScore.toFixed(1)} / 5` : t("social.notRatedYet")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                مبني على {projects.filter((p) => p.score).length} مشروع
+                {t("social.basedOnProjects", { count: projects.filter((p) => p.score).length })}
               </p>
             </div>
           </CardContent>
@@ -196,18 +198,18 @@ export function AnalyticsClient({
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">قائمة كل المشاريع</CardTitle></CardHeader>
-        <CardContent className="overflow-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="p-2 text-right">الاسم</th>
-                <th className="p-2 text-right">النوع</th>
-                <th className="p-2 text-right">الحالة</th>
-                <th className="p-2 text-right">الجمع/الهدف</th>
-                <th className="p-2 text-right">المهام</th>
-                <th className="p-2 text-right">الساعات</th>
-                <th className="p-2 text-right">التقييم</th>
+          <CardHeader><CardTitle className="text-base">{t("social.allProjectsList")}</CardTitle></CardHeader>
+          <CardContent className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2 text-right">{t("social.thName")}</th>
+                  <th className="p-2 text-right">{t("common.type")}</th>
+                  <th className="p-2 text-right">{t("common.status")}</th>
+                  <th className="p-2 text-right">{t("social.thCollectedTarget")}</th>
+                  <th className="p-2 text-right">{t("social.thTasks")}</th>
+                  <th className="p-2 text-right">{t("social.thHours")}</th>
+                  <th className="p-2 text-right">{t("social.thRating")}</th>
               </tr>
             </thead>
             <tbody>

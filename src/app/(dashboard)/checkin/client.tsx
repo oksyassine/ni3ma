@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { SECTION_LABELS } from "@/lib/section";
 import { usePermissions } from "@/lib/use-permissions";
+import { useT } from "@/components/i18n/provider";
 import { Camera, CameraOff, Check } from "lucide-react";
 import type { Section } from "@prisma/client";
 
@@ -23,6 +24,7 @@ export function CheckinScanner({
   initialSection: string;
   activityId: string;
 }) {
+  const { t, locale } = useT();
   const perms = usePermissions();
   // Only sections the user can write to — taking attendance is a write action.
   const writableSections = useMemo(() => {
@@ -77,13 +79,13 @@ export function CheckinScanner({
     const data = await r.json();
     if (r.ok) {
       toast.success(`✓ ${data.member.fullName}`);
-      setRecent((p) => [{ name: data.member.fullName, time: new Date().toLocaleTimeString("ar-MA") }, ...p.slice(0, 9)]);
-    } else toast.error(data.error ?? "فشل");
+      setRecent((p) => [{ name: data.member.fullName, time: new Date().toLocaleTimeString(locale === "fr" ? "fr-MA" : "ar-MA") }, ...p.slice(0, 9)]);
+    } else toast.error(data.error ?? t("misc.failed"));
   };
 
   const startScan = async () => {
     if (!supported) {
-      toast.error("متصفحك لا يدعم المسح. استخدم الإدخال اليدوي.");
+      toast.error(t("checkin.unsupportedScanToast"));
       return;
     }
     try {
@@ -110,7 +112,7 @@ export function CheckinScanner({
       };
       requestAnimationFrame(tick);
     } catch {
-      toast.error("تعذّر فتح الكاميرا");
+      toast.error(t("checkin.cameraError"));
     }
   };
 
@@ -134,7 +136,7 @@ export function CheckinScanner({
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            ليس لديك صلاحية لتسجيل الحضور في أي قسم. تواصل مع الإدارة لمنحك صلاحية الكتابة في القسم المعني.
+            {t("checkin.noPermission")}
           </CardContent>
         </Card>
       </div>
@@ -144,14 +146,14 @@ export function CheckinScanner({
   return (
     <div className="space-y-4 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">مسح حضور</h1>
-        <p className="text-muted-foreground">امسح شارة المنخرط لتسجيل الحضور</p>
+        <h1 className="text-2xl font-bold">{t("checkin.title")}</h1>
+        <p className="text-muted-foreground">{t("checkin.scanSubtitle")}</p>
       </div>
 
       <Card>
         <CardContent className="grid md:grid-cols-2 gap-3 py-4">
           <div>
-            <Label>القسم</Label>
+            <Label>{t("misc.section")}</Label>
             <select
               value={section}
               onChange={(e) => setSection(e.target.value)}
@@ -166,11 +168,11 @@ export function CheckinScanner({
           <div className="flex items-end">
             {!scanning ? (
               <Button onClick={startScan} className="w-full" disabled={!supported}>
-                <Camera size={16} />بدء المسح
+                <Camera size={16} />{t("checkin.startScan")}
               </Button>
             ) : (
               <Button onClick={stopScan} variant="outline" className="w-full">
-                <CameraOff size={16} />إيقاف
+                <CameraOff size={16} />{t("checkin.stop")}
               </Button>
             )}
           </div>
@@ -188,9 +190,9 @@ export function CheckinScanner({
       {!supported && (
         <Card>
           <CardContent className="py-4">
-            <p className="text-sm text-muted-foreground mb-3">المتصفح لا يدعم BarcodeDetector. استعمل الإدخال اليدوي:</p>
+            <p className="text-sm text-muted-foreground mb-3">{t("checkin.manualFallback")}</p>
             <form onSubmit={submitManual} className="flex gap-2">
-              <Input placeholder="رمز المنخرط أو رابط" value={manualToken} onChange={(e) => setManualToken(e.target.value)} />
+              <Input placeholder={t("checkin.tokenPlaceholder")} value={manualToken} onChange={(e) => setManualToken(e.target.value)} />
               <Button type="submit"><Check size={14} /></Button>
             </form>
           </CardContent>
@@ -200,7 +202,7 @@ export function CheckinScanner({
       {recent.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">آخر التسجيلات</CardTitle>
+            <CardTitle className="text-sm">{t("checkin.recent")}</CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
             {recent.map((r, i) => (

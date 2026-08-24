@@ -19,7 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ROLE_LABELS } from "@/lib/rbac";
+import { roleLabel } from "@/lib/rbac";
+import { useT } from "@/components/i18n/provider";
 import { toast } from "sonner";
 import type { Role } from "@/lib/rbac";
 
@@ -64,6 +65,8 @@ type InviteResult = {
 
 export default function UsersPage() {
   const router = useRouter();
+  const { t, locale } = useT();
+  const dateLocale = locale === "fr" ? "fr-MA" : "ar-MA";
   const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
   const [adultsNoAccess, setAdultsNoAccess] = useState<AdultNoAccess[]>([]);
   const [memberUsers, setMemberUsers] = useState<MemberWithAccess[]>([]);
@@ -107,10 +110,10 @@ export default function UsersPage() {
       body: JSON.stringify({ isActive: true }),
     });
     if (res.ok) {
-      toast.success("تم قبول التسجيل");
+      toast.success(t("admin.users.toastApproved"));
       fetchData();
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("admin.error"));
     }
   };
 
@@ -126,18 +129,18 @@ export default function UsersPage() {
       fetchData();
     } else {
       const data = await res.json();
-      toast.error(data.error ?? "حدث خطأ");
+      toast.error(data.error ?? t("admin.error"));
     }
   };
 
   const rejectMember = async (memberId: string) => {
-    if (!confirm("هل تريد رفض وحذف طلب التسجيل هذا؟")) return;
+    if (!confirm(t("admin.users.confirmReject"))) return;
     const res = await fetch(`/api/members/${memberId}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("تم رفض الطلب");
+      toast.success(t("admin.users.toastRejected"));
       fetchData();
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("admin.error"));
     }
   };
 
@@ -152,7 +155,7 @@ export default function UsersPage() {
       setInviteResult(data);
     } else {
       const data = await res.json();
-      toast.error(data.error ?? "حدث خطأ");
+      toast.error(data.error ?? t("admin.error"));
     }
   };
 
@@ -167,9 +170,9 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">إدارة الوصول</h1>
+        <h1 className="text-2xl font-bold">{t("admin.users.title")}</h1>
         <p className="text-muted-foreground">
-          طلبات التسجيل · الحسابات النشطة · حسابات النظام
+          {t("admin.users.subtitle")}
         </p>
       </div>
 
@@ -179,7 +182,7 @@ export default function UsersPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <span className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
-              طلبات التسجيل في انتظار الموافقة ({pendingMembers.length})
+              {t("admin.users.pendingCount", { count: pendingMembers.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -193,24 +196,24 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{m.fullName}</p>
                       <Badge variant={m.memberType === "CHILD" ? "secondary" : "default"} className="text-xs">
-                        {m.memberType === "CHILD" ? "طفل" : "كبير / متطوع"}
+                        {m.memberType === "CHILD" ? t("admin.users.childBadge") : t("admin.users.adultBadge")}
                       </Badge>
                     </div>
                     {m.phone && (
                       <p className="text-sm text-muted-foreground" dir="ltr">{m.phone}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      {new Date(m.createdAt).toLocaleDateString("ar-MA")}
+                      {new Date(m.createdAt).toLocaleDateString(dateLocale)}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     {m.memberType === "CHILD" ? (
                       <Button size="sm" onClick={() => approveChild(m.id)}>
-                        قبول
+                        {t("admin.users.approve")}
                       </Button>
                     ) : (
                       <Button size="sm" onClick={() => approveAdultWithInvite(m.id)}>
-                        قبول + إرسال دعوة
+                        {t("admin.users.approveInvite")}
                       </Button>
                     )}
                     <Button
@@ -218,7 +221,7 @@ export default function UsersPage() {
                       variant="destructive"
                       onClick={() => rejectMember(m.id)}
                     >
-                      رفض
+                      {t("admin.users.reject")}
                     </Button>
                   </div>
                 </div>
@@ -234,10 +237,10 @@ export default function UsersPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <span className="w-3 h-3 bg-blue-500 rounded-full" />
-              منخرطون كبار بدون حساب دخول ({adultsNoAccess.length})
+              {t("admin.users.adultsNoAccessCount", { count: adultsNoAccess.length })}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              منخرطون مقبولون لكن لم يُنشئوا حسابهم بعد. أرسل لهم رابط دعوة لإعداد كلمة المرور.
+              {t("admin.users.adultsNoAccessDesc")}
             </p>
           </CardHeader>
           <CardContent>
@@ -258,14 +261,14 @@ export default function UsersPage() {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => sendNewInvite(m.id)}>
-                      إرسال دعوة
+                      {t("admin.users.sendInvite")}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => router.push(`/admin/members/${m.id}/edit`)}
                     >
-                      تعديل
+                      {t("admin.users.edit")}
                     </Button>
                   </div>
                 </div>
@@ -277,13 +280,13 @@ export default function UsersPage() {
 
       {/* Members with login access */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">المنخرطون الكبار (لديهم حساب دخول)</h2>
+        <h2 className="text-lg font-semibold mb-3">{t("admin.users.memberUsersHeading")}</h2>
         {loading ? (
-          <p className="text-muted-foreground text-sm py-4">جاري التحميل...</p>
+          <p className="text-muted-foreground text-sm py-4">{t("admin.loading")}</p>
         ) : memberUsers.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground text-sm">
-              لا يوجد منخرطون لديهم حسابات دخول بعد.
+              {t("admin.users.emptyMembers")}
             </CardContent>
           </Card>
         ) : (
@@ -291,11 +294,11 @@ export default function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الاسم</TableHead>
-                  <TableHead>اسم المستخدم</TableHead>
-                  <TableHead>الأدوار</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="w-32">إجراءات</TableHead>
+                  <TableHead>{t("admin.users.colName")}</TableHead>
+                  <TableHead>{t("admin.users.colUsername")}</TableHead>
+                  <TableHead>{t("admin.users.colRoles")}</TableHead>
+                  <TableHead>{t("admin.users.colStatus")}</TableHead>
+                  <TableHead className="w-32">{t("admin.users.colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -312,14 +315,14 @@ export default function UsersPage() {
                       <div className="flex gap-1 flex-wrap">
                         {m.roles.map((role) => (
                           <Badge key={role} variant="secondary" className="text-xs">
-                            {ROLE_LABELS[role]}
+                            {roleLabel(role, locale as "ar" | "fr")}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={m.userIsActive ? "default" : "secondary"}>
-                        {m.userIsActive ? "نشط" : "معطّل"}
+                        {m.userIsActive ? t("admin.users.active") : t("admin.users.disabled")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -330,14 +333,14 @@ export default function UsersPage() {
                           className="text-xs h-7"
                           onClick={() => router.push(`/admin/members/${m.id}/edit`)}
                         >
-                          تعديل
+                          {t("admin.users.edit")}
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           className="text-xs h-7"
                           onClick={() => sendNewInvite(m.id)}
-                          title="إرسال دعوة جديدة"
+                          title={t("admin.users.sendNewInviteTitle")}
                         >
                           🔗
                         </Button>
@@ -353,20 +356,20 @@ export default function UsersPage() {
 
       {/* System accounts */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">حسابات النظام</h2>
+        <h2 className="text-lg font-semibold mb-3">{t("admin.users.systemAccounts")}</h2>
         <div className="border rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الاسم</TableHead>
-                <TableHead>اسم المستخدم</TableHead>
-                <TableHead>الأدوار</TableHead>
+                <TableHead>{t("admin.users.colName")}</TableHead>
+                <TableHead>{t("admin.users.colUsername")}</TableHead>
+                <TableHead>{t("admin.users.colRoles")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-6">جاري التحميل...</TableCell>
+                  <TableCell colSpan={3} className="text-center py-6">{t("admin.loading")}</TableCell>
                 </TableRow>
               ) : (
                 systemUsers.map((u) => (
@@ -377,7 +380,7 @@ export default function UsersPage() {
                       <div className="flex gap-1 flex-wrap">
                         {u.roles.map((r) => (
                           <Badge key={r} variant="secondary" className="text-xs">
-                            {ROLE_LABELS[r]}
+                            {roleLabel(r, locale as "ar" | "fr")}
                           </Badge>
                         ))}
                       </div>
@@ -394,24 +397,24 @@ export default function UsersPage() {
       <Dialog open={!!inviteResult} onOpenChange={() => { setInviteResult(null); setCopied(false); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>رابط تفعيل الحساب</DialogTitle>
+            <DialogTitle>{t("admin.users.inviteDialogTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              شارك هذا الرابط مع المنخرط عبر واتساب أو البريد الإلكتروني. صلاحيته 7 أيام.
+              {t("admin.users.inviteDialogDesc")}
             </p>
             <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border text-sm font-mono break-all" dir="ltr">
               {inviteResult?.inviteUrl}
             </div>
             <div className="flex gap-2">
               <Button className="flex-1" onClick={copyLink}>
-                {copied ? "✓ تم النسخ" : "نسخ الرابط"}
+                {copied ? t("admin.users.copied") : t("admin.users.copyLink")}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => { setInviteResult(null); setCopied(false); }}
               >
-                إغلاق
+                {t("admin.users.close")}
               </Button>
             </div>
           </div>

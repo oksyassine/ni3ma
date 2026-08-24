@@ -47,6 +47,11 @@ export function getDefaultDashboard(userRoles: Role[]): string {
   return "/member";
 }
 
+// Localized labels. The plain objects below are the Arabic (default) tables
+// kept for backward compatibility; prefer the locale-aware functions.
+import { translate, type Locale } from "@/lib/i18n/config";
+export type { Locale };
+
 export const DASHBOARD_LABELS: Record<string, string> = {
   "/admin": "لوحة الإدارة",
   "/bureau": "المكتب المسير",
@@ -55,6 +60,23 @@ export const DASHBOARD_LABELS: Record<string, string> = {
   "/social": "القسم الاجتماعي",
   "/quran": "قسم القرآن الكريم",
   "/member": "فضاء المنخرط",
+};
+
+export function dashboardLabel(path: string, locale: Locale): string {
+  return translate(locale, `nav.${path.slice(1)}`);
+}
+
+const ROLE_KEYS: Record<Role, string> = {
+  ADMIN: "role.admin",
+  BUREAU: "role.bureau",
+  FINANCIAL: "role.treasurer",
+  EDUCATIONAL: "role.educational",
+  SOCIAL: "role.social",
+  QURAN: "role.quran",
+  MEMBER: "role.member",
+  BAHT_IJTIMA3I_TEAM: "role.bahtTeam",
+  BUREAU_RW: "role.bureauRw",
+  SECTION_ADMIN: "role.sectionAdmin",
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -69,3 +91,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   BUREAU_RW: "مكتب — قراءة/كتابة",
   SECTION_ADMIN: "مدير قسم",
 };
+
+export function roleLabel(role: Role, locale: Locale): string {
+  return translate(locale, ROLE_KEYS[role]);
+}

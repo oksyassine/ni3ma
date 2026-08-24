@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
+import { useT } from "@/components/i18n/provider";
 
 type Year = { id: string; label: string; isCurrent: boolean };
 
@@ -20,18 +21,19 @@ type Summary = {
   topDonors: { name: string; total: number }[];
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  EDUCATIONAL: "تربوي",
-  SOCIAL: "اجتماعي",
-  QURAN: "قرآن",
-  ADMINISTRATIVE: "إداري",
-  MAINTENANCE: "صيانة",
-  OTHER: "أخرى",
+const CATEGORY_KEYS: Record<string, string> = {
+  EDUCATIONAL: "financial.cat.educational",
+  SOCIAL: "financial.cat.social",
+  QURAN: "financial.cat.quran",
+  ADMINISTRATIVE: "financial.cat.administrative",
+  MAINTENANCE: "financial.cat.maintenance",
+  OTHER: "financial.cat.other",
 };
 
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 export function ReportsClient({ years }: { years: Year[] }) {
+  const { t } = useT();
   const initial = years.find((y) => y.isCurrent)?.id ?? years[0]?.id ?? "";
   const [yearId, setYearId] = useState(initial);
   const [data, setData] = useState<Summary | null>(null);
@@ -48,24 +50,24 @@ export function ReportsClient({ years }: { years: Year[] }) {
     window.location.href = `/api/financial/export?${params}`;
   };
 
-  if (!data) return <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>;
+  if (!data) return <p className="text-center py-8 text-muted-foreground">{t("common.loading")}</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">تقارير وإحصائيات</h1>
-          <p className="text-muted-foreground">تحليل الوضع المالي للجمعية</p>
+          <h1 className="text-2xl font-bold">{t("financial.reportsTitle")}</h1>
+          <p className="text-muted-foreground">{t("financial.reportsSubtitle")}</p>
         </div>
         <div className="flex items-end gap-3">
           <div>
-            <Label className="text-xs">السنة الدراسية</Label>
+            <Label className="text-xs">{t("financial.academicYear")}</Label>
             <select
               value={yearId}
               onChange={(e) => setYearId(e.target.value)}
               className="h-9 px-3 rounded-md border bg-background text-sm"
             >
-              <option value="">جميع السنوات</option>
+              <option value="">{t("financial.allYears")}</option>
               {years.map((y) => (
                 <option key={y.id} value={y.id}>{y.label}</option>
               ))}
@@ -79,29 +81,29 @@ export function ReportsClient({ years }: { years: Year[] }) {
 
       <div className="grid gap-3 md:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">المساهمات</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{data.totals.contributions.toFixed(2)} د.م</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.contributionsShort")}</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold text-green-600">{data.totals.contributions.toFixed(2)} {t("financial.mad")}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">التبرعات</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-blue-600">{data.totals.donations.toFixed(2)} د.م</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.donationsShort")}</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold text-blue-600">{data.totals.donations.toFixed(2)} {t("financial.mad")}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">المصاريف</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-red-600">{data.totals.expenses.toFixed(2)} د.م</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.expensesShort")}</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold text-red-600">{data.totals.expenses.toFixed(2)} {t("financial.mad")}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">الرصيد</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.balance")}</CardTitle></CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${data.totals.balance >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {data.totals.balance.toFixed(2)} د.م
+              {data.totals.balance.toFixed(2)} {t("financial.mad")}
             </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>الإيرادات والمصاريف الشهرية</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("financial.monthlyIncomeExpenses")}</CardTitle></CardHeader>
         <CardContent style={{ height: 320 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.monthly}>
@@ -110,16 +112,16 @@ export function ReportsClient({ years }: { years: Year[] }) {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="contributions" fill="#10b981" name="مساهمات" />
-              <Bar dataKey="donations" fill="#3b82f6" name="تبرعات" />
-              <Bar dataKey="expenses" fill="#ef4444" name="مصاريف" />
+              <Bar dataKey="contributions" fill="#10b981" name={t("financial.contributionsShort")} />
+              <Bar dataKey="donations" fill="#3b82f6" name={t("financial.donationsShort")} />
+              <Bar dataKey="expenses" fill="#ef4444" name={t("financial.expensesShort")} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>الرصيد التراكمي</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("financial.cumulativeBalance")}</CardTitle></CardHeader>
         <CardContent style={{ height: 280 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data.monthly}>
@@ -127,7 +129,7 @@ export function ReportsClient({ years }: { years: Year[] }) {
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="balance" stroke="#10b981" strokeWidth={2} name="الرصيد" />
+              <Line type="monotone" dataKey="balance" stroke="#10b981" strokeWidth={2} name={t("financial.balance")} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -135,12 +137,12 @@ export function ReportsClient({ years }: { years: Year[] }) {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>المصاريف حسب الصنف</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("financial.expensesByCategory")}</CardTitle></CardHeader>
           <CardContent style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={data.expensesByCategory.map((e) => ({ ...e, name: CATEGORY_LABELS[e.category] ?? e.category }))}
+                  data={data.expensesByCategory.map((e) => ({ ...e, name: t(CATEGORY_KEYS[e.category] ?? "financial.cat.other") }))}
                   dataKey="total"
                   nameKey="name"
                   outerRadius={90}
@@ -158,9 +160,9 @@ export function ReportsClient({ years }: { years: Year[] }) {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>أكبر المتبرعين</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("financial.topDonors")}</CardTitle></CardHeader>
           <CardContent>
-            {data.topDonors.length === 0 && <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>}
+            {data.topDonors.length === 0 && <p className="text-muted-foreground text-center py-4">{t("financial.noData")}</p>}
             <div className="space-y-2">
               {data.topDonors.map((d, i) => (
                 <div key={d.name} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
@@ -168,7 +170,7 @@ export function ReportsClient({ years }: { years: Year[] }) {
                     <span className="text-muted-foreground w-6">#{i + 1}</span>
                     <span className="font-medium">{d.name}</span>
                   </span>
-                  <span className="font-mono">{d.total.toFixed(2)} د.م</span>
+                  <span className="font-mono">{d.total.toFixed(2)} {t("financial.mad")}</span>
                 </div>
               ))}
             </div>

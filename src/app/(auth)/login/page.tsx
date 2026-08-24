@@ -1,11 +1,14 @@
 "use client";
 
+import { useT } from "@/components/i18n/provider";
+
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const { t } = useT();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +27,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError("اسم المستخدم أو كلمة المرور غير صحيحة، أو الحساب في انتظار الموافقة");
+      setError(t("auth.login.invalid"));
       setLoading(false);
     } else {
       router.push("/");
@@ -39,30 +42,30 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="logo-badge mx-auto mb-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.jpg" alt="جمعية النعمة" className="w-full h-full object-cover" />
+            <img src="/logo.jpg" alt={t("auth.login.title")} className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-wide">جمعية النعمة</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wide">{t("landing.brand")}</h1>
           <p className="text-sm mt-1" style={{ color: "oklch(0.75 0.08 130)" }}>
-            نظام التسيير · مكناس
+            {t("auth.login.tagline")}
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="auth-label" htmlFor="username">اسم المستخدم</label>
+            <label className="auth-label" htmlFor="username">{t("auth.login.username")}</label>
             <input
               id="username"
               className="auth-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="أدخل اسم المستخدم"
+              placeholder={t("auth.login.usernamePlaceholder")}
               required
               dir="ltr"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="auth-label" htmlFor="password">كلمة المرور</label>
+            <label className="auth-label" htmlFor="password">{t("auth.login.password")}</label>
             <input
               id="password"
               type="password"
@@ -85,22 +88,22 @@ export default function LoginPage() {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                جاري الدخول...
+                {t("auth.login.signingIn")}
               </span>
             ) : (
-              "تسجيل الدخول"
+              t("auth.login.submit")
             )}
           </button>
         </form>
 
         <p className="text-center text-sm mt-6" style={{ color: "oklch(0.65 0.04 140)" }}>
-          جديد في الجمعية؟{" "}
+          {t("auth.login.newHere")}{" "}
           <Link
             href="/signup"
             className="font-semibold transition-colors hover:opacity-80"
             style={{ color: "oklch(0.82 0.16 82)" }}
           >
-            التسجيل
+            {t("auth.signup.title")}
           </Link>
         </p>
       </div>

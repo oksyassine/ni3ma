@@ -31,11 +31,12 @@ import {
 } from "@/components/ui/select";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n/provider";
 
-const SECTION_LABELS: Record<string, string> = {
-  EDUCATIONAL: "تربوي",
-  SOCIAL: "اجتماعي",
-  QURAN: "قرآن كريم",
+const SECTION_KEYS: Record<string, string> = {
+  EDUCATIONAL: "financial.cat.educational",
+  SOCIAL: "financial.cat.social",
+  QURAN: "financial.cat.quran",
 };
 
 type DonationItem = {
@@ -55,6 +56,8 @@ type DonationItem = {
 };
 
 export default function DonationsPage() {
+  const { t, locale } = useT();
+  const sectionLabel = (value: string) => t(SECTION_KEYS[value] ?? "financial.cat.other");
   const [donations, setDonations] = useState<DonationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -76,16 +79,16 @@ export default function DonationsPage() {
   };
 
   const markPaid = async (id: string) => {
-    if (!confirm("تأكيد استلام هذا التبرع؟")) return;
+    if (!confirm(t("financial.confirmReceive"))) return;
     const r = await fetch(`/api/donations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ markPaid: true }),
     });
     if (r.ok) {
-      toast.success("تم تأكيد الاستلام");
+      toast.success(t("financial.receiptConfirmed"));
       fetchDonations();
-    } else toast.error("فشل");
+    } else toast.error(t("financial.failed"));
   };
 
   const openEdit = (d: DonationItem) => {
@@ -103,14 +106,14 @@ export default function DonationsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("حذف هذا التبرع؟")) return;
+    if (!confirm(t("financial.deleteDonationConfirm"))) return;
     const r = await fetch(`/api/donations/${id}`, { method: "DELETE" });
     if (r.ok) {
-      toast.success("تم الحذف");
+      toast.success(t("financial.deleted"));
       fetchDonations();
     } else {
       const data = await r.json().catch(() => ({}));
-      toast.error(data.error ?? "فشل الحذف");
+      toast.error(data.error ?? t("financial.deleteFailed"));
     }
   };
 
@@ -128,11 +131,11 @@ export default function DonationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount) {
-      toast.error("المبلغ مطلوب");
+      toast.error(t("financial.amountRequired"));
       return;
     }
     if (!form.isAnonymous && !form.donorName) {
-      toast.error("اسم المتبرع مطلوب أو اختر تبرع مجهول");
+      toast.error(t("financial.donorNameRequired"));
       return;
     }
 
@@ -150,12 +153,12 @@ export default function DonationsPage() {
         });
 
     if (res.ok) {
-      toast.success(editingId ? "تم تعديل التبرع" : "تم تسجيل التبرع بنجاح");
+      toast.success(editingId ? t("financial.donationUpdated") : t("financial.donationCreated"));
       setDialogOpen(false);
       resetForm();
       fetchDonations();
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("common.error"));
     }
     setSubmitting(false);
   };
@@ -166,18 +169,18 @@ export default function DonationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">التبرعات</h1>
+          <h1 className="text-2xl font-bold">{t("financial.donationsTitle")}</h1>
           <p className="text-muted-foreground">
-            الإجمالي: {total.toFixed(2)} درهم
+            {t("financial.totalWithAmount", { total: total.toFixed(2) })}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
           <DialogTrigger>
-            <Button>إضافة تبرع</Button>
+            <Button>{t("financial.addDonation")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingId ? "تعديل التبرع" : "تبرع جديد"}</DialogTitle>
+              <DialogTitle>{editingId ? t("financial.editDonation") : t("financial.newDonation")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-center gap-2">
@@ -189,21 +192,21 @@ export default function DonationsPage() {
                   }
                 />
                 <Label htmlFor="anonymous" className="cursor-pointer font-normal">
-                  تبرع مجهول
+                  {t("financial.anonymousDonation")}
                 </Label>
               </div>
 
               {!form.isAnonymous && (
                 <>
                   <div className="space-y-2">
-                    <Label>اسم المتبرع *</Label>
+                    <Label>{t("financial.donorName")} *</Label>
                     <Input
                       value={form.donorName}
                       onChange={(e) => setForm({ ...form, donorName: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>هاتف المتبرع</Label>
+                    <Label>{t("financial.donorPhone")}</Label>
                     <Input
                       value={form.donorPhone}
                       onChange={(e) => setForm({ ...form, donorPhone: e.target.value })}
@@ -215,7 +218,7 @@ export default function DonationsPage() {
               )}
 
               <div className="space-y-2">
-                <Label>المبلغ (درهم) *</Label>
+                <Label>{t("financial.amountMadRequired")}</Label>
                 <Input
                   type="number"
                   value={form.amount}
@@ -229,25 +232,25 @@ export default function DonationsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>القسم</Label>
+                <Label>{t("common.section")}</Label>
                 <Select value={form.section} onValueChange={(v) => setForm({ ...form, section: v ?? "SOCIAL" })}>
                   <SelectTrigger>
-                    <SelectValue>{form.section ? (SECTION_LABELS as Record<string, string>)[form.section] : ""}</SelectValue>
+                    <SelectValue>{form.section ? sectionLabel(form.section) : ""}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(SECTION_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    {Object.entries(SECTION_KEYS).map(([value, key]) => (
+                      <SelectItem key={value} value={value}>{t(key)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>ملاحظات</Label>
+                <Label>{t("common.notes")}</Label>
                 <Textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="ملاحظات إضافية"
+                  placeholder={t("financial.additionalNotes")}
                   rows={2}
                 />
               </div>
@@ -260,13 +263,13 @@ export default function DonationsPage() {
                   className="mt-0.5"
                 />
                 <div>
-                  <div className="font-medium">تبرع موعود (لم يُستلم بعد)</div>
-                  <div className="text-xs text-muted-foreground">المبلغ الموعود يظهر منفصلا حتى يتم تأكيد استلامه</div>
+                  <div className="font-medium">{t("financial.pledgeCheckbox")}</div>
+                  <div className="text-xs text-muted-foreground">{t("financial.pledgeHint")}</div>
                 </div>
               </label>
 
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "جاري الحفظ..." : editingId ? "حفظ التعديلات" : "حفظ التبرع"}
+                {submitting ? t("common.saving") : editingId ? t("financial.savingChanges") : t("financial.saveDonation")}
               </Button>
             </form>
           </DialogContent>
@@ -277,41 +280,41 @@ export default function DonationsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>التاريخ</TableHead>
-              <TableHead>المتبرع</TableHead>
-              <TableHead>المبلغ</TableHead>
-              <TableHead>القسم</TableHead>
-              <TableHead>المشروع</TableHead>
-              <TableHead>ملاحظات</TableHead>
-              <TableHead className="w-20">الحالة</TableHead>
-              <TableHead className="w-40">إجراءات</TableHead>
+              <TableHead>{t("common.date")}</TableHead>
+              <TableHead>{t("financial.donor")}</TableHead>
+              <TableHead>{t("common.amount")}</TableHead>
+              <TableHead>{t("common.section")}</TableHead>
+              <TableHead>{t("financial.project")}</TableHead>
+              <TableHead>{t("common.notes")}</TableHead>
+              <TableHead className="w-20">{t("common.status")}</TableHead>
+              <TableHead className="w-40">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">جاري التحميل...</TableCell>
+                <TableCell colSpan={8} className="text-center py-8">{t("common.loading")}</TableCell>
               </TableRow>
             ) : donations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  لا توجد تبرعات مسجلة
+                  {t("financial.noDonations")}
                 </TableCell>
               </TableRow>
             ) : (
               donations.map((donation) => (
                 <TableRow key={donation.id}>
-                  <TableCell>{new Date(donation.donationDate).toLocaleDateString("ar-MA")}</TableCell>
+                  <TableCell>{new Date(donation.donationDate).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA")}</TableCell>
                   <TableCell>
                     {donation.isAnonymous ? (
-                      <span className="text-muted-foreground italic">مجهول</span>
+                      <span className="text-muted-foreground italic">{t("financial.anonymousShort")}</span>
                     ) : (
                       donation.donorName
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{parseFloat(donation.amount).toFixed(2)} د.م</TableCell>
+                  <TableCell className="font-medium">{parseFloat(donation.amount).toFixed(2)} {t("financial.mad")}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{SECTION_LABELS[donation.section]}</Badge>
+                    <Badge variant="secondary">{sectionLabel(donation.section)}</Badge>
                   </TableCell>
                   <TableCell>{donation.project?.name ?? "-"}</TableCell>
                   <TableCell className="max-w-xs truncate text-muted-foreground text-sm">
@@ -319,25 +322,25 @@ export default function DonationsPage() {
                   </TableCell>
                   <TableCell>
                     {donation.isPaid ? (
-                      <Badge variant="default" className="text-[10px]">مستلم</Badge>
+                      <Badge variant="default" className="text-[10px]">{t("financial.receivedBadge")}</Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-700">موعود</Badge>
+                      <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-700">{t("financial.pledgedBadge")}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       {!donation.isPaid && (
                         <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => markPaid(donation.id)}>
-                          ✓ تأكيد الاستلام
+                          {t("financial.confirmReceiptBtn")}
                         </Button>
                       )}
-                      <a href={`/financial/donations/${donation.id}/receipt`} target="_blank" rel="noopener noreferrer" title="وصل" className="h-7 w-7 inline-flex items-center justify-center text-xs hover:bg-muted rounded">
+                      <a href={`/financial/donations/${donation.id}/receipt`} target="_blank" rel="noopener noreferrer" title={t("financial.receiptShort")} className="h-7 w-7 inline-flex items-center justify-center text-xs hover:bg-muted rounded">
                         🧾
                       </a>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(donation)} title="تعديل">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(donation)} title={t("common.edit")}>
                         <Pencil size={13} />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(donation.id)} title="حذف">
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(donation.id)} title={t("common.delete")}>
                         <Trash2 size={13} />
                       </Button>
                     </div>

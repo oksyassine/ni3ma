@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useT } from "@/components/i18n/provider";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, AlertTriangle, Check, Download } from "lucide-react";
 
@@ -28,6 +29,7 @@ const TEMPLATE_COLS = [
 ];
 
 export function ImportClient() {
+  const { t } = useT();
   const [rows, setRows] = useState<Row[]>([]);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [importing, setImporting] = useState(false);
@@ -51,7 +53,7 @@ export function ImportClient() {
       body: JSON.stringify({ rows: data, dryRun: true }),
     });
     if (r.ok) setPreview(await r.json());
-    else toast.error("فشل التحقق");
+    else toast.error(t("members.import.validationFailed"));
   };
 
   const confirmImport = async () => {
@@ -63,11 +65,11 @@ export function ImportClient() {
     });
     if (r.ok) {
       const data = await r.json();
-      toast.success(`تم استيراد ${data.imported} منخرط`);
+      toast.success(t("members.import.importedToast", { count: data.imported }));
       setRows([]);
       setPreview(null);
       setFilename("");
-    } else toast.error("فشل الاستيراد");
+    } else toast.error(t("members.import.importFailed"));
     setImporting(false);
   };
 
@@ -86,25 +88,25 @@ export function ImportClient() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">استيراد المنخرطين</h1>
-          <p className="text-muted-foreground">رفع ملف Excel أو CSV لاستيراد قائمة المنخرطين</p>
+          <h1 className="text-2xl font-bold">{t("members.import.title")}</h1>
+          <p className="text-muted-foreground">{t("members.import.desc")}</p>
         </div>
         <Button variant="outline" onClick={downloadTemplate}>
-          <Download size={14} />تنزيل النموذج
+          <Download size={14} />{t("members.import.downloadTemplate")}
         </Button>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Upload size={18} />رفع الملف</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Upload size={18} />{t("members.import.uploadFile")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <Label>ملف Excel أو CSV</Label>
+            <Label>{t("members.import.fileLabel")}</Label>
             <Input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} />
           </div>
-          {filename && <p className="text-sm text-muted-foreground">📄 {filename} — {rows.length} صف</p>}
+          {filename && <p className="text-sm text-muted-foreground">📄 {filename} — {t("members.import.rowCount", { count: rows.length })}</p>}
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>الأعمدة المطلوبة: <code className="bg-muted px-1 rounded">fullName</code>, <code className="bg-muted px-1 rounded">memberType</code> (CHILD/ADULT)</p>
-            <p>الأعمدة الاختيارية: gender, dateOfBirth, phone, fatherName, motherName, sections (مفصولة بفاصلة)...</p>
+            <p>{t("members.import.requiredCols")} <code className="bg-muted px-1 rounded">fullName</code>, <code className="bg-muted px-1 rounded">memberType</code> (CHILD/ADULT)</p>
+            <p>{t("members.import.optionalCols")} {t("members.import.separatedByComma")}</p>
           </div>
         </CardContent>
       </Card>
@@ -116,7 +118,7 @@ export function ImportClient() {
               <CardContent className="py-4 flex items-center gap-3">
                 <FileSpreadsheet size={24} className="text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">إجمالي الصفوف</p>
+                  <p className="text-xs text-muted-foreground">{t("members.import.statRows")}</p>
                   <p className="text-2xl font-bold">{preview.total}</p>
                 </div>
               </CardContent>
@@ -125,7 +127,7 @@ export function ImportClient() {
               <CardContent className="py-4 flex items-center gap-3">
                 <Check size={24} className="text-green-600" />
                 <div>
-                  <p className="text-xs text-muted-foreground">صالح للاستيراد</p>
+                  <p className="text-xs text-muted-foreground">{t("members.import.statValid")}</p>
                   <p className="text-2xl font-bold text-green-600">{preview.valid}</p>
                 </div>
               </CardContent>
@@ -134,7 +136,7 @@ export function ImportClient() {
               <CardContent className="py-4 flex items-center gap-3">
                 <AlertTriangle size={24} className="text-orange-600" />
                 <div>
-                  <p className="text-xs text-muted-foreground">أخطاء</p>
+                  <p className="text-xs text-muted-foreground">{t("members.import.statErrors")}</p>
                   <p className="text-2xl font-bold text-orange-600">{preview.errors.length}</p>
                 </div>
               </CardContent>
@@ -143,31 +145,31 @@ export function ImportClient() {
 
           {preview.errors.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base text-orange-700">الأخطاء</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base text-orange-700">{t("members.import.errorsTitle")}</CardTitle></CardHeader>
               <CardContent className="space-y-1 max-h-64 overflow-auto">
                 {preview.errors.slice(0, 50).map((e, i) => (
                   <div key={i} className="text-sm">
-                    <Badge variant="outline">صف {e.index + 2}</Badge>
+                    <Badge variant="outline">{t("members.import.rowBadge", { row: e.index + 2 })}</Badge>
                     <span className="ms-2">{e.reason}</span>
                   </div>
                 ))}
                 {preview.errors.length > 50 && (
-                  <p className="text-xs text-muted-foreground">... و {preview.errors.length - 50} أخطاء أخرى</p>
+                  <p className="text-xs text-muted-foreground">{t("members.import.moreErrors", { count: preview.errors.length - 50 })}</p>
                 )}
               </CardContent>
             </Card>
           )}
 
           <Card>
-            <CardHeader><CardTitle className="text-base">معاينة (10 صفوف)</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("members.import.previewTitle")}</CardTitle></CardHeader>
             <CardContent className="overflow-auto">
               <table className="text-xs w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="p-2 text-right">الاسم</th>
-                    <th className="p-2 text-right">النوع</th>
-                    <th className="p-2 text-right">الجنس</th>
-                    <th className="p-2 text-right">الهاتف</th>
+                    <th className="p-2 text-right">{t("members.import.thName")}</th>
+                    <th className="p-2 text-right">{t("members.col.type")}</th>
+                    <th className="p-2 text-right">{t("members.gender")}</th>
+                    <th className="p-2 text-right">{t("members.col.phone")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,7 +187,7 @@ export function ImportClient() {
           </Card>
 
           <Button onClick={confirmImport} disabled={importing || preview.valid === 0} size="lg">
-            {importing ? "..." : `تأكيد استيراد ${preview.valid} منخرط`}
+            {importing ? "..." : t("members.import.confirmImport", { count: preview.valid })}
           </Button>
         </>
       )}

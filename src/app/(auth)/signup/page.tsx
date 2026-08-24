@@ -3,18 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { EDUCATIONAL_LEVELS } from "@/lib/constants";
+import { useT } from "@/components/i18n/provider";
 
 type MemberType = "CHILD" | "ADULT" | null;
 type Step = "choose" | "form" | "success";
 
 const REGISTRATION_TYPES = [
-  { value: "TAMM",          label: "تسجيل تام" },
-  { value: "DAAM_MADRASSI", label: "دعم مدرسي" },
-  { value: "QURAN_TAJWEED", label: "حفظ وتجويد القرآن" },
-  { value: "MOKHAYAM",      label: "مخيم" },
+  { value: "TAMM",          key: "auth.signup.type.tamm" },
+  { value: "DAAM_MADRASSI", key: "auth.signup.type.daamMadrassi" },
+  { value: "QURAN_TAJWEED", key: "auth.signup.type.quranTajweed" },
+  { value: "MOKHAYAM",      key: "auth.signup.type.mokhayam" },
 ];
 
 export default function SignupPage() {
+  const { t } = useT();
   const [step, setStep] = useState<Step>("choose");
   const [memberType, setMemberType] = useState<MemberType>(null);
   const [loading, setLoading] = useState(false);
@@ -54,11 +56,11 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.fullName.trim()) {
-      setError("الاسم الكامل مطلوب");
+      setError(t("auth.signup.error.fullName"));
       return;
     }
     if (!form.registrationType) {
-      setError("نوع التسجيل مطلوب");
+      setError(t("auth.signup.error.regType"));
       return;
     }
     setLoading(true);
@@ -116,7 +118,7 @@ export default function SignupPage() {
       setStep("success");
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "حدث خطأ، يرجى المحاولة مجدداً");
+      setError(data.error ?? t("auth.signup.error.generic"));
     }
     setLoading(false);
   };
@@ -136,31 +138,31 @@ export default function SignupPage() {
           <div className="text-center mb-8">
             <div className="logo-badge mx-auto mb-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.jpg" alt="جمعية النعمة" className="w-full h-full object-cover" />
+              <img src="/logo.jpg" alt={t("auth.org.name")} className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-2xl font-bold text-white">التسجيل في جمعية النعمة</h1>
+            <h1 className="text-2xl font-bold text-white">{t("auth.signup.choose.title")}</h1>
             <p className="text-sm mt-1.5" style={{ color: "oklch(0.72 0.07 130)" }}>
-              اختر نوع التسجيل للمتابعة
+              {t("auth.signup.choose.subtitle")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button className="type-card" onClick={() => { setMemberType("CHILD"); setStep("form"); }}>
               <span className="type-icon">👦</span>
-              <span className="type-title">تسجيل طفل</span>
-              <span className="type-desc">تسجيل قاصر في برامج الجمعية</span>
+              <span className="type-title">{t("auth.signup.childCard.title")}</span>
+              <span className="type-desc">{t("auth.signup.childCard.desc")}</span>
             </button>
             <button className="type-card" onClick={() => { setMemberType("ADULT"); setStep("form"); }}>
               <span className="type-icon">🤝</span>
-              <span className="type-title">تسجيل متطوع / كبير</span>
-              <span className="type-desc">الانخراط كعضو بالغ أو متطوع</span>
+              <span className="type-title">{t("auth.signup.adultCard.title")}</span>
+              <span className="type-desc">{t("auth.signup.adultCard.desc")}</span>
             </button>
           </div>
 
           <p className="text-center text-sm mt-8" style={{ color: "oklch(0.60 0.04 140)" }}>
-            لديك حساب بالفعل؟{" "}
+            {t("auth.signup.haveAccount")}{" "}
             <Link href="/login" className="font-semibold" style={{ color: "oklch(0.82 0.16 82)" }}>
-              تسجيل الدخول
+              {t("auth.login.title")}
             </Link>
           </p>
         </div>
@@ -174,32 +176,32 @@ export default function SignupPage() {
                 className="text-xs font-bold px-2.5 py-1 rounded-full"
                 style={{ background: "oklch(0.80 0.16 82 / 0.15)", color: "oklch(0.82 0.16 82)", border: "1px solid oklch(0.80 0.16 82 / 0.3)" }}
               >
-                {memberType === "CHILD" ? "👦 طفل" : "🤝 متطوع / كبير"}
+                {memberType === "CHILD" ? `👦 ${t("auth.signup.badge.child")}` : `🤝 ${t("auth.signup.badge.adult")}`}
               </span>
               <h2 className="text-lg font-bold text-white">
-                {memberType === "CHILD" ? "استمارة تسجيل طفل" : "استمارة تسجيل منخرط"}
+                {memberType === "CHILD" ? t("auth.signup.form.childTitle") : t("auth.signup.form.adultTitle")}
               </h2>
             </div>
             <button type="button" onClick={() => { setStep("choose"); setError(""); }} className="text-sm" style={{ color: "oklch(0.65 0.07 140)" }}>
-              ← تغيير النوع
+              ← {t("auth.signup.changeType")}
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <section className="form-section">
-              <h3 className="form-section-title">الصورة الشخصية (اختياري)</h3>
+              <h3 className="form-section-title">{t("auth.signup.photo.section")}</h3>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 shrink-0" style={{ background: "oklch(0.20 0.07 155 / 0.6)", borderColor: "oklch(0.40 0.08 155)" }}>
                   {photoPreview ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoPreview} alt="معاينة" className="w-full h-full object-cover" />
+                    <img src={photoPreview} alt={t("auth.signup.photo.previewAlt")} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-2xl sm:text-3xl" style={{ color: "oklch(0.55 0.06 140)" }}>👤</div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer" style={{ background: "oklch(0.42 0.14 155)", color: "white" }}>
-                    📷 {photo ? "تغيير الصورة" : "اختيار صورة"}
+                    📷 {photo ? t("auth.signup.photo.change") : t("auth.signup.photo.pick")}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -210,51 +212,51 @@ export default function SignupPage() {
                   {photo && (
                     <p className="text-[11px] truncate" style={{ color: "oklch(0.78 0.06 140)" }} title={photo.name}>{photo.name}</p>
                   )}
-                  <p className="text-[10px]" style={{ color: "oklch(0.55 0.06 140)" }}>JPG / PNG / WEBP، أقل من 5 ميغابايت</p>
+                  <p className="text-[10px]" style={{ color: "oklch(0.55 0.06 140)" }}>{t("auth.signup.photo.hint")}</p>
                 </div>
               </div>
             </section>
 
             <section className="form-section">
-              <h3 className="form-section-title">نوع التسجيل</h3>
+              <h3 className="form-section-title">{t("auth.signup.regType.section")}</h3>
               <div className="space-y-1">
-                <label className="auth-label">نوع التسجيل *</label>
+                <label className="auth-label">{t("auth.signup.regType.label")}</label>
                 <select className="auth-input" value={form.registrationType} onChange={(e) => update("registrationType", e.target.value)} required>
-                  <option value="">-- اختر --</option>
-                  {REGISTRATION_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  <option value="">{t("auth.signup.selectPlaceholder")}</option>
+                  {REGISTRATION_TYPES.map((r) => (
+                    <option key={r.value} value={r.value}>{t(r.key)}</option>
                   ))}
                 </select>
               </div>
             </section>
 
             <section className="form-section">
-              <h3 className="form-section-title">المعلومات الشخصية</h3>
+              <h3 className="form-section-title">{t("auth.signup.personal.section")}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="auth-label">الاسم الكامل *</label>
+                  <label className="auth-label">{t("auth.signup.fullName.label")}</label>
                   <input className="auth-input" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} required />
                 </div>
                 <div className="space-y-1">
-                  <label className="auth-label">تاريخ الازدياد</label>
+                  <label className="auth-label">{t("auth.signup.birthDate.label")}</label>
                   <input type="date" className="auth-input" value={form.dateOfBirth} onChange={(e) => update("dateOfBirth", e.target.value)} dir="ltr" />
                 </div>
                 <div className="space-y-1">
-                  <label className="auth-label">مكان الازدياد</label>
-                  <input className="auth-input" value={form.placeOfBirth} onChange={(e) => update("placeOfBirth", e.target.value)} placeholder="المدينة" />
+                  <label className="auth-label">{t("auth.signup.birthPlace.label")}</label>
+                  <input className="auth-input" value={form.placeOfBirth} onChange={(e) => update("placeOfBirth", e.target.value)} placeholder={t("auth.signup.city.placeholder")} />
                 </div>
                 <div className="space-y-1">
-                  <label className="auth-label">الجنس</label>
+                  <label className="auth-label">{t("auth.signup.gender.label")}</label>
                   <select className="auth-input" value={form.gender} onChange={(e) => update("gender", e.target.value)}>
-                    <option value="">-- اختر --</option>
-                    <option value="MALE">ذكر</option>
-                    <option value="FEMALE">أنثى</option>
+                    <option value="">{t("auth.signup.selectPlaceholder")}</option>
+                    <option value="MALE">{t("auth.signup.gender.male")}</option>
+                    <option value="FEMALE">{t("auth.signup.gender.female")}</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="auth-label">المستوى الدراسي</label>
+                  <label className="auth-label">{t("auth.signup.eduLevel.label")}</label>
                   <select className="auth-input" value={form.educationalLevel} onChange={(e) => update("educationalLevel", e.target.value)}>
-                    <option value="">-- اختر --</option>
+                    <option value="">{t("auth.signup.selectPlaceholder")}</option>
                     {EDUCATIONAL_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
@@ -264,19 +266,19 @@ export default function SignupPage() {
             {memberType === "CHILD" ? (
               <>
                 <section className="form-section">
-                  <h3 className="form-section-title">الوضع الصحي</h3>
+                  <h3 className="form-section-title">{t("auth.signup.health.section")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="auth-label">الوضع الصحي</label>
+                      <label className="auth-label">{t("auth.signup.health.status.label")}</label>
                       <select className="auth-input" value={form.healthStatus} onChange={(e) => update("healthStatus", e.target.value)}>
-                        <option value="">-- اختر --</option>
-                        <option value="HEALTHY">عادي</option>
-                        <option value="SICK">مريض</option>
+                        <option value="">{t("auth.signup.selectPlaceholder")}</option>
+                        <option value="HEALTHY">{t("auth.signup.health.healthy")}</option>
+                        <option value="SICK">{t("auth.signup.health.sick")}</option>
                       </select>
                     </div>
                     {form.healthStatus === "SICK" && (
                       <div className="space-y-1">
-                        <label className="auth-label">نوع المرض</label>
+                        <label className="auth-label">{t("auth.signup.health.condition.label")}</label>
                         <input className="auth-input" value={form.healthConditions} onChange={(e) => update("healthConditions", e.target.value)} />
                       </div>
                     )}
@@ -284,106 +286,106 @@ export default function SignupPage() {
                 </section>
 
                 <section className="form-section">
-                  <h3 className="form-section-title">الإخوة</h3>
+                  <h3 className="form-section-title">{t("auth.signup.siblings.section")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <label className="auth-label">عدد الإخوة الذكور</label>
+                      <label className="auth-label">{t("auth.signup.siblings.brothers.label")}</label>
                       <input type="number" min="0" className="auth-input" value={form.siblingsBoys} onChange={(e) => update("siblingsBoys", e.target.value)} dir="ltr" />
                     </div>
                     <div className="space-y-1">
-                      <label className="auth-label">عدد الأخوات الإناث</label>
+                      <label className="auth-label">{t("auth.signup.siblings.sisters.label")}</label>
                       <input type="number" min="0" className="auth-input" value={form.siblingsGirls} onChange={(e) => update("siblingsGirls", e.target.value)} dir="ltr" />
                     </div>
                     <div className="space-y-1">
-                      <label className="auth-label">الرتبة بين الإخوة</label>
+                      <label className="auth-label">{t("auth.signup.siblings.order.label")}</label>
                       <input type="number" min="1" className="auth-input" value={form.siblingOrder} onChange={(e) => update("siblingOrder", e.target.value)} dir="ltr" />
                     </div>
                   </div>
                 </section>
 
                 <section className="form-section">
-                  <h3 className="form-section-title">معلومات الأب</h3>
+                  <h3 className="form-section-title">{t("auth.signup.father.section")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1"><label className="auth-label">اسم الأب</label><input className="auth-input" value={form.fatherName} onChange={(e) => update("fatherName", e.target.value)} /></div>
-                    <div className="space-y-1"><label className="auth-label">المهنة</label><input className="auth-input" value={form.fatherProfession} onChange={(e) => update("fatherProfession", e.target.value)} /></div>
-                    <div className="space-y-1"><label className="auth-label">رقم ب.و.ت</label><input className="auth-input" value={form.fatherCin} onChange={(e) => update("fatherCin", e.target.value)} dir="ltr" /></div>
-                    <div className="space-y-1"><label className="auth-label">المستوى الدراسي</label><input className="auth-input" value={form.fatherEducation} onChange={(e) => update("fatherEducation", e.target.value)} /></div>
-                    <div className="space-y-1"><label className="auth-label">الهاتف المحمول</label><input className="auth-input" value={form.fatherPhone} onChange={(e) => update("fatherPhone", e.target.value)} placeholder="06XXXXXXXX" dir="ltr" /></div>
-                    <div className="space-y-1"><label className="auth-label">الهاتف الثابت</label><input className="auth-input" value={form.fatherLandline} onChange={(e) => update("fatherLandline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" /></div>
-                    <div className="sm:col-span-2 space-y-1"><label className="auth-label">العنوان</label><input className="auth-input" value={form.fatherAddress} onChange={(e) => update("fatherAddress", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.father.name.label")}</label><input className="auth-input" value={form.fatherName} onChange={(e) => update("fatherName", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.profession.label")}</label><input className="auth-input" value={form.fatherProfession} onChange={(e) => update("fatherProfession", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.cin.label")}</label><input className="auth-input" value={form.fatherCin} onChange={(e) => update("fatherCin", e.target.value)} dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.eduLevel.label")}</label><input className="auth-input" value={form.fatherEducation} onChange={(e) => update("fatherEducation", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.mobile.label")}</label><input className="auth-input" value={form.fatherPhone} onChange={(e) => update("fatherPhone", e.target.value)} placeholder="06XXXXXXXX" dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.landline.label")}</label><input className="auth-input" value={form.fatherLandline} onChange={(e) => update("fatherLandline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" /></div>
+                    <div className="sm:col-span-2 space-y-1"><label className="auth-label">{t("auth.signup.address.label")}</label><input className="auth-input" value={form.fatherAddress} onChange={(e) => update("fatherAddress", e.target.value)} /></div>
                   </div>
                 </section>
 
                 <section className="form-section">
-                  <h3 className="form-section-title">معلومات الأم</h3>
+                  <h3 className="form-section-title">{t("auth.signup.mother.section")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1"><label className="auth-label">اسم الأم</label><input className="auth-input" value={form.motherName} onChange={(e) => update("motherName", e.target.value)} /></div>
-                    <div className="space-y-1"><label className="auth-label">المهنة</label><input className="auth-input" value={form.motherProfession} onChange={(e) => update("motherProfession", e.target.value)} /></div>
-                    <div className="space-y-1"><label className="auth-label">رقم ب.و.ت</label><input className="auth-input" value={form.motherCin} onChange={(e) => update("motherCin", e.target.value)} dir="ltr" /></div>
-                    <div className="space-y-1"><label className="auth-label">المستوى الدراسي</label><input className="auth-input" value={form.motherEducation} onChange={(e) => update("motherEducation", e.target.value)} /></div>
-                    <div className="space-y-1"><label className="auth-label">الهاتف المحمول</label><input className="auth-input" value={form.motherPhone} onChange={(e) => update("motherPhone", e.target.value)} placeholder="06XXXXXXXX" dir="ltr" /></div>
-                    <div className="space-y-1"><label className="auth-label">الهاتف الثابت</label><input className="auth-input" value={form.motherLandline} onChange={(e) => update("motherLandline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" /></div>
-                    <div className="sm:col-span-2 space-y-1"><label className="auth-label">العنوان</label><input className="auth-input" value={form.motherAddress} onChange={(e) => update("motherAddress", e.target.value)} /></div>
-                    <div className="sm:col-span-2 space-y-1"><label className="auth-label">رقم ب.و.ت للولي (إن لم يكن أحد الوالدين)</label><input className="auth-input" value={form.parentCin} onChange={(e) => update("parentCin", e.target.value)} dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.mother.name.label")}</label><input className="auth-input" value={form.motherName} onChange={(e) => update("motherName", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.profession.label")}</label><input className="auth-input" value={form.motherProfession} onChange={(e) => update("motherProfession", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.cin.label")}</label><input className="auth-input" value={form.motherCin} onChange={(e) => update("motherCin", e.target.value)} dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.eduLevel.label")}</label><input className="auth-input" value={form.motherEducation} onChange={(e) => update("motherEducation", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.mobile.label")}</label><input className="auth-input" value={form.motherPhone} onChange={(e) => update("motherPhone", e.target.value)} placeholder="06XXXXXXXX" dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.landline.label")}</label><input className="auth-input" value={form.motherLandline} onChange={(e) => update("motherLandline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" /></div>
+                    <div className="sm:col-span-2 space-y-1"><label className="auth-label">{t("auth.signup.address.label")}</label><input className="auth-input" value={form.motherAddress} onChange={(e) => update("motherAddress", e.target.value)} /></div>
+                    <div className="sm:col-span-2 space-y-1"><label className="auth-label">{t("auth.signup.guardianCin.label")}</label><input className="auth-input" value={form.parentCin} onChange={(e) => update("parentCin", e.target.value)} dir="ltr" /></div>
                   </div>
                 </section>
               </>
             ) : (
               <>
                 <section className="form-section">
-                  <h3 className="form-section-title">معلومات المنخرط</h3>
+                  <h3 className="form-section-title">{t("auth.signup.member.section")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1"><label className="auth-label">رقم ب.و.ت (CIN)</label><input className="auth-input" value={form.cin} onChange={(e) => update("cin", e.target.value)} dir="ltr" placeholder="AB123456" /></div>
-                    <div className="space-y-1"><label className="auth-label">المهنة</label><input className="auth-input" value={form.profession} onChange={(e) => update("profession", e.target.value)} /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.cin.fullLabel")}</label><input className="auth-input" value={form.cin} onChange={(e) => update("cin", e.target.value)} dir="ltr" placeholder="AB123456" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.profession.label")}</label><input className="auth-input" value={form.profession} onChange={(e) => update("profession", e.target.value)} /></div>
                     <div className="space-y-1">
-                      <label className="auth-label">الحالة العائلية</label>
+                      <label className="auth-label">{t("auth.signup.marital.label")}</label>
                       <select className="auth-input" value={form.maritalStatus} onChange={(e) => update("maritalStatus", e.target.value)}>
-                        <option value="">-- اختر --</option>
-                        <option value="SINGLE">أعزب</option>
-                        <option value="MARRIED">متزوج</option>
-                        <option value="DIVORCED">مطلق</option>
-                        <option value="WIDOWED">أرمل</option>
+                        <option value="">{t("auth.signup.selectPlaceholder")}</option>
+                        <option value="SINGLE">{t("auth.signup.marital.single")}</option>
+                        <option value="MARRIED">{t("auth.signup.marital.married")}</option>
+                        <option value="DIVORCED">{t("auth.signup.marital.divorced")}</option>
+                        <option value="WIDOWED">{t("auth.signup.marital.widowed")}</option>
                       </select>
                     </div>
-                    <div className="space-y-1"><label className="auth-label">الهاتف الثابت</label><input className="auth-input" value={form.landline} onChange={(e) => update("landline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" /></div>
-                    <div className="space-y-1"><label className="auth-label">عدد الأبناء الذكور</label><input type="number" min="0" className="auth-input" value={form.childrenBoys} onChange={(e) => update("childrenBoys", e.target.value)} dir="ltr" /></div>
-                    <div className="space-y-1"><label className="auth-label">عدد البنات</label><input type="number" min="0" className="auth-input" value={form.childrenGirls} onChange={(e) => update("childrenGirls", e.target.value)} dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.landline.label")}</label><input className="auth-input" value={form.landline} onChange={(e) => update("landline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.children.boys.label")}</label><input type="number" min="0" className="auth-input" value={form.childrenBoys} onChange={(e) => update("childrenBoys", e.target.value)} dir="ltr" /></div>
+                    <div className="space-y-1"><label className="auth-label">{t("auth.signup.children.girls.label")}</label><input type="number" min="0" className="auth-input" value={form.childrenGirls} onChange={(e) => update("childrenGirls", e.target.value)} dir="ltr" /></div>
                   </div>
                 </section>
 
                 <section className="form-section">
-                  <h3 className="form-section-title">الاهتمامات</h3>
+                  <h3 className="form-section-title">{t("auth.signup.interests.section")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                     <label className="flex items-center gap-2 text-sm" style={{ color: "oklch(0.78 0.06 140)" }}>
                       <input type="checkbox" checked={form.interestJtima3iya} onChange={(e) => update("interestJtima3iya", e.target.checked)} />
-                      اجتماعية
+                      {t("auth.signup.interests.social")}
                     </label>
                     <label className="flex items-center gap-2 text-sm" style={{ color: "oklch(0.78 0.06 140)" }}>
                       <input type="checkbox" checked={form.interestTarbawiya} onChange={(e) => update("interestTarbawiya", e.target.checked)} />
-                      تربوية
+                      {t("auth.signup.interests.educational")}
                     </label>
                     <label className="flex items-center gap-2 text-sm" style={{ color: "oklch(0.78 0.06 140)" }}>
                       <input type="checkbox" checked={form.interestFikriya} onChange={(e) => update("interestFikriya", e.target.checked)} />
-                      فكرية
+                      {t("auth.signup.interests.intellectual")}
                     </label>
                   </div>
                   <div className="space-y-1">
-                    <label className="auth-label">اهتمامات أخرى</label>
-                    <input className="auth-input" value={form.interests} onChange={(e) => update("interests", e.target.value)} placeholder="مثال: القرآن الكريم، الرياضة..." />
+                    <label className="auth-label">{t("auth.signup.interests.other.label")}</label>
+                    <input className="auth-input" value={form.interests} onChange={(e) => update("interests", e.target.value)} placeholder={t("auth.signup.interests.placeholder")} />
                   </div>
                 </section>
               </>
             )}
 
             <section className="form-section">
-              <h3 className="form-section-title">معلومات الاتصال</h3>
+              <h3 className="form-section-title">{t("auth.signup.contact.section")}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="auth-label">رقم الهاتف</label>
+                  <label className="auth-label">{t("auth.signup.phone.label")}</label>
                   <input className="auth-input" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="06XXXXXXXX" dir="ltr" />
                 </div>
                 <div className="space-y-1">
-                  <label className="auth-label">العنوان</label>
+                  <label className="auth-label">{t("auth.signup.address.label")}</label>
                   <input className="auth-input" value={form.address} onChange={(e) => update("address", e.target.value)} />
                 </div>
               </div>
@@ -399,10 +401,10 @@ export default function SignupPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  جاري الإرسال...
+                  {t("auth.signup.submitting")}
                 </span>
               ) : (
-                "إرسال طلب التسجيل"
+                t("auth.signup.submitRequest")
               )}
             </button>
           </form>
@@ -412,13 +414,12 @@ export default function SignupPage() {
       {step === "success" && (
         <div className="auth-card w-full max-w-sm text-center">
           <div className="success-check mx-auto mb-5">✓</div>
-          <h2 className="text-xl font-bold text-white mb-3">تم استلام طلبك</h2>
+          <h2 className="text-xl font-bold text-white mb-3">{t("auth.signup.success.title")}</h2>
           <p className="text-sm leading-relaxed mb-6" style={{ color: "oklch(0.72 0.07 130)" }}>
-            تم تقديم طلب التسجيل بنجاح. سيقوم المسؤول بمراجعة طلبك والتواصل معك قريباً
-            {memberType === "ADULT" ? " لإرسال رابط تفعيل حسابك." : "."}
+            {memberType === "ADULT" ? t("auth.signup.success.bodyAdult") : t("auth.signup.success.body")}
           </p>
           <Link href="/login" className="auth-btn block text-center no-underline" style={{ textDecoration: "none" }}>
-            العودة لتسجيل الدخول
+            {t("auth.signup.success.backToLogin")}
           </Link>
         </div>
       )}

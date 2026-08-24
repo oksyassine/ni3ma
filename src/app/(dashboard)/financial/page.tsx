@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getT } from "@/lib/i18n/server";
 import Link from "next/link";
 
 async function getFinancialStats() {
@@ -22,19 +23,20 @@ async function getFinancialStats() {
 export default async function FinancialDashboard() {
   const stats = await getFinancialStats();
   const balance = stats.contributions + stats.donations - stats.expenses;
+  const { t } = await getT();
 
   const cards = [
-    { title: "إجمالي المساهمات", value: `${stats.contributions.toFixed(2)} د.م`, href: "/financial/contributions", color: "text-green-600" },
-    { title: "إجمالي المصاريف", value: `${stats.expenses.toFixed(2)} د.م`, href: "/financial/expenses", color: "text-red-600" },
-    { title: "إجمالي التبرعات", value: `${stats.donations.toFixed(2)} د.م`, href: "/financial/donations", color: "text-blue-600" },
-    { title: "الرصيد", value: `${balance.toFixed(2)} د.م`, href: "#", color: balance >= 0 ? "text-green-600" : "text-red-600" },
+    { title: t("financial.totalContributions"), value: `${stats.contributions.toFixed(2)} ${t("financial.mad")}`, href: "/financial/contributions", color: "text-green-600" },
+    { title: t("financial.totalExpenses"), value: `${stats.expenses.toFixed(2)} ${t("financial.mad")}`, href: "/financial/expenses", color: "text-red-600" },
+    { title: t("financial.totalDonations"), value: `${stats.donations.toFixed(2)} ${t("financial.mad")}`, href: "/financial/donations", color: "text-blue-600" },
+    { title: t("financial.balance"), value: `${balance.toFixed(2)} ${t("financial.mad")}`, href: "#", color: balance >= 0 ? "text-green-600" : "text-red-600" },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">لوحة المالية</h1>
-        <p className="text-muted-foreground">تتبع المساهمات والمصاريف والتبرعات</p>
+        <h1 className="text-2xl font-bold">{t("financial.dashboardTitle")}</h1>
+        <p className="text-muted-foreground">{t("financial.dashboardSubtitle")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -58,31 +60,31 @@ export default async function FinancialDashboard() {
         <Link href="/financial/contributions">
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardHeader>
-              <CardTitle className="text-lg">المساهمات الأسبوعية</CardTitle>
+              <CardTitle className="text-lg">{t("financial.weeklyContributions")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-sm">تسجيل ومتابعة المساهمات الأسبوعية للمنخرطين</p>
-              <p className="text-sm mt-2">{stats.contributionCount} مساهمة مسجلة</p>
+              <p className="text-muted-foreground text-sm">{t("financial.weeklyContributionsDesc")}</p>
+              <p className="text-sm mt-2">{t("financial.recordedCount", { count: stats.contributionCount })}</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/financial/expenses">
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardHeader>
-              <CardTitle className="text-lg">المصاريف</CardTitle>
+              <CardTitle className="text-lg">{t("financial.expensesTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-sm">تسجيل مصاريف الجمعية حسب القسم والصنف</p>
+              <p className="text-muted-foreground text-sm">{t("financial.expensesDesc")}</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/financial/donations">
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardHeader>
-              <CardTitle className="text-lg">التبرعات</CardTitle>
+              <CardTitle className="text-lg">{t("financial.donationsTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-sm">تسجيل التبرعات والمحسنين</p>
+              <p className="text-muted-foreground text-sm">{t("financial.donationsDesc")}</p>
             </CardContent>
           </Card>
         </Link>

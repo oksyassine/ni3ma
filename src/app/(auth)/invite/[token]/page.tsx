@@ -4,12 +4,14 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { validateUsernameFormat, suggestUsernameFromName } from "@/lib/validations/username";
+import { useT } from "@/components/i18n/provider";
 
 type PageState = "loading" | "ready" | "success" | "error";
 
 export default function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const router = useRouter();
+  const { t } = useT();
 
   const [pageState, setPageState] = useState<PageState>("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -25,7 +27,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
-          setErrorMsg(data.error ?? "رابط غير صالح");
+          setErrorMsg(data.error ?? t("auth.invite.invalidLink"));
           setPageState("error");
         } else {
           setFullName(data.fullName);
@@ -33,7 +35,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         }
       })
       .catch(() => {
-        setErrorMsg("حدث خطأ في الاتصال");
+        setErrorMsg(t("auth.invite.connectionError"));
         setPageState("error");
       });
   }, [token]);
@@ -43,8 +45,8 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
     setFormError("");
     const usernameErr = validateUsernameFormat(username);
     if (usernameErr) { setFormError(usernameErr); return; }
-    if (password.length < 6) { setFormError("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
-    if (password !== confirm) { setFormError("كلمة المرور وتأكيدها غير متطابقتين"); return; }
+    if (password.length < 6) { setFormError(t("auth.invite.error.passwordTooShort")); return; }
+    if (password !== confirm) { setFormError(t("auth.invite.error.passwordMismatch")); return; }
 
     setSubmitting(true);
     const res = await fetch(`/api/invite/${token}`, {
@@ -57,7 +59,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       setPageState("success");
     } else {
       const data = await res.json();
-      setFormError(data.error ?? "حدث خطأ");
+      setFormError(data.error ?? t("auth.invite.genericError"));
       setSubmitting(false);
     }
   };
@@ -69,25 +71,25 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         <div className="text-center mb-7">
           <div className="logo-badge mx-auto mb-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.jpg" alt="جمعية النعمة" className="w-full h-full object-cover" />
+            <img src="/logo.jpg" alt={t("auth.org.name")} className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-xl font-bold text-white">جمعية النعمة</h1>
+          <h1 className="text-xl font-bold text-white">{t("auth.org.name")}</h1>
         </div>
 
         {pageState === "loading" && (
           <div className="text-center py-6" style={{ color: "oklch(0.70 0.07 140)" }}>
             <span className="inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm">جاري التحقق من الرابط...</p>
+            <p className="text-sm">{t("auth.invite.verifying")}</p>
           </div>
         )}
 
         {pageState === "error" && (
           <div className="text-center py-4">
             <div className="error-icon mx-auto mb-4">✕</div>
-            <p className="text-white font-semibold mb-2">رابط غير صالح</p>
+            <p className="text-white font-semibold mb-2">{t("auth.invite.invalidLink")}</p>
             <p className="text-sm mb-5" style={{ color: "oklch(0.70 0.07 140)" }}>{errorMsg}</p>
             <Link href="/login" className="auth-btn block text-center" style={{ textDecoration: "none" }}>
-              تسجيل الدخول
+              {t("auth.login.title")}
             </Link>
           </div>
         )}
@@ -95,20 +97,20 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         {pageState === "ready" && (
           <>
             <p className="text-center text-sm mb-5" style={{ color: "oklch(0.78 0.10 130)" }}>
-              مرحباً <span className="text-white font-semibold">{fullName}</span>
+              {t("auth.invite.welcome")} <span className="text-white font-semibold">{fullName}</span>
               <br />
-              حدد اسم المستخدم وكلمة المرور لحسابك
+              {t("auth.invite.setUsernameHint")}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="auth-label">اسم المستخدم</label>
+                <label className="auth-label">{t("auth.login.username")}</label>
                 <div className="flex gap-2">
                   <input
                     className="auth-input flex-1 min-w-0"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                    placeholder="مثال: ahmed.alaoui"
+                    placeholder={t("auth.invite.username.placeholder")}
                     dir="ltr"
                     required
                   />
@@ -119,28 +121,28 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
                       className="text-xs px-2 py-1.5 rounded-md whitespace-nowrap shrink-0"
                       style={{ background: "oklch(0.42 0.14 155)", color: "white" }}
                     >
-                      ✨ اقتراح
+                      ✨ {t("auth.invite.suggest")}
                     </button>
                   )}
                 </div>
                 <p className="text-[11px]" style={{ color: "oklch(0.55 0.06 140)" }}>
-                  حروف لاتينية صغيرة (a-z) وأرقام والرموز . _ - فقط، 3-30 حرفا.
+                  {t("auth.invite.usernameRules")}
                 </p>
               </div>
               <div className="space-y-1">
-                <label className="auth-label">كلمة المرور</label>
+                <label className="auth-label">{t("auth.login.password")}</label>
                 <input
                   type="password"
                   className="auth-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="6 أحرف على الأقل"
+                  placeholder={t("auth.invite.password.placeholder")}
                   dir="ltr"
                   required
                 />
               </div>
               <div className="space-y-1">
-                <label className="auth-label">تأكيد كلمة المرور</label>
+                <label className="auth-label">{t("auth.invite.confirmPassword")}</label>
                 <input
                   type="password"
                   className="auth-input"
@@ -162,10 +164,10 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    جاري الحفظ...
+                    {t("auth.invite.saving")}
                   </span>
                 ) : (
-                  "تفعيل الحساب"
+                  t("auth.invite.activateAccount")
                 )}
               </button>
             </form>
@@ -175,15 +177,15 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         {pageState === "success" && (
           <div className="text-center py-2">
             <div className="success-check mx-auto mb-4">✓</div>
-            <p className="text-white font-semibold mb-2">تم تفعيل حسابك</p>
+            <p className="text-white font-semibold mb-2">{t("auth.invite.success.title")}</p>
             <p className="text-sm mb-5" style={{ color: "oklch(0.72 0.07 130)" }}>
-              يمكنك الآن تسجيل الدخول باسم المستخدم وكلمة المرور التي اخترتها
+              {t("auth.invite.success.canLogin")}
             </p>
             <button
               className="auth-btn"
               onClick={() => router.push("/login")}
             >
-              تسجيل الدخول
+              {t("auth.login.title")}
             </button>
           </div>
         )}

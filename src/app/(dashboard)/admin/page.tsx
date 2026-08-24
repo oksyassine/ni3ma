@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getT } from "@/lib/i18n/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 async function getStats() {
@@ -15,19 +16,20 @@ async function getStats() {
 
 export default async function AdminDashboard() {
   const stats = await getStats();
+  const { t } = await getT();
 
   const cards = [
-    { title: "إجمالي المنخرطين", value: stats.totalMembers },
-    { title: "المنخرطين النشطين", value: stats.activeMembers },
-    { title: "الأطفال", value: stats.childMembers },
-    { title: "الكبار", value: stats.adultMembers },
+    { title: t("admin.dashboard.totalMembers"), value: stats.totalMembers },
+    { title: t("admin.dashboard.activeMembers"), value: stats.activeMembers },
+    { title: t("admin.dashboard.children"), value: stats.childMembers },
+    { title: t("admin.dashboard.adults"), value: stats.adultMembers },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">لوحة الإدارة</h1>
-        <p className="text-muted-foreground">نظرة عامة على جمعية النعمة</p>
+        <h1 className="text-2xl font-bold">{t("admin.dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("admin.dashboard.overview")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

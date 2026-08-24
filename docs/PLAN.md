@@ -90,8 +90,8 @@ Tenant resolution: `{slug}.neimaa.ma` subdomains + custom domain mapping (CNAME)
 - [ ] Invoice/receipt generation (TenantPayment rows recorded; PDF receipts pending)
 - [x] Platform owner console `/platform` (apex-only): tenant list, suspend/activate/retry-provision; `/billing` page with usage meter & upgrades
 
-### Phase 3 — Market fit (month 2)
-- [ ] French i18n layer
+### Phase 3 — Market fit (month 2) — i18n ✅ implemented
+- [x] French i18n layer: full AR/FR dictionaries (~15 namespaces), per-association default locale (AssociationInfo.defaultLocale) + user cookie override, dynamic lang/dir, localized metadata/dates/role labels; all surfaces swept
 - [ ] WhatsApp notification channel (via WhatsApp Cloud API or CallMeBot-style gateway initially)
 - [ ] Authority-ready exports: annual moral+financial report PDF, Excel/FEC
 - [ ] PWA installability + offline-tolerant attendance

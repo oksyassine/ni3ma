@@ -4,12 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HIFZ_GRADE_LABELS, HIFZ_GRADE_COLORS } from "@/lib/quran";
+import { getT } from "@/lib/i18n/server";
 import { Calendar, BookOpen, Coins, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 
 export default async function FamilyPage() {
   const session = await auth();
   if (!session) redirect("/login");
+  const { t } = await getT();
 
   // Find this user's member row to use as the parent
   const me = await prisma.member.findFirst({
@@ -17,7 +19,7 @@ export default async function FamilyPage() {
     select: { id: true },
   });
   if (!me) {
-    return <p className="p-8 text-center text-muted-foreground">لا يوجد ملف منخرط مرتبط بحسابك</p>;
+    return <p className="p-8 text-center text-muted-foreground">{t("memberVol.notLinked")}</p>;
   }
 
   const links = await prisma.familyLink.findMany({
@@ -36,10 +38,10 @@ export default async function FamilyPage() {
   if (links.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">أبنائي</h1>
+        <h1 className="text-2xl font-bold">{t("family.title")}</h1>
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            لم يتم ربط أي طفل بحسابك بعد. تواصل مع إدارة الجمعية لإضافة أبنائك.
+            {t("family.empty")}
           </CardContent>
         </Card>
       </div>
@@ -49,8 +51,8 @@ export default async function FamilyPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">أبنائي</h1>
-        <p className="text-muted-foreground">متابعة حضور وتقدم أبنائك في الجمعية</p>
+        <h1 className="text-2xl font-bold">{t("family.title")}</h1>
+        <p className="text-muted-foreground">{t("family.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -71,7 +73,7 @@ export default async function FamilyPage() {
                   )}
                   <div>
                     <CardTitle className="text-lg">{c.fullName}</CardTitle>
-                    <p className="text-xs text-muted-foreground">رقم {c.registrationNumber}{l.relation ? ` · ${l.relation}` : ""}</p>
+                    <p className="text-xs text-muted-foreground">{t("family.regNumber", { number: c.registrationNumber })}{l.relation ? ` · ${l.relation}` : ""}</p>
                   </div>
                 </div>
               </CardHeader>
@@ -79,7 +81,7 @@ export default async function FamilyPage() {
                 {attendanceRate !== null && (
                   <div className="flex items-center gap-2">
                     <CalendarCheck size={16} className="text-muted-foreground" />
-                    <span className="text-sm">نسبة الحضور آخر {c.attendance.length} حصص:</span>
+                    <span className="text-sm">{t("family.attendanceRate", { count: c.attendance.length })}</span>
                     <Badge variant={attendanceRate >= 70 ? "default" : "outline"}>{attendanceRate}%</Badge>
                   </div>
                 )}
@@ -87,7 +89,7 @@ export default async function FamilyPage() {
                 {c.quranProgress.length > 0 && (
                   <div>
                     <h4 className="text-sm font-semibold flex items-center gap-1 mb-2">
-                      <BookOpen size={14} />آخر تسميعات
+                      <BookOpen size={14} />{t("family.recentRecitations")}
                     </h4>
                     <div className="space-y-1">
                       {c.quranProgress.map((q) => (
@@ -108,7 +110,7 @@ export default async function FamilyPage() {
                 {c.contributions.length > 0 && (
                   <div>
                     <h4 className="text-sm font-semibold flex items-center gap-1 mb-2">
-                      <Coins size={14} />آخر المساهمات
+                      <Coins size={14} />{t("family.recentContributions")}
                     </h4>
                     <div className="space-y-1">
                       {c.contributions.map((co) => (
@@ -116,7 +118,7 @@ export default async function FamilyPage() {
                           <span className="text-muted-foreground flex items-center gap-1">
                             <Calendar size={11} />{co.weekStart.toISOString().slice(0, 10)}
                           </span>
-                          <span className="font-mono">{Number(co.amount).toFixed(2)} د.م</span>
+                          <span className="font-mono">{Number(co.amount).toFixed(2)} {t("bureau.currencyMad")}</span>
                         </div>
                       ))}
                     </div>
@@ -124,7 +126,7 @@ export default async function FamilyPage() {
                 )}
 
                 <Link href={`/admin/members/${c.id}`} className="text-xs text-primary hover:underline">
-                  عرض الملف الكامل ←
+                  {t("family.viewProfile")}
                 </Link>
               </CardContent>
             </Card>

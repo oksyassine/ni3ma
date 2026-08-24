@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getT } from "@/lib/i18n/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -23,38 +24,39 @@ async function getEducationalStats() {
 
 export default async function EducationalDashboard() {
   const { members, programs, totalAttendance } = await getEducationalStats();
+  const { t } = await getT();
   const maleCount = members.filter((m) => m.gender === "MALE").length;
   const femaleCount = members.filter((m) => m.gender === "FEMALE").length;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">القسم التربوي</h1>
-        <p className="text-muted-foreground">إدارة البرنامج التربوي والمنخرطين</p>
+        <h1 className="text-2xl font-bold">{t("educational.title")}</h1>
+        <p className="text-muted-foreground">{t("educational.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">المنخرطين</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("educational.members")}</CardTitle>
           </CardHeader>
           <CardContent><div className="text-3xl font-bold">{members.length}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">ذكور</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("educational.males")}</CardTitle>
           </CardHeader>
           <CardContent><div className="text-3xl font-bold">{maleCount}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">إناث</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("educational.females")}</CardTitle>
           </CardHeader>
           <CardContent><div className="text-3xl font-bold">{femaleCount}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">سجلات الحضور</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("educational.attendanceRecords")}</CardTitle>
           </CardHeader>
           <CardContent><div className="text-3xl font-bold">{totalAttendance}</div></CardContent>
         </Card>
@@ -63,11 +65,11 @@ export default async function EducationalDashboard() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">المنخرطين في القسم</CardTitle>
+            <CardTitle className="text-lg">{t("educational.sectionMembers")}</CardTitle>
           </CardHeader>
           <CardContent>
             {members.length === 0 ? (
-              <p className="text-muted-foreground text-sm">لا يوجد منخرطين في هذا القسم</p>
+              <p className="text-muted-foreground text-sm">{t("educational.noMembers")}</p>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {members.map((m) => (
@@ -77,7 +79,7 @@ export default async function EducationalDashboard() {
                       <span className="text-muted-foreground text-sm mr-2">#{m.registrationNumber}</span>
                     </div>
                     <Badge variant="secondary">
-                      {m.memberType === "CHILD" ? "طفل" : "كبير"}
+                      {m.memberType === "CHILD" ? t("educational.child") : t("educational.adult")}
                     </Badge>
                   </div>
                 ))}
@@ -88,11 +90,11 @@ export default async function EducationalDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">البرامج السنوية</CardTitle>
+            <CardTitle className="text-lg">{t("educational.annualPrograms")}</CardTitle>
           </CardHeader>
           <CardContent>
             {programs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">لا توجد برامج مسجلة</p>
+              <p className="text-muted-foreground text-sm">{t("educational.noPrograms")}</p>
             ) : (
               <div className="space-y-4">
                 {programs.map((p) => (

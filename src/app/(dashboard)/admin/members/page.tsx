@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useT } from "@/components/i18n/provider";
 
 type MemberSection = {
   id: string;
@@ -39,17 +40,13 @@ type Member = {
 };
 
 const SECTION_LABELS: Record<string, string> = {
-  EDUCATIONAL: "تربوي",
-  SOCIAL: "اجتماعي",
-  QURAN: "قرآن كريم",
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  CHILD: "طفل",
-  ADULT: "كبير",
+  EDUCATIONAL: "members.section.EDUCATIONAL",
+  SOCIAL: "members.section.SOCIAL",
+  QURAN: "members.section.QURAN",
 };
 
 export default function MembersPage() {
+  const { t } = useT();
   const [members, setMembers] = useState<Member[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
@@ -84,40 +81,40 @@ export default function MembersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">المنخرطين</h1>
-          <p className="text-muted-foreground">إجمالي: {total} منخرط</p>
+          <h1 className="text-2xl font-bold">{t("members.listTitle")}</h1>
+          <p className="text-muted-foreground">{t("members.totalCount", { count: total })}</p>
         </div>
         <Link href="/admin/members/new">
-          <Button>تسجيل منخرط جديد</Button>
+          <Button>{t("members.registerNew")}</Button>
         </Link>
       </div>
 
       <div className="flex gap-3 flex-wrap">
         <Input
-          placeholder="بحث بالاسم..."
+          placeholder={t("members.searchPlaceholder")}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           className="max-w-xs"
         />
         <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v ?? "all"); setPage(1); }}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="النوع" />
+            <SelectValue placeholder={t("members.filterType")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="CHILD">أطفال</SelectItem>
-            <SelectItem value="ADULT">كبار</SelectItem>
+            <SelectItem value="all">{t("members.all")}</SelectItem>
+            <SelectItem value="CHILD">{t("members.children")}</SelectItem>
+            <SelectItem value="ADULT">{t("members.adults")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sectionFilter} onValueChange={(v) => { setSectionFilter(v ?? "all"); setPage(1); }}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="القسم" />
+            <SelectValue placeholder={t("members.filterSection")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="EDUCATIONAL">تربوي</SelectItem>
-            <SelectItem value="SOCIAL">اجتماعي</SelectItem>
-            <SelectItem value="QURAN">قرآن كريم</SelectItem>
+            <SelectItem value="all">{t("members.all")}</SelectItem>
+            <SelectItem value="EDUCATIONAL">{t("members.section.EDUCATIONAL")}</SelectItem>
+            <SelectItem value="SOCIAL">{t("members.section.SOCIAL")}</SelectItem>
+            <SelectItem value="QURAN">{t("members.section.QURAN")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -126,26 +123,26 @@ export default function MembersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">الرقم</TableHead>
-              <TableHead>الاسم الكامل</TableHead>
-              <TableHead>النوع</TableHead>
-              <TableHead>الهاتف</TableHead>
-              <TableHead>الأقسام</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead className="w-20">إجراءات</TableHead>
+              <TableHead className="w-16">{t("members.col.number")}</TableHead>
+              <TableHead>{t("members.col.fullName")}</TableHead>
+              <TableHead>{t("members.col.type")}</TableHead>
+              <TableHead>{t("members.col.phone")}</TableHead>
+              <TableHead>{t("members.col.sections")}</TableHead>
+              <TableHead>{t("members.col.status")}</TableHead>
+              <TableHead className="w-20">{t("members.col.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
-                  جاري التحميل...
+                  {t("members.loading")}
                 </TableCell>
               </TableRow>
             ) : members.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  لا يوجد منخرطين
+                  {t("members.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -155,7 +152,7 @@ export default function MembersPage() {
                   <TableCell className="font-medium">{member.fullName}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {TYPE_LABELS[member.memberType]}
+                      {t(`members.type.${member.memberType}`)}
                     </Badge>
                   </TableCell>
                   <TableCell dir="ltr" className="text-right">{member.phone ?? "-"}</TableCell>
@@ -165,19 +162,19 @@ export default function MembersPage() {
                         .filter((s) => s.isActive)
                         .map((s) => (
                           <Badge key={s.id} variant="secondary" className="text-xs">
-                            {SECTION_LABELS[s.section]}
+                            {t(SECTION_LABELS[s.section])}
                           </Badge>
                         ))}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={member.isActive ? "default" : "destructive"}>
-                      {member.isActive ? "نشط" : "غير نشط"}
+                      {member.isActive ? t("members.active") : t("members.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Link href={`/admin/members/${member.id}`}>
-                      <Button variant="ghost" size="sm">عرض</Button>
+                      <Button variant="ghost" size="sm">{t("members.view")}</Button>
                     </Link>
                   </TableCell>
                 </TableRow>
@@ -195,10 +192,10 @@ export default function MembersPage() {
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
-            السابق
+            {t("members.prev")}
           </Button>
           <span className="text-sm text-muted-foreground">
-            صفحة {page} من {totalPages}
+            {t("members.pageOf", { page, totalPages })}
           </span>
           <Button
             variant="outline"
@@ -206,7 +203,7 @@ export default function MembersPage() {
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
           >
-            التالي
+            {t("members.next")}
           </Button>
         </div>
       )}

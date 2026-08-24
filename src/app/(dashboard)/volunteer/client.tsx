@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n/provider";
 import { Check, X, Trash2, HandHeart, Pencil } from "lucide-react";
 import { SECTION_LABELS } from "@/lib/section";
 import type { Section } from "@prisma/client";
@@ -29,6 +30,7 @@ type Hours = {
 };
 
 export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[]; activities: Activity[] }) {
+  const { t } = useT();
   const [hours, setHours] = useState<Hours[]>([]);
   const [filter, setFilter] = useState<"" | "true" | "false">("");
   const [form, setForm] = useState({
@@ -56,7 +58,7 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.memberId || !form.hours) {
-      toast.error("اختر متطوع وأدخل ساعات");
+      toast.error(t("vol.selectError"));
       return;
     }
     const r = await fetch("/api/volunteer-hours", {
@@ -65,10 +67,10 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
       body: JSON.stringify({ ...form, activityId: form.activityId || null }),
     });
     if (r.ok) {
-      toast.success("تم تسجيل الساعات");
+      toast.success(t("vol.savedToast"));
       setForm({ ...form, hours: "", description: "", activityId: "" });
       load();
-    } else toast.error("فشل");
+    } else toast.error(t("misc.failed"));
   };
 
   const approve = async (id: string, approve: boolean) => {
@@ -78,16 +80,16 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
       body: JSON.stringify({ approve }),
     });
     if (r.ok) {
-      toast.success(approve ? "تم الاعتماد" : "تم الرفض");
+      toast.success(approve ? t("vol.approvedToast") : t("vol.rejectedToast"));
       load();
     }
   };
 
   const del = async (id: string) => {
-    if (!confirm("حذف؟")) return;
+    if (!confirm(t("misc.confirmDelete"))) return;
     const r = await fetch(`/api/volunteer-hours/${id}`, { method: "DELETE" });
     if (r.ok) {
-      toast.success("تم الحذف");
+      toast.success(t("misc.deleted"));
       load();
     }
   };
@@ -98,25 +100,25 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><HandHeart size={24} />ساعات التطوع</h1>
-        <p className="text-muted-foreground">تسجيل واعتماد ساعات تطوع المتطوعين</p>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><HandHeart size={24} />{t("vol.title")}</h1>
+        <p className="text-muted-foreground">{t("vol.leaderSubtitle")}</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>تسجيل ساعات</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("vol.recordTitle")}</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={submit} className="grid gap-3 md:grid-cols-3">
             <div className="md:col-span-1">
-              <Label>المتطوع</Label>
+              <Label>{t("vol.volunteer")}</Label>
               <select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className="w-full h-9 px-3 rounded-md border bg-background text-sm">
-                <option value="">— اختر —</option>
+                <option value="">{t("misc.selectPlaceholder")}</option>
                 {adults.map((a) => (
                   <option key={a.id} value={a.id}>{a.fullName} (#{a.registrationNumber})</option>
                 ))}
               </select>
             </div>
             <div>
-              <Label>القسم</Label>
+              <Label>{t("misc.section")}</Label>
               <select value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value as Section })} className="w-full h-9 px-3 rounded-md border bg-background text-sm">
                 {Object.entries(SECTION_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -124,7 +126,7 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
               </select>
             </div>
             <div>
-              <Label>النشاط (اختياري)</Label>
+              <Label>{t("vol.activityOptional")}</Label>
               <select value={form.activityId} onChange={(e) => setForm({ ...form, activityId: e.target.value })} className="w-full h-9 px-3 rounded-md border bg-background text-sm">
                 <option value="">—</option>
                 {activities.filter((a) => a.section === form.section).map((a) => (
@@ -133,19 +135,19 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
               </select>
             </div>
             <div>
-              <Label>التاريخ</Label>
+              <Label>{t("misc.date")}</Label>
               <Input type="date" value={form.hoursDate} onChange={(e) => setForm({ ...form, hoursDate: e.target.value })} />
             </div>
             <div>
-              <Label>الساعات</Label>
+              <Label>{t("misc.hoursLabel")}</Label>
               <Input type="number" step="0.5" min="0" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} />
             </div>
             <div className="md:col-span-3">
-              <Label>الوصف</Label>
+              <Label>{t("misc.descriptionLabel")}</Label>
               <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
             <div>
-              <Button type="submit">تسجيل</Button>
+              <Button type="submit">{t("vol.submit")}</Button>
             </div>
           </form>
         </CardContent>
@@ -153,19 +155,19 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2">
-          <Button size="sm" variant={filter === "" ? "default" : "outline"} onClick={() => setFilter("")}>الكل</Button>
-          <Button size="sm" variant={filter === "false" ? "default" : "outline"} onClick={() => setFilter("false")}>قيد المراجعة</Button>
-          <Button size="sm" variant={filter === "true" ? "default" : "outline"} onClick={() => setFilter("true")}>معتمدة</Button>
+          <Button size="sm" variant={filter === "" ? "default" : "outline"} onClick={() => setFilter("")}>{t("misc.all")}</Button>
+          <Button size="sm" variant={filter === "false" ? "default" : "outline"} onClick={() => setFilter("false")}>{t("misc.pendingReview")}</Button>
+          <Button size="sm" variant={filter === "true" ? "default" : "outline"} onClick={() => setFilter("true")}>{t("misc.approved")}</Button>
         </div>
         <div className="flex gap-2">
-          <Badge variant="secondary">إجمالي معتمد: {totalApproved.toFixed(1)} ساعة</Badge>
-          {totalFromTasks > 0 && <Badge variant="outline">من المهام: {totalFromTasks.toFixed(1)} ساعة</Badge>}
+          <Badge variant="secondary">{t("vol.totalApproved", { total: totalApproved.toFixed(1) })}</Badge>
+          {totalFromTasks > 0 && <Badge variant="outline">{t("vol.fromTasks", { total: totalFromTasks.toFixed(1) })}</Badge>}
         </div>
       </div>
 
       <Card>
         <CardContent className="divide-y p-0">
-          {hours.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد سجلات</p>}
+          {hours.length === 0 && <p className="text-center text-muted-foreground py-8">{t("misc.noRecords")}</p>}
           {hours.map((h) => {
             const fromTask = h.source === "TASK_WORKLOG";
             return (
@@ -174,31 +176,31 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium">{h.member.fullName}</span>
                     <Badge variant="outline">{SECTION_LABELS[h.section]}</Badge>
-                    <span className="text-sm font-mono">{Number(h.hours).toFixed(1)} ساعة</span>
+                    <span className="text-sm font-mono">{Number(h.hours).toFixed(1)} {t("misc.hoursShort")}</span>
                     {fromTask ? (
-                      <Badge className="bg-purple-100 text-purple-800 text-[10px]">📋 من مهمة</Badge>
+                      <Badge className="bg-purple-100 text-purple-800 text-[10px]">{t("vol.fromTaskBadge")}</Badge>
                     ) : h.approved ? (
-                      <Badge variant="default">معتمد</Badge>
+                      <Badge variant="default">{t("misc.approved")}</Badge>
                     ) : (
-                      <Badge variant="outline" className="text-orange-700">قيد المراجعة</Badge>
+                      <Badge variant="outline" className="text-orange-700">{t("misc.pendingReview")}</Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {h.hoursDate}
-                    {h.activity && <> · {h.activity.title}</>}
-                    {h.project && <> · مشروع: {h.project.name}</>}
-                    {h.approver && <> · اعتمد: {h.approver.fullName}</>}
+                    {h.activity && <> · {t("misc.activityLabel", { title: h.activity.title })}</>}
+                    {h.project && <> · {t("misc.projectLabel")} {h.project.name}</>}
+                    {h.approver && <> · {t("misc.approvedBy", { name: h.approver.fullName })}</>}
                   </div>
                   {h.description && <p className="text-xs text-muted-foreground mt-1">{h.description}</p>}
                 </div>
                 {!fromTask && !h.approved && (
                   <Button size="sm" onClick={() => approve(h.id, true)} className="bg-green-600 hover:bg-green-700">
-                    <Check size={14} />اعتماد
+                    <Check size={14} />{t("vol.approve")}
                   </Button>
                 )}
                 {!fromTask && h.approved && (
                   <Button size="sm" variant="outline" onClick={() => approve(h.id, false)}>
-                    <X size={14} />إلغاء الاعتماد
+                    <X size={14} />{t("vol.unapprove")}
                   </Button>
                 )}
                 {!fromTask && (
@@ -219,6 +221,7 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
 }
 
 function VolunteerHoursEditButton({ hours, reload }: { hours: Hours; reload: () => void }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     hours: hours.hours,
@@ -233,33 +236,33 @@ function VolunteerHoursEditButton({ hours, reload }: { hours: Hours; reload: () 
       body: JSON.stringify(form),
     });
     if (r.ok) {
-      toast.success("تم");
+      toast.success(t("misc.done"));
       setOpen(false);
       reload();
-    } else toast.error("فشل");
+    } else toast.error(t("misc.failed"));
   };
 
   return (
     <>
-      <Button size="icon" variant="ghost" onClick={() => setOpen(true)} title="تعديل">
+      <Button size="icon" variant="ghost" onClick={() => setOpen(true)} title={t("misc.edit")}>
         <Pencil size={13} />
       </Button>
       {open && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
           <div className="bg-card rounded-lg p-4 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold mb-3">تعديل الساعات</h3>
+            <h3 className="font-bold mb-3">{t("vol.editHours")}</h3>
             <form onSubmit={submit} className="space-y-3">
               <div>
-                <Label>الساعات</Label>
+                <Label>{t("misc.hoursLabel")}</Label>
                 <Input type="number" step="0.5" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} />
               </div>
               <div>
-                <Label>الوصف</Label>
+                <Label>{t("misc.descriptionLabel")}</Label>
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="flex gap-2">
-                <Button type="submit" size="sm">حفظ</Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>إلغاء</Button>
+                <Button type="submit" size="sm">{t("misc.save")}</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>{t("misc.cancel")}</Button>
               </div>
             </form>
           </div>

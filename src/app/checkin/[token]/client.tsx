@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { SECTION_LABELS } from "@/lib/section";
+import { useT } from "@/components/i18n/provider";
 
 export function CheckinForm({
   token,
@@ -17,6 +18,7 @@ export function CheckinForm({
   initialSection: string;
   initialActivityId: string;
 }) {
+  const { t } = useT();
   const [section, setSection] = useState(initialSection);
   const [activityId] = useState(initialActivityId);
   const [submitting, setSubmitting] = useState(false);
@@ -33,10 +35,10 @@ export function CheckinForm({
     const data = await r.json();
     if (r.ok) {
       setResult({ ok: true, member: data.member });
-      toast.success(`تم تسجيل حضور ${data.member.fullName}`);
+      toast.success(t("token.successToast", { name: data.member.fullName }));
     } else {
       setResult({ ok: false, error: data.error });
-      toast.error(data.error ?? "فشل التسجيل");
+      toast.error(data.error ?? t("token.failedToast"));
     }
     setSubmitting(false);
   };
@@ -45,14 +47,14 @@ export function CheckinForm({
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>تسجيل الحضور</CardTitle>
+          <CardTitle>{t("token.formTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {!result && (
             <>
-              <p className="text-sm text-muted-foreground">رمز المنخرط: <code>{token}</code></p>
+              <p className="text-sm text-muted-foreground">{t("token.memberCode")} <code>{token}</code></p>
               <div>
-                <Label>القسم</Label>
+                <Label>{t("misc.section")}</Label>
                 <select
                   value={section}
                   onChange={(e) => setSection(e.target.value)}
@@ -64,7 +66,7 @@ export function CheckinForm({
                 </select>
               </div>
               <Button onClick={submit} disabled={submitting} className="w-full" size="lg">
-                {submitting ? "..." : "تسجيل الحضور"}
+                {submitting ? "..." : t("token.submit")}
               </Button>
             </>
           )}
@@ -72,16 +74,16 @@ export function CheckinForm({
             <div className="text-center space-y-3 py-4">
               <CheckCircle2 size={64} className="mx-auto text-green-600" />
               <p className="text-lg font-bold">{result.member?.fullName}</p>
-              <p className="text-sm text-muted-foreground">رقم التسجيل: {result.member?.registrationNumber}</p>
-              <p className="text-sm text-green-600">تم تسجيل الحضور بنجاح</p>
-              <Button variant="outline" onClick={() => window.history.back()}>عودة</Button>
+              <p className="text-sm text-muted-foreground">{t("token.regNumber", { number: result.member?.registrationNumber ?? "" })}</p>
+              <p className="text-sm text-green-600">{t("token.success")}</p>
+              <Button variant="outline" onClick={() => window.history.back()}>{t("token.back")}</Button>
             </div>
           )}
           {result && !result.ok && (
             <div className="text-center space-y-3 py-4">
               <XCircle size={64} className="mx-auto text-red-600" />
               <p className="text-sm text-red-600">{result.error}</p>
-              <Button variant="outline" onClick={() => setResult(null)}>إعادة المحاولة</Button>
+              <Button variant="outline" onClick={() => setResult(null)}>{t("token.retry")}</Button>
             </div>
           )}
         </CardContent>

@@ -888,6 +888,8 @@ model AssociationInfo {
   logoUrl             String?  @map("logo_url")
   // Per-RegistrationType fees, JSON map e.g. { "TAMM": 100, "DAAM_MADRASSI": 50, ... }
   registrationFees    Json?    @map("registration_fees")
+  // Default UI language for this association's space ("ar" | "fr").
+  defaultLocale       String   @default("ar") @map("default_locale")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("association_info")

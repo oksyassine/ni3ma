@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Section } from "@prisma/client";
 import { SECTION_LABELS } from "@/lib/section";
+import { useT } from "@/components/i18n/provider";
 import { QrCode, Check, X, Save } from "lucide-react";
 
 type Member = { id: string; fullName: string; registrationNumber: number };
@@ -17,6 +18,7 @@ type Activity = { id: string; title: string; activityDate: string | null; progra
 type AttRecord = { memberId: string; isPresent: boolean };
 
 export function AttendancePage({ section }: { section: Section }) {
+  const { t } = useT();
   const today = new Date().toISOString().slice(0, 10);
   const [members, setMembers] = useState<Member[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -77,8 +79,8 @@ export function AttendancePage({ section }: { section: Section }) {
         entries: members.map((m) => ({ memberId: m.id, isPresent: !!att[m.id] })),
       }),
     });
-    if (r.ok) toast.success("تم حفظ الحضور");
-    else toast.error("فشل الحفظ");
+    if (r.ok) toast.success(t("educational.savedToast"));
+    else toast.error(t("educational.saveFailedToast"));
     setSaving(false);
   };
 
@@ -86,12 +88,12 @@ export function AttendancePage({ section }: { section: Section }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">حضور {SECTION_LABELS[section]}</h1>
-          <p className="text-muted-foreground">تسجيل الحضور والغياب</p>
+          <h1 className="text-2xl font-bold">{t("educational.attendanceTitle", { section: SECTION_LABELS[section] })}</h1>
+          <p className="text-muted-foreground">{t("educational.attendanceSubtitle")}</p>
         </div>
         <Link href={`/checkin?section=${section}${activityId ? `&activityId=${activityId}` : ""}`}>
           <Button variant="outline">
-            <QrCode size={16} />وضع المسح
+            <QrCode size={16} />{t("educational.scanMode")}
           </Button>
         </Link>
       </div>
@@ -99,17 +101,17 @@ export function AttendancePage({ section }: { section: Section }) {
       <Card>
         <CardContent className="grid gap-3 md:grid-cols-3 py-4">
           <div>
-            <Label>التاريخ</Label>
+            <Label>{t("educational.date")}</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
-            <Label>النشاط (اختياري)</Label>
+            <Label>{t("educational.activityOptional")}</Label>
             <select
               value={activityId}
               onChange={(e) => setActivityId(e.target.value)}
               className="w-full h-9 px-3 rounded-md border bg-background text-sm"
             >
-              <option value="">— غير محدد —</option>
+              <option value="">{t("educational.unspecified")}</option>
               {activities.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.title}{a.activityDate ? ` (${a.activityDate.slice(0, 10)})` : ""}
@@ -118,22 +120,22 @@ export function AttendancePage({ section }: { section: Section }) {
             </select>
           </div>
           <div className="flex items-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => markAll(true)}>الكل حاضر</Button>
-            <Button variant="outline" size="sm" onClick={() => markAll(false)}>الكل غائب</Button>
+            <Button variant="outline" size="sm" onClick={() => markAll(true)}>{t("educational.allPresent")}</Button>
+            <Button variant="outline" size="sm" onClick={() => markAll(false)}>{t("educational.allAbsent")}</Button>
           </div>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between">
-        <Badge variant="secondary">حاضر: {presentCount} / {members.length}</Badge>
+        <Badge variant="secondary">{t("educational.presentCount", { present: presentCount, total: members.length })}</Badge>
         <Button onClick={save} disabled={saving}>
-          <Save size={14} />{saving ? "..." : "حفظ"}
+          <Save size={14} />{saving ? "..." : t("educational.save")}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>المنخرطين</CardTitle>
+          <CardTitle>{t("educational.members")}</CardTitle>
         </CardHeader>
         <CardContent className="divide-y">
           {members.map((m) => (
@@ -149,12 +151,12 @@ export function AttendancePage({ section }: { section: Section }) {
                 className={att[m.id] ? "bg-green-600 hover:bg-green-700" : ""}
               >
                 {att[m.id] ? <Check size={14} /> : <X size={14} />}
-                {att[m.id] ? "حاضر" : "غائب"}
+                {att[m.id] ? t("educational.present") : t("educational.absent")}
               </Button>
             </div>
           ))}
           {members.length === 0 && (
-            <p className="text-center text-muted-foreground py-4">لا يوجد منخرطون في هذا القسم</p>
+            <p className="text-center text-muted-foreground py-4">{t("educational.noMembersSection")}</p>
           )}
         </CardContent>
       </Card>

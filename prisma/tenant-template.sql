@@ -635,6 +635,7 @@ CREATE TABLE "association_info" (
     "privacy_notice" TEXT,
     "logo_url" TEXT,
     "registration_fees" JSONB,
+    "default_locale" TEXT NOT NULL DEFAULT 'ar',
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "association_info_pkey" PRIMARY KEY ("id")

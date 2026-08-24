@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { getT } from "@/lib/i18n/server";
 import { Target, BarChart3, ClipboardList, CalendarCheck, ArrowLeft } from "lucide-react";
 
 async function getSocialStats() {
@@ -35,39 +36,39 @@ async function getSocialStats() {
   };
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "نشط",
-  COMPLETED: "مكتمل",
-  CANCELLED: "ملغى",
-};
-
 export default async function SocialDashboard() {
+  const { t } = await getT();
   const { members, projects, totalDonations, programs } = await getSocialStats();
   const activeProjects = projects.filter((p) => p.status === "ACTIVE");
+  const statusKey: Record<string, string> = {
+    ACTIVE: "social.statusActive",
+    COMPLETED: "social.statusCompleted",
+    CANCELLED: "social.statusCancelled",
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">القسم الاجتماعي</h1>
-        <p className="text-muted-foreground">إدارة المشاريع الاجتماعية والتبرعات</p>
+        <h1 className="text-2xl font-bold">{t("social.title")}</h1>
+        <p className="text-muted-foreground">{t("social.subtitle")}</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">المنخرطون</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t("social.members")}</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-bold">{members.length}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">المشاريع النشطة</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t("social.activeProjects")}</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-bold">{activeProjects.length}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">إجمالي المشاريع</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t("social.totalProjects")}</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-bold">{projects.length}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">التبرعات</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{totalDonations.toFixed(2)} د.م</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t("social.donations")}</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold text-green-600">{totalDonations.toFixed(2)} {t("social.mad")}</div></CardContent>
         </Card>
       </div>
 
@@ -77,8 +78,8 @@ export default async function SocialDashboard() {
             <CardContent className="py-4 flex items-center gap-3">
               <Target size={22} className="text-primary" />
               <div>
-                <p className="font-medium">المشاريع والأنشطة</p>
-                <p className="text-xs text-muted-foreground">إدارة كاملة + خطط + مهام</p>
+                <p className="font-medium">{t("social.projectsActivities")}</p>
+                <p className="text-xs text-muted-foreground">{t("social.projectsActivitiesDesc")}</p>
               </div>
               <ArrowLeft size={14} className="ms-auto text-muted-foreground" />
             </CardContent>
@@ -89,8 +90,8 @@ export default async function SocialDashboard() {
             <CardContent className="py-4 flex items-center gap-3">
               <ClipboardList size={22} className="text-primary" />
               <div>
-                <p className="font-medium">البرامج السنوية</p>
-                <p className="text-xs text-muted-foreground">برامج وأنشطة دورية</p>
+                <p className="font-medium">{t("social.annualPrograms")}</p>
+                <p className="text-xs text-muted-foreground">{t("social.annualProgramsDesc")}</p>
               </div>
               <ArrowLeft size={14} className="ms-auto text-muted-foreground" />
             </CardContent>
@@ -101,8 +102,8 @@ export default async function SocialDashboard() {
             <CardContent className="py-4 flex items-center gap-3">
               <CalendarCheck size={22} className="text-primary" />
               <div>
-                <p className="font-medium">الحضور</p>
-                <p className="text-xs text-muted-foreground">تسجيل حضور المنخرطين</p>
+                <p className="font-medium">{t("social.attendance")}</p>
+                <p className="text-xs text-muted-foreground">{t("social.attendanceDesc")}</p>
               </div>
               <ArrowLeft size={14} className="ms-auto text-muted-foreground" />
             </CardContent>
@@ -113,8 +114,8 @@ export default async function SocialDashboard() {
             <CardContent className="py-4 flex items-center gap-3">
               <BarChart3 size={22} className="text-primary" />
               <div>
-                <p className="font-medium">التحليلات</p>
-                <p className="text-xs text-muted-foreground">إحصائيات تنفيذ المشاريع</p>
+                <p className="font-medium">{t("social.analytics")}</p>
+                <p className="text-xs text-muted-foreground">{t("social.analyticsDesc")}</p>
               </div>
               <ArrowLeft size={14} className="ms-auto text-muted-foreground" />
             </CardContent>
@@ -125,11 +126,11 @@ export default async function SocialDashboard() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">المشاريع الاجتماعية</CardTitle>
+            <CardTitle className="text-lg">{t("social.socialProjectsTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {projects.length === 0 ? (
-              <p className="text-muted-foreground text-sm">لا توجد مشاريع مسجلة</p>
+              <p className="text-muted-foreground text-sm">{t("social.noProjects")}</p>
             ) : (
               <div className="space-y-3">
                 {projects.map((p) => (
@@ -138,15 +139,15 @@ export default async function SocialDashboard() {
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="font-medium">{p.name}</h3>
                         <Badge variant={p.status === "ACTIVE" ? "default" : "secondary"}>
-                          {STATUS_LABELS[p.status]}
+                          {t(statusKey[p.status] ?? "social.statusActive")}
                         </Badge>
                       </div>
                       {p.description && <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{p.description}</p>}
                       {p.targetAmount && (
                         <div className="text-sm">
-                          <span className="text-muted-foreground">المجموع: </span>
+                          <span className="text-muted-foreground">{t("social.collected")}: </span>
                           <span className="font-medium">{p.collected.toFixed(2)}</span>
-                          <span className="text-muted-foreground"> / {Number(p.targetAmount).toFixed(2)} د.م</span>
+                          <span className="text-muted-foreground"> / {Number(p.targetAmount).toFixed(2)} {t("social.mad")}</span>
                           <Progress
                             value={Math.min(100, (p.collected / Number(p.targetAmount)) * 100)}
                             indicatorClassName="bg-green-600"
@@ -164,11 +165,11 @@ export default async function SocialDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">المنخرطين في القسم</CardTitle>
+            <CardTitle className="text-lg">{t("social.sectionMembers")}</CardTitle>
           </CardHeader>
           <CardContent>
             {members.length === 0 ? (
-              <p className="text-muted-foreground text-sm">لا يوجد منخرطين</p>
+              <p className="text-muted-foreground text-sm">{t("social.noMembers")}</p>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {members.map((m) => (

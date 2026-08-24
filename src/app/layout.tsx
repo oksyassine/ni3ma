@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
+import { I18nProvider } from "@/components/i18n/provider";
+import { getLocale } from "@/lib/i18n/server";
+import { isRtl } from "@/lib/i18n/config";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -15,39 +18,32 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://neimaa.carbtrim.online"),
-  title: "جمعية النعمة - مكناس",
-  description: "مؤسسة خلصة في التنمية الاجتماعية ورعاية الأيتام وكذا التنمية الثقافية والفنية",
-  openGraph: {
-    title: "جمعية النعمة - مكناس",
-    description: "مؤسسة خلصة في التنمية الاجتماعية ورعاية الأيتام وكذا التنمية الثقافية والفنية",
-    url: "https://neimaa.carbtrim.online",
-    siteName: "جمعية النعمة",
-    images: [
-      {
-        url: "/logo.jpg",
-        width: 1000,
-        height: 1000,
-        alt: "جمعية النعمة - مكناس",
-      },
-    ],
-    locale: "ar_MA",
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const ar = locale !== "fr";
+  return {
+    metadataBase: new URL("https://neimaa.carbtrim.online"),
+    title: ar ? "منصة نعمة — إدارة الجمعيات" : "Plateforme Nima — gestion d'associations",
+    description: ar
+      ? "نظام إدارة الجمعيات المغربية ودور حفظ القرآن: الأعضاء، الحضور، المالية، المشاريع والحالات الاجتماعية."
+      : "Gestion des associations marocaines et écoles coraniques : adhérents, présence, finances, projets et dossiers sociaux.",
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
-    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full`} suppressHydrationWarning>
+    <html lang={locale} dir={isRtl(locale) ? "rtl" : "ltr"} className={`${cairo.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full font-cairo antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
-          {children}
-          <Toaster position="top-center" />
+          <I18nProvider locale={locale}>
+            {children}
+            <Toaster position="top-center" />
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

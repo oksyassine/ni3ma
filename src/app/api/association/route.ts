@@ -22,6 +22,9 @@ export async function PUT(req: NextRequest) {
     ? body.registrationFees
     : null;
 
+  // Only "ar" | "fr" are supported UI locales.
+  const defaultLocale = body.defaultLocale === "fr" ? "fr" : "ar";
+
   const info = await prisma.associationInfo.upsert({
     where: { id: 1 },
     update: {
@@ -34,6 +37,7 @@ export async function PUT(req: NextRequest) {
       cndpRegistration: body.cndpRegistration || null,
       privacyNotice: body.privacyNotice || null,
       registrationFees: fees,
+      defaultLocale,
     },
     create: {
       name: body.name || "جمعية النعمة",
@@ -45,6 +49,7 @@ export async function PUT(req: NextRequest) {
       cndpRegistration: body.cndpRegistration || null,
       privacyNotice: body.privacyNotice || null,
       registrationFees: fees,
+      defaultLocale,
     },
   });
 

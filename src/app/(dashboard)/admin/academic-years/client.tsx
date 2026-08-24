@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n/provider";
 import { CheckCircle2, Lock, Trash2 } from "lucide-react";
 
 type Year = {
@@ -21,6 +22,7 @@ type Year = {
 
 export function AcademicYearsManager({ initialYears }: { initialYears: Year[] }) {
   const router = useRouter();
+  const { t } = useT();
   const [years, setYears] = useState(initialYears);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ label: "", startDate: "", endDate: "" });
@@ -28,7 +30,7 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.label || !form.startDate || !form.endDate) {
-      toast.error("جميع الحقول مطلوبة");
+      toast.error(t("admin.academicYears.toastFieldsRequired"));
       return;
     }
     setCreating(true);
@@ -44,10 +46,10 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
         ...prev,
       ]);
       setForm({ label: "", startDate: "", endDate: "" });
-      toast.success("تم إنشاء السنة الدراسية");
+      toast.success(t("admin.academicYears.toastCreated"));
       router.refresh();
     } else {
-      toast.error("فشل الإنشاء");
+      toast.error(t("admin.academicYears.toastCreateFailed"));
     }
     setCreating(false);
   };
@@ -60,21 +62,21 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
     });
     if (res.ok) {
       setYears((prev) => prev.map((y) => ({ ...y, isCurrent: y.id === id })));
-      toast.success("تم تحديد السنة الجارية");
+      toast.success(t("admin.academicYears.toastCurrentSet"));
       router.refresh();
-    } else toast.error("فشل التحديث");
+    } else toast.error(t("admin.academicYears.toastUpdateFailed"));
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("حذف هذه السنة الدراسية؟")) return;
+    if (!confirm(t("admin.academicYears.confirmDelete"))) return;
     const res = await fetch(`/api/academic-years/${id}`, { method: "DELETE" });
     if (res.ok) {
       setYears((prev) => prev.filter((y) => y.id !== id));
-      toast.success("تم الحذف");
+      toast.success(t("admin.academicYears.toastDeleted"));
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
-      toast.error(data.error ?? "فشل الحذف");
+      toast.error(data.error ?? t("admin.academicYears.toastDeleteFailed"));
     }
   };
 
@@ -86,20 +88,20 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
     });
     if (res.ok) {
       setYears((prev) => prev.map((y) => (y.id === id ? { ...y, isClosed: !isClosed } : y)));
-      toast.success(!isClosed ? "تم إغلاق السنة" : "تم فتح السنة");
-    } else toast.error("فشل التحديث");
+      toast.success(!isClosed ? t("admin.academicYears.toastClosed") : t("admin.academicYears.toastOpened"));
+    } else toast.error(t("admin.academicYears.toastUpdateFailed"));
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>إضافة سنة دراسية</CardTitle>
+          <CardTitle>{t("admin.academicYears.addYear")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-4">
             <div>
-              <Label>المسمى</Label>
+              <Label>{t("admin.academicYears.labelLabel")}</Label>
               <Input
                 placeholder="2026-2027"
                 value={form.label}
@@ -107,7 +109,7 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
               />
             </div>
             <div>
-              <Label>تاريخ البداية</Label>
+              <Label>{t("admin.academicYears.startDate")}</Label>
               <Input
                 type="date"
                 value={form.startDate}
@@ -115,7 +117,7 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
               />
             </div>
             <div>
-              <Label>تاريخ النهاية</Label>
+              <Label>{t("admin.academicYears.endDate")}</Label>
               <Input
                 type="date"
                 value={form.endDate}
@@ -124,7 +126,7 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
             </div>
             <div className="flex items-end">
               <Button type="submit" disabled={creating} className="w-full">
-                {creating ? "..." : "إضافة"}
+                {creating ? "..." : t("admin.academicYears.add")}
               </Button>
             </div>
           </form>
@@ -140,12 +142,12 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
                   <span className="font-bold text-lg">{y.label}</span>
                   {y.isCurrent && (
                     <Badge variant="default" className="gap-1">
-                      <CheckCircle2 size={12} /> الحالية
+                      <CheckCircle2 size={12} /> {t("admin.academicYears.current")}
                     </Badge>
                   )}
                   {y.isClosed && (
                     <Badge variant="outline" className="gap-1">
-                      <Lock size={12} /> مغلقة
+                      <Lock size={12} /> {t("admin.academicYears.closed")}
                     </Badge>
                   )}
                 </div>
@@ -156,14 +158,14 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
               <div className="flex gap-2">
                 {!y.isCurrent && (
                   <Button size="sm" variant="outline" onClick={() => handleSetCurrent(y.id)}>
-                    جعلها الحالية
+                    {t("admin.academicYears.makeCurrent")}
                   </Button>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => handleToggleClosed(y.id, y.isClosed)}>
-                  {y.isClosed ? "فتح" : "إغلاق"}
+                  {y.isClosed ? t("admin.academicYears.open") : t("admin.academicYears.closeYear")}
                 </Button>
                 {!y.isCurrent && (
-                  <Button size="icon" variant="ghost" onClick={() => handleDelete(y.id)} title="حذف" className="text-destructive hover:text-destructive">
+                  <Button size="icon" variant="ghost" onClick={() => handleDelete(y.id)} title={t("admin.academicYears.deleteTitle")} className="text-destructive hover:text-destructive">
                     <Trash2 size={14} />
                   </Button>
                 )}
@@ -172,7 +174,7 @@ export function AcademicYearsManager({ initialYears }: { initialYears: Year[] })
           </Card>
         ))}
         {years.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">لا توجد سنوات دراسية</p>
+          <p className="text-center text-muted-foreground py-8">{t("admin.academicYears.none")}</p>
         )}
       </div>
     </div>

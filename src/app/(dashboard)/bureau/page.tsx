@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getT } from "@/lib/i18n/server";
 
 async function getBureauStats() {
   const [
@@ -41,41 +42,42 @@ async function getBureauStats() {
 }
 
 export default async function BureauDashboard() {
+  const { t } = await getT();
   const stats = await getBureauStats();
   const balance = stats.contributions + stats.donations - stats.expenses;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">المكتب المسير</h1>
-        <p className="text-muted-foreground">نظرة عامة على أنشطة الجمعية</p>
+        <h1 className="text-2xl font-bold">{t("bureau.title")}</h1>
+        <p className="text-muted-foreground">{t("bureau.subtitle")}</p>
       </div>
 
       {/* Members Overview */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">المنخرطين</h2>
+        <h2 className="text-lg font-semibold mb-3">{t("bureau.members")}</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">الإجمالي</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.total")}</CardTitle>
             </CardHeader>
             <CardContent><div className="text-3xl font-bold">{stats.totalMembers}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">النشطون</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.active")}</CardTitle>
             </CardHeader>
             <CardContent><div className="text-3xl font-bold text-green-600">{stats.activeMembers}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">الأطفال</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.children")}</CardTitle>
             </CardHeader>
             <CardContent><div className="text-3xl font-bold">{stats.childMembers}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">الكبار</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.adults")}</CardTitle>
             </CardHeader>
             <CardContent><div className="text-3xl font-bold">{stats.adultMembers}</div></CardContent>
           </Card>
@@ -84,56 +86,56 @@ export default async function BureauDashboard() {
 
       {/* Sections Overview */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">الأقسام</h2>
+        <h2 className="text-lg font-semibold mb-3">{t("bureau.sectionsHeading")}</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">القسم التربوي</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.sectionEducational")}</CardTitle>
             </CardHeader>
-            <CardContent><div className="text-3xl font-bold">{stats.educationalCount}</div><p className="text-sm text-muted-foreground">منخرط</p></CardContent>
+            <CardContent><div className="text-3xl font-bold">{stats.educationalCount}</div><p className="text-sm text-muted-foreground">{t("bureau.memberUnit")}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">القسم الاجتماعي</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.sectionSocial")}</CardTitle>
             </CardHeader>
-            <CardContent><div className="text-3xl font-bold">{stats.socialCount}</div><p className="text-sm text-muted-foreground">منخرط</p></CardContent>
+            <CardContent><div className="text-3xl font-bold">{stats.socialCount}</div><p className="text-sm text-muted-foreground">{t("bureau.memberUnit")}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">قسم القرآن الكريم</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.sectionQuran")}</CardTitle>
             </CardHeader>
-            <CardContent><div className="text-3xl font-bold">{stats.quranCount}</div><p className="text-sm text-muted-foreground">منخرط</p></CardContent>
+            <CardContent><div className="text-3xl font-bold">{stats.quranCount}</div><p className="text-sm text-muted-foreground">{t("bureau.memberUnit")}</p></CardContent>
           </Card>
         </div>
       </div>
 
       {/* Financial Overview */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">الوضعية المالية</h2>
+        <h2 className="text-lg font-semibold mb-3">{t("bureau.financeHeading")}</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">المساهمات</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.contributions")}</CardTitle>
             </CardHeader>
-            <CardContent><div className="text-2xl font-bold text-green-600">{stats.contributions.toFixed(2)} د.م</div></CardContent>
+            <CardContent><div className="text-2xl font-bold text-green-600">{stats.contributions.toFixed(2)} {t("bureau.currencyMad")}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">التبرعات</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.donations")}</CardTitle>
             </CardHeader>
-            <CardContent><div className="text-2xl font-bold text-blue-600">{stats.donations.toFixed(2)} د.م</div></CardContent>
+            <CardContent><div className="text-2xl font-bold text-blue-600">{stats.donations.toFixed(2)} {t("bureau.currencyMad")}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">المصاريف</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.expenses")}</CardTitle>
             </CardHeader>
-            <CardContent><div className="text-2xl font-bold text-red-600">{stats.expenses.toFixed(2)} د.م</div></CardContent>
+            <CardContent><div className="text-2xl font-bold text-red-600">{stats.expenses.toFixed(2)} {t("bureau.currencyMad")}</div></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">الرصيد</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("bureau.balance")}</CardTitle>
             </CardHeader>
-            <CardContent><div className={`text-2xl font-bold ${balance >= 0 ? "text-green-600" : "text-red-600"}`}>{balance.toFixed(2)} د.م</div></CardContent>
+            <CardContent><div className={`text-2xl font-bold ${balance >= 0 ? "text-green-600" : "text-red-600"}`}>{balance.toFixed(2)} {t("bureau.currencyMad")}</div></CardContent>
           </Card>
         </div>
       </div>

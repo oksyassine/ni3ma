@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HIFZ_GRADE_LABELS, HIFZ_GRADE_COLORS, TAJWEED_GROUPS, TAJWEED_FIELDS, SURAH_NAMES } from "@/lib/quran";
+import { useT } from "@/components/i18n/provider";
 import type { HifzGrade } from "@prisma/client";
 import { Plus, Trash2, BookOpen, Pencil } from "lucide-react";
 
@@ -31,6 +32,7 @@ type Progress = {
 };
 
 const TAJWEED_KEYS = TAJWEED_FIELDS.map((f) => f.key);
+const TAJWEED_GROUP_KEYS = ["basics", "noonMeem", "madd", "qalqala", "waqf", "overall"];
 
 const blank: Record<string, string> & { hifzGrade: HifzGrade | "" } = {
   recitationDate: new Date().toISOString().slice(0, 10),
@@ -47,6 +49,7 @@ const blank: Record<string, string> & { hifzGrade: HifzGrade | "" } = {
 
 export function QuranProgressClient({ members }: { members: Member[] }) {
   const perms = usePermissions();
+  const { t } = useT();
   const canWrite = perms.canWriteSection("QURAN");
   const [selected, setSelected] = useState<string>(members[0]?.id ?? "");
   const [history, setHistory] = useState<Progress[]>([]);
@@ -98,7 +101,7 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) {
-      toast.error("اختر منخرطًا");
+      toast.error(t("quran.toast.selectMember"));
       return;
     }
     setSaving(true);
@@ -114,19 +117,19 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
           body: JSON.stringify({ memberId: selected, ...form }),
         });
     if (r.ok) {
-      toast.success(editingId ? "تم التعديل" : "تم حفظ التقدم");
+      toast.success(editingId ? t("quran.toast.updated") : t("quran.toast.saved"));
       setEditingId(null);
       setForm({ ...blank, recitationDate: new Date().toISOString().slice(0, 10) });
       load(selected);
-    } else toast.error("فشل الحفظ");
+    } else toast.error(t("quran.toast.saveFailed"));
     setSaving(false);
   };
 
   const del = async (id: string) => {
-    if (!confirm("حذف هذه السجلة؟")) return;
+    if (!confirm(t("quran.confirm.deleteRecord"))) return;
     const r = await fetch(`/api/quran-progress/${id}`, { method: "DELETE" });
     if (r.ok) {
-      toast.success("تم الحذف");
+      toast.success(t("quran.toast.deleted"));
       load(selected);
     }
   };
@@ -139,11 +142,11 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">المنخرطون في قسم القرآن</CardTitle>
+          <CardTitle className="text-sm">{t("quran.members.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <Input
-            placeholder="بحث..."
+            placeholder={t("quran.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -159,7 +162,7 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
               </button>
             ))}
             {filteredMembers.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-2">لا نتائج</p>
+              <p className="text-xs text-muted-foreground text-center py-2">{t("common.noResults")}</p>
             )}
           </div>
         </CardContent>
@@ -169,14 +172,14 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
         {canWrite && <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus size={18} />تسميع جديد
+              <Plus size={18} />{t("quran.form.newRecitation")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={submit} className="space-y-5">
               <div className="grid md:grid-cols-3 gap-3">
                 <div>
-                  <Label>التاريخ</Label>
+                  <Label>{t("common.date")}</Label>
                   <Input
                     type="date"
                     value={form.recitationDate}
@@ -184,28 +187,28 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
                   />
                 </div>
                 <div>
-                  <Label>السورة</Label>
+                  <Label>{t("quran.form.surah")}</Label>
                   <select
                     value={form.currentSurah}
                     onChange={(e) => updateField("currentSurah", e.target.value)}
                     className="w-full h-9 px-3 rounded-md border bg-background text-sm"
                   >
-                    <option value="">— اختر —</option>
+                    <option value="">{t("quran.form.choose")}</option>
                     {SURAH_NAMES.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <Label>تقدير الحفظ</Label>
+                  <Label>{t("quran.form.hifzGrade")}</Label>
                   <select
                     value={form.hifzGrade}
                     onChange={(e) => updateField("hifzGrade", e.target.value)}
                     className="w-full h-9 px-3 rounded-md border bg-background text-sm"
                   >
-                    <option value="">— اختر —</option>
-                    {Object.entries(HIFZ_GRADE_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
+                    <option value="">{t("quran.form.choose")}</option>
+                    {Object.keys(HIFZ_GRADE_LABELS).map((k) => (
+                      <option key={k} value={k}>{t(`quran.grade.${k.toLowerCase()}`)}</option>
                     ))}
                   </select>
                 </div>
@@ -213,47 +216,47 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
 
               <div className="grid md:grid-cols-5 gap-3">
                 <div>
-                  <Label>من آية</Label>
+                  <Label>{t("quran.form.fromAyah")}</Label>
                   <Input type="number" value={form.surahFromAyah} onChange={(e) => updateField("surahFromAyah", e.target.value)} />
                 </div>
                 <div>
-                  <Label>إلى آية</Label>
+                  <Label>{t("quran.form.toAyah")}</Label>
                   <Input type="number" value={form.surahToAyah} onChange={(e) => updateField("surahToAyah", e.target.value)} />
                 </div>
                 <div>
-                  <Label>الحزب</Label>
+                  <Label>{t("quran.form.hizb")}</Label>
                   <Input type="number" min={1} max={60} value={form.hizb} onChange={(e) => updateField("hizb", e.target.value)} />
                 </div>
                 <div>
-                  <Label>الجزء</Label>
+                  <Label>{t("quran.form.juz")}</Label>
                   <Input type="number" min={1} max={30} value={form.juz} onChange={(e) => updateField("juz", e.target.value)} />
                 </div>
                 <div>
-                  <Label>الصفحات المحفوظة</Label>
+                  <Label>{t("quran.form.pagesMemorized")}</Label>
                   <Input type="number" value={form.pagesMemorized} onChange={(e) => updateField("pagesMemorized", e.target.value)} />
                 </div>
               </div>
 
               <div className="border-t pt-4">
-                <h3 className="text-base font-bold mb-1">تقييم التجويد (1 ضعيف ← 5 ممتاز)</h3>
-                <p className="text-xs text-muted-foreground mb-4">قواعد التجويد الكلاسيكية — قيّم كل قاعدة على حدة</p>
+                <h3 className="text-base font-bold mb-1">{t("quran.tajweed.title")} ({t("quran.tajweed.scale")})</h3>
+                <p className="text-xs text-muted-foreground mb-4">{t("quran.tajweed.subtitle")}</p>
                 <div className="space-y-4">
-                  {TAJWEED_GROUPS.map((group) => (
+                  {TAJWEED_GROUPS.map((group, gi) => (
                     <div key={group.label} className="rounded-lg border bg-muted/20 p-3">
-                      <h4 className="text-sm font-semibold mb-3">{group.label}</h4>
+                      <h4 className="text-sm font-semibold mb-3">{t(`quran.tajweed.group.${TAJWEED_GROUP_KEYS[gi]}`)}</h4>
                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {group.fields.map((f) => (
                           <div key={f.key}>
-                            <Label className="text-xs">{f.label}</Label>
+                            <Label className="text-xs">{t(`quran.tajweed.field.${f.key}`)}</Label>
                             {f.hint && (
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{f.hint}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{t(`quran.tajweed.hint.${f.key}`)}</p>
                             )}
                             <select
                               value={form[f.key] ?? ""}
                               onChange={(e) => updateField(f.key, e.target.value)}
                               className="w-full h-9 px-3 mt-1 rounded-md border bg-background text-sm"
                             >
-                              <option value="">— لم يُقيّم —</option>
+                              <option value="">{t("quran.tajweed.notRated")}</option>
                               {[1, 2, 3, 4, 5].map((n) => (
                                 <option key={n} value={n}>{n}</option>
                               ))}
@@ -267,17 +270,17 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
               </div>
 
               <div>
-                <Label>ملاحظات</Label>
+                <Label>{t("common.notes")}</Label>
                 <Textarea value={form.notes} onChange={(e) => updateField("notes", e.target.value)} />
               </div>
 
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving || !selected}>
-                  {saving ? "..." : editingId ? "حفظ التعديلات" : "حفظ التقدم"}
+                  {saving ? "..." : editingId ? t("quran.form.saveEdits") : t("quran.form.saveProgress")}
                 </Button>
                 {editingId && (
                   <Button type="button" variant="ghost" onClick={() => { setEditingId(null); setForm({ ...blank, recitationDate: new Date().toISOString().slice(0, 10) }); }}>
-                    إلغاء التعديل
+                    {t("quran.form.cancelEdit")}
                   </Button>
                 )}
               </div>
@@ -288,12 +291,12 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BookOpen size={18} />السجل
+              <BookOpen size={18} />{t("quran.history.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {history.length === 0 && (
-              <p className="text-center text-muted-foreground py-4">لا توجد تسميعات بعد</p>
+              <p className="text-center text-muted-foreground py-4">{t("quran.history.empty")}</p>
             )}
             {history.map((h) => (
               <div key={h.id} className="border rounded-lg p-3 bg-muted/20">
@@ -303,16 +306,16 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
                     {h.currentSurah && <Badge variant="outline">{h.currentSurah}</Badge>}
                     {h.hifzGrade && (
                       <span className={`text-xs px-2 py-0.5 rounded ${HIFZ_GRADE_COLORS[h.hifzGrade]}`}>
-                        {HIFZ_GRADE_LABELS[h.hifzGrade]}
+                        {t(`quran.grade.${h.hifzGrade.toLowerCase()}`)}
                       </span>
                     )}
                   </div>
                   {canWrite && (
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => loadForEdit(h)} title="تعديل">
+                      <Button size="icon" variant="ghost" onClick={() => loadForEdit(h)} title={t("common.edit")}>
                         <Pencil size={13} />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => del(h.id)} title="حذف">
+                      <Button size="icon" variant="ghost" onClick={() => del(h.id)} title={t("common.delete")}>
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -320,11 +323,11 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   {h.surahFromAyah && h.surahToAyah && (
-                    <span>الآيات: {h.surahFromAyah}-{h.surahToAyah}</span>
+                    <span>{t("quran.history.ayahs", { from: h.surahFromAyah, to: h.surahToAyah })}</span>
                   )}
-                  {h.hizb && <span>الحزب: {h.hizb}</span>}
-                  {h.juz && <span>الجزء: {h.juz}</span>}
-                  {h.pagesMemorized && <span>الصفحات: {h.pagesMemorized}</span>}
+                  {h.hizb && <span>{t("quran.history.hizb", { n: h.hizb })}</span>}
+                  {h.juz && <span>{t("quran.history.juz", { n: h.juz })}</span>}
+                  {h.pagesMemorized && <span>{t("quran.history.pages", { n: h.pagesMemorized })}</span>}
                 </div>
                 {TAJWEED_FIELDS.some((f) => h[f.key]) && (
                   <div className="mt-2 pt-2 border-t flex flex-wrap gap-1.5 text-[11px]">
@@ -333,7 +336,7 @@ export function QuranProgressClient({ members }: { members: Member[] }) {
                       if (!v) return null;
                       return (
                         <Badge key={f.key} variant="secondary" className="text-[10px] font-normal">
-                          {f.label}: {v}/5
+                          {t(`quran.tajweed.field.${f.key}`)}: {v}/5
                         </Badge>
                       );
                     })}

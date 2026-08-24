@@ -17,24 +17,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EDUCATIONAL_LEVELS } from "@/lib/constants";
-import { ROLE_LABELS } from "@/lib/rbac";
+import { roleLabel } from "@/lib/rbac";
+import { useT } from "@/components/i18n/provider";
 import { toast } from "sonner";
-import type { Role } from "@/lib/rbac";
+import type { Role, Locale } from "@/lib/rbac";
 import { validateUsernameFormat, suggestUsernameFromName } from "@/lib/validations/username";
 
 const ALL_ROLES: Role[] = ["ADMIN", "BUREAU", "FINANCIAL", "EDUCATIONAL", "SOCIAL", "QURAN", "MEMBER", "BAHT_IJTIMA3I_TEAM"];
 
 const REGISTRATION_TYPES = [
-  { value: "TAMM",          label: "تسجيل تام" },
-  { value: "DAAM_MADRASSI", label: "دعم مدرسي" },
-  { value: "QURAN_TAJWEED", label: "حفظ وتجويد القرآن" },
-  { value: "MOKHAYAM",      label: "مخيم" },
+  { value: "TAMM",          label: "members.reg.type.TAMM" },
+  { value: "DAAM_MADRASSI", label: "members.reg.type.DAAM_MADRASSI" },
+  { value: "QURAN_TAJWEED", label: "members.reg.type.QURAN_TAJWEED" },
+  { value: "MOKHAYAM",      label: "members.reg.type.MOKHAYAM" },
 ];
-const REG_TYPE_LABEL: Record<string, string> = Object.fromEntries(REGISTRATION_TYPES.map((t) => [t.value, t.label]));
-const GENDER_LABEL: Record<string, string> = { MALE: "ذكر", FEMALE: "أنثى" };
-const MARITAL_LABEL: Record<string, string> = { SINGLE: "أعزب", MARRIED: "متزوج", DIVORCED: "مطلق", WIDOWED: "أرمل" };
-const HEALTH_LABEL: Record<string, string> = { HEALTHY: "عادي", SICK: "مريض" };
-const labelOr = (map: Record<string, string>, v: unknown) => (typeof v === "string" && map[v]) || "";
+const REG_TYPE_KEY: Record<string, string> = Object.fromEntries(REGISTRATION_TYPES.map((rt) => [rt.value, rt.label]));
+const GENDER_KEY: Record<string, string> = { MALE: "members.gender.MALE", FEMALE: "members.gender.FEMALE" };
+const MARITAL_KEY: Record<string, string> = { SINGLE: "members.marital.SINGLE", MARRIED: "members.marital.MARRIED", DIVORCED: "members.marital.DIVORCED", WIDOWED: "members.marital.WIDOWED" };
+const HEALTH_KEY: Record<string, string> = { HEALTHY: "members.health.HEALTHY", SICK: "members.health.SICK" };
+const keyOr = (map: Record<string, string>, v: unknown) => (typeof v === "string" && map[v]) || "";
 
 type AccessInfo = {
   username: string | null;
@@ -45,6 +46,7 @@ type AccessInfo = {
 export default function EditMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { t, locale } = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [memberType, setMemberType] = useState("");
@@ -182,11 +184,11 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
   };
 
   const handleSaveAccess = async () => {
-    if (!accessForm.username) { toast.error("اسم المستخدم مطلوب"); return; }
+    if (!accessForm.username) { toast.error(t("members.errUsername")); return; }
     const usernameErr = validateUsernameFormat(accessForm.username);
     if (usernameErr) { toast.error(usernameErr); return; }
-    if (!access?.username && !accessForm.password) { toast.error("كلمة المرور مطلوبة عند إنشاء حساب جديد"); return; }
-    if (accessForm.roles.length === 0) { toast.error("يجب اختيار دور واحد على الأقل"); return; }
+    if (!access?.username && !accessForm.password) { toast.error(t("members.errPasswordNew")); return; }
+    if (accessForm.roles.length === 0) { toast.error(t("members.errRoleAtLeast")); return; }
     setSavingAccess(true);
     const res = await fetch(`/api/members/${id}/access`, {
       method: "PUT",
@@ -197,25 +199,25 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
       const updated = await res.json();
       setAccess(updated);
       setAccessForm((prev) => ({ ...prev, password: "" }));
-      toast.success("تم حفظ صلاحيات الدخول");
+      toast.success(t("members.accessSaved"));
     } else if (res.status === 409) {
-      toast.error("اسم المستخدم محجوز");
+      toast.error(t("members.usernameTaken"));
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("members.genericError"));
     }
     setSavingAccess(false);
   };
 
   const handleRevokeAccess = async () => {
-    if (!confirm("هل تريد إلغاء صلاحيات الدخول لهذا المنخرط؟")) return;
+    if (!confirm(t("members.revokeConfirm"))) return;
     setRevokingAccess(true);
     const res = await fetch(`/api/members/${id}/access`, { method: "DELETE" });
     if (res.ok) {
       setAccess({ username: null, userIsActive: false, roles: [] });
       setAccessForm({ username: "", password: "", roles: [] });
-      toast.success("تم إلغاء الصلاحيات");
+      toast.success(t("members.accessRevoked"));
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("members.genericError"));
     }
     setRevokingAccess(false);
   };
@@ -230,10 +232,10 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
     if (res.ok) {
       const data = await res.json();
       setPhotoUrl(data.photoUrl + "?t=" + Date.now());
-      toast.success("تم رفع الصورة بنجاح");
+      toast.success(t("members.photoUploaded"));
     } else {
       const data = await res.json();
-      toast.error(data.error ?? "فشل رفع الصورة");
+      toast.error(data.error ?? t("members.errPhotoUpload"));
     }
     setUploadingPhoto(false);
     e.target.value = "";
@@ -241,7 +243,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullName.trim()) { toast.error("الاسم الكامل مطلوب"); return; }
+    if (!form.fullName.trim()) { toast.error(t("members.errFullName")); return; }
 
     setSaving(true);
     try {
@@ -305,71 +307,71 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "فشل في الحفظ");
+        throw new Error(data.error ?? t("members.errSave"));
       }
-      toast.success("تم تحديث المعلومات بنجاح");
+      toast.success(t("members.updated"));
       router.push(`/admin/members/${id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "حدث خطأ أثناء التحديث");
+      toast.error(err instanceof Error ? err.message : t("members.errDuringUpdate"));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className="text-center py-12">جاري التحميل...</div>;
+  if (loading) return <div className="text-center py-12">{t("members.loading")}</div>;
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">تعديل بيانات المنخرط</h1>
+          <h1 className="text-2xl font-bold">{t("members.editPageTitle")}</h1>
           <p className="text-muted-foreground">{form.fullName}</p>
         </div>
-        <Button variant="outline" onClick={() => router.back()}>رجوع</Button>
+        <Button variant="outline" onClick={() => router.back()}>{t("members.back")}</Button>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>الصورة الشخصية</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("members.photoCard")}</CardTitle></CardHeader>
         <CardContent className="flex items-center gap-6">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-border shrink-0">
             {photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoUrl} alt="صورة المنخرط" className="w-full h-full object-cover" />
+              <img src={photoUrl} alt={t("members.photoAlt")} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-3xl text-muted-foreground">👤</div>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="photo-upload">رفع صورة جديدة</Label>
+            <Label htmlFor="photo-upload">{t("members.uploadNewPhoto")}</Label>
             <input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} disabled={uploadingPhoto}
               className="block text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground cursor-pointer" />
-            <p className="text-xs text-muted-foreground">JPG أو PNG أو WEBP، بحد أقصى 5 ميغابايت</p>
-            {uploadingPhoto && <p className="text-xs text-muted-foreground">جاري الرفع...</p>}
+            <p className="text-xs text-muted-foreground">{t("members.photoHint")}</p>
+            {uploadingPhoto && <p className="text-xs text-muted-foreground">{t("members.uploading")}</p>}
           </div>
         </CardContent>
       </Card>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
-          <CardHeader><CardTitle>معطيات التسجيل</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("members.reg.registrationData")}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>تاريخ التسجيل</Label>
+              <Label>{t("members.reg.date")}</Label>
               <Input type="date" value={form.registrationDate} onChange={(e) => update("registrationDate", e.target.value)} dir="ltr" />
             </div>
             <div className="space-y-2">
-              <Label>نوع التسجيل</Label>
+              <Label>{t("members.reg.type")}</Label>
               <Select value={form.registrationType} onValueChange={(v) => update("registrationType", v)}>
-                <SelectTrigger><SelectValue placeholder="اختر النوع">{labelOr(REG_TYPE_LABEL, form.registrationType) || "اختر النوع"}</SelectValue></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("members.selectType")}>{keyOr(REG_TYPE_KEY, form.registrationType) ? t(keyOr(REG_TYPE_KEY, form.registrationType)) : t("members.selectType")}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {REGISTRATION_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  {REGISTRATION_TYPES.map((rt) => (
+                    <SelectItem key={rt.value} value={rt.value}>{t(rt.label)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2 max-w-xs md:col-span-2">
-              <Label>مبلغ الانخراط (درهم)</Label>
+              <Label>{t("members.reg.subscriptionAmount")}</Label>
               <Input type="number" value={form.subscriptionAmount} onChange={(e) => update("subscriptionAmount", e.target.value)}
                 placeholder="0.00" dir="ltr" className="text-right" step="0.01" />
             </div>
@@ -377,34 +379,34 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>المعلومات الشخصية</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("members.personalInfoCard")}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
-              <Label>الاسم الكامل *</Label>
+              <Label>{t("members.fullNameRequired")}</Label>
               <Input value={form.fullName} onChange={(e) => update("fullName", e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label>تاريخ الازدياد</Label>
+              <Label>{t("members.dateOfBirth")}</Label>
               <Input type="date" value={form.dateOfBirth} onChange={(e) => update("dateOfBirth", e.target.value)} dir="ltr" />
             </div>
             <div className="space-y-2">
-              <Label>مكان الازدياد</Label>
+              <Label>{t("members.placeOfBirth")}</Label>
               <Input value={form.placeOfBirth} onChange={(e) => update("placeOfBirth", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>الجنس</Label>
+              <Label>{t("members.gender")}</Label>
               <Select value={form.gender} onValueChange={(v) => update("gender", v)}>
-                <SelectTrigger><SelectValue placeholder="اختر الجنس">{labelOr(GENDER_LABEL, form.gender) || "اختر الجنس"}</SelectValue></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("members.selectGender")}>{keyOr(GENDER_KEY, form.gender) ? t(keyOr(GENDER_KEY, form.gender)) : t("members.selectGender")}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MALE">ذكر</SelectItem>
-                  <SelectItem value="FEMALE">أنثى</SelectItem>
+                  <SelectItem value="MALE">{t("members.gender.MALE")}</SelectItem>
+                  <SelectItem value="FEMALE">{t("members.gender.FEMALE")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>المستوى الدراسي</Label>
+              <Label>{t("members.educationalLevel")}</Label>
               <Select value={form.educationalLevel} onValueChange={(v) => update("educationalLevel", v)}>
-                <SelectTrigger><SelectValue placeholder="اختر المستوى">{form.educationalLevel || "اختر المستوى"}</SelectValue></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("members.selectLevel")}>{form.educationalLevel || t("members.selectLevel")}</SelectValue></SelectTrigger>
                 <SelectContent>
                   {EDUCATIONAL_LEVELS.map((level) => (
                     <SelectItem key={level} value={level}>{level}</SelectItem>
@@ -418,21 +420,21 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
         {memberType === "CHILD" ? (
           <>
             <Card>
-              <CardHeader><CardTitle>الوضع الصحي</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("members.healthCard")}</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>الوضع الصحي</Label>
+                  <Label>{t("members.healthStatusLabel")}</Label>
                   <Select value={form.healthStatus} onValueChange={(v) => update("healthStatus", v)}>
-                    <SelectTrigger><SelectValue placeholder="اختر الوضع">{labelOr(HEALTH_LABEL, form.healthStatus) || "اختر الوضع"}</SelectValue></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("members.selectStatus")}>{keyOr(HEALTH_KEY, form.healthStatus) ? t(keyOr(HEALTH_KEY, form.healthStatus)) : t("members.selectStatus")}</SelectValue></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="HEALTHY">عادي</SelectItem>
-                      <SelectItem value="SICK">مريض</SelectItem>
+                      <SelectItem value="HEALTHY">{t("members.health.HEALTHY")}</SelectItem>
+                      <SelectItem value="SICK">{t("members.health.SICK")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {form.healthStatus === "SICK" && (
                   <div className="space-y-2">
-                    <Label>نوع المرض / الأمراض</Label>
+                    <Label>{t("members.illnessType")}</Label>
                     <Input value={form.healthConditions} onChange={(e) => update("healthConditions", e.target.value)} />
                   </div>
                 )}
@@ -440,95 +442,95 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>الإخوة</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("members.siblingsCard")}</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>عدد الإخوة الذكور</Label>
+                  <Label>{t("members.siblingsBoys")}</Label>
                   <Input type="number" min="0" value={form.siblingsBoys} onChange={(e) => update("siblingsBoys", e.target.value)} dir="ltr" className="text-right" />
                 </div>
                 <div className="space-y-2">
-                  <Label>عدد الأخوات الإناث</Label>
+                  <Label>{t("members.siblingsGirls")}</Label>
                   <Input type="number" min="0" value={form.siblingsGirls} onChange={(e) => update("siblingsGirls", e.target.value)} dir="ltr" className="text-right" />
                 </div>
                 <div className="space-y-2">
-                  <Label>الرتبة بين الإخوة</Label>
+                  <Label>{t("members.siblingOrder")}</Label>
                   <Input type="number" min="1" value={form.siblingOrder} onChange={(e) => update("siblingOrder", e.target.value)} dir="ltr" className="text-right" />
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>معلومات الأب</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("members.fatherCard")}</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2"><Label>اسم الأب</Label><Input value={form.fatherName} onChange={(e) => update("fatherName", e.target.value)} /></div>
-                <div className="space-y-2"><Label>المهنة</Label><Input value={form.fatherProfession} onChange={(e) => update("fatherProfession", e.target.value)} /></div>
-                <div className="space-y-2"><Label>رقم ب.و.ت</Label><Input value={form.fatherCin} onChange={(e) => update("fatherCin", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2"><Label>المستوى الدراسي</Label><Input value={form.fatherEducation} onChange={(e) => update("fatherEducation", e.target.value)} /></div>
-                <div className="space-y-2"><Label>الهاتف المحمول</Label><Input value={form.fatherPhone} onChange={(e) => update("fatherPhone", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2"><Label>الهاتف الثابت</Label><Input value={form.fatherLandline} onChange={(e) => update("fatherLandline", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2 md:col-span-2"><Label>العنوان</Label><Textarea rows={2} value={form.fatherAddress} onChange={(e) => update("fatherAddress", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.fatherName")}</Label><Input value={form.fatherName} onChange={(e) => update("fatherName", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.profession")}</Label><Input value={form.fatherProfession} onChange={(e) => update("fatherProfession", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.cin")}</Label><Input value={form.fatherCin} onChange={(e) => update("fatherCin", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.educationalLevel")}</Label><Input value={form.fatherEducation} onChange={(e) => update("fatherEducation", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.mobilePhone")}</Label><Input value={form.fatherPhone} onChange={(e) => update("fatherPhone", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.landline")}</Label><Input value={form.fatherLandline} onChange={(e) => update("fatherLandline", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2 md:col-span-2"><Label>{t("members.address")}</Label><Textarea rows={2} value={form.fatherAddress} onChange={(e) => update("fatherAddress", e.target.value)} /></div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>معلومات الأم</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("members.motherCard")}</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2"><Label>اسم الأم</Label><Input value={form.motherName} onChange={(e) => update("motherName", e.target.value)} /></div>
-                <div className="space-y-2"><Label>المهنة</Label><Input value={form.motherProfession} onChange={(e) => update("motherProfession", e.target.value)} /></div>
-                <div className="space-y-2"><Label>رقم ب.و.ت</Label><Input value={form.motherCin} onChange={(e) => update("motherCin", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2"><Label>المستوى الدراسي</Label><Input value={form.motherEducation} onChange={(e) => update("motherEducation", e.target.value)} /></div>
-                <div className="space-y-2"><Label>الهاتف المحمول</Label><Input value={form.motherPhone} onChange={(e) => update("motherPhone", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2"><Label>الهاتف الثابت</Label><Input value={form.motherLandline} onChange={(e) => update("motherLandline", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2 md:col-span-2"><Label>العنوان</Label><Textarea rows={2} value={form.motherAddress} onChange={(e) => update("motherAddress", e.target.value)} /></div>
-                <div className="space-y-2 md:col-span-2"><Label>رقم ب.و.ت للولي (إن لم يكن أحد الوالدين)</Label><Input value={form.parentCin} onChange={(e) => update("parentCin", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.motherName")}</Label><Input value={form.motherName} onChange={(e) => update("motherName", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.profession")}</Label><Input value={form.motherProfession} onChange={(e) => update("motherProfession", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.cin")}</Label><Input value={form.motherCin} onChange={(e) => update("motherCin", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.educationalLevel")}</Label><Input value={form.motherEducation} onChange={(e) => update("motherEducation", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.mobilePhone")}</Label><Input value={form.motherPhone} onChange={(e) => update("motherPhone", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.landline")}</Label><Input value={form.motherLandline} onChange={(e) => update("motherLandline", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2 md:col-span-2"><Label>{t("members.address")}</Label><Textarea rows={2} value={form.motherAddress} onChange={(e) => update("motherAddress", e.target.value)} /></div>
+                <div className="space-y-2 md:col-span-2"><Label>{t("members.parentCin")}</Label><Input value={form.parentCin} onChange={(e) => update("parentCin", e.target.value)} dir="ltr" className="text-right" /></div>
               </CardContent>
             </Card>
           </>
         ) : (
           <>
             <Card>
-              <CardHeader><CardTitle>معلومات المنخرط</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("members.memberInfoCard")}</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2"><Label>رقم ب.و.ت</Label><Input value={form.cin} onChange={(e) => update("cin", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2"><Label>المهنة</Label><Input value={form.profession} onChange={(e) => update("profession", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.cin")}</Label><Input value={form.cin} onChange={(e) => update("cin", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.profession")}</Label><Input value={form.profession} onChange={(e) => update("profession", e.target.value)} /></div>
                 <div className="space-y-2">
-                  <Label>الحالة العائلية</Label>
+                  <Label>{t("members.maritalStatus")}</Label>
                   <Select value={form.maritalStatus} onValueChange={(v) => update("maritalStatus", v)}>
-                    <SelectTrigger><SelectValue placeholder="اختر الحالة">{labelOr(MARITAL_LABEL, form.maritalStatus) || "اختر الحالة"}</SelectValue></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("members.selectMarital")}>{keyOr(MARITAL_KEY, form.maritalStatus) ? t(keyOr(MARITAL_KEY, form.maritalStatus)) : t("members.selectMarital")}</SelectValue></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SINGLE">أعزب</SelectItem>
-                      <SelectItem value="MARRIED">متزوج</SelectItem>
-                      <SelectItem value="DIVORCED">مطلق</SelectItem>
-                      <SelectItem value="WIDOWED">أرمل</SelectItem>
+                      <SelectItem value="SINGLE">{t("members.marital.SINGLE")}</SelectItem>
+                      <SelectItem value="MARRIED">{t("members.marital.MARRIED")}</SelectItem>
+                      <SelectItem value="DIVORCED">{t("members.marital.DIVORCED")}</SelectItem>
+                      <SelectItem value="WIDOWED">{t("members.marital.WIDOWED")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label>الدور في الجمعية</Label><Input value={form.associationRole} onChange={(e) => update("associationRole", e.target.value)} /></div>
-                <div className="space-y-2"><Label>عدد الأبناء الذكور</Label><Input type="number" min="0" value={form.childrenBoys} onChange={(e) => update("childrenBoys", e.target.value)} dir="ltr" className="text-right" /></div>
-                <div className="space-y-2"><Label>عدد البنات</Label><Input type="number" min="0" value={form.childrenGirls} onChange={(e) => update("childrenGirls", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.assocRole")}</Label><Input value={form.associationRole} onChange={(e) => update("associationRole", e.target.value)} /></div>
+                <div className="space-y-2"><Label>{t("members.childrenBoys")}</Label><Input type="number" min="0" value={form.childrenBoys} onChange={(e) => update("childrenBoys", e.target.value)} dir="ltr" className="text-right" /></div>
+                <div className="space-y-2"><Label>{t("members.childrenGirls")}</Label><Input type="number" min="0" value={form.childrenGirls} onChange={(e) => update("childrenGirls", e.target.value)} dir="ltr" className="text-right" /></div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>الاهتمامات</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("members.interestsCard")}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="flex items-center gap-2">
                     <Checkbox id="ij" checked={form.interestJtima3iya} onCheckedChange={(v) => update("interestJtima3iya", !!v)} />
-                    <Label htmlFor="ij" className="font-normal cursor-pointer">اجتماعية</Label>
+                    <Label htmlFor="ij" className="font-normal cursor-pointer">{t("members.interest.social")}</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Checkbox id="it" checked={form.interestTarbawiya} onCheckedChange={(v) => update("interestTarbawiya", !!v)} />
-                    <Label htmlFor="it" className="font-normal cursor-pointer">تربوية</Label>
+                    <Label htmlFor="it" className="font-normal cursor-pointer">{t("members.interest.educational")}</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Checkbox id="if" checked={form.interestFikriya} onCheckedChange={(v) => update("interestFikriya", !!v)} />
-                    <Label htmlFor="if" className="font-normal cursor-pointer">فكرية</Label>
+                    <Label htmlFor="if" className="font-normal cursor-pointer">{t("members.interest.intellectual")}</Label>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>اهتمامات أخرى</Label>
-                  <Input value={form.interests} onChange={(e) => update("interests", e.target.value)} placeholder="مثال: التربية، القرآن الكريم، الرياضة..." />
+                  <Label>{t("members.otherInterests")}</Label>
+                  <Input value={form.interests} onChange={(e) => update("interests", e.target.value)} placeholder={t("members.interestsExample")} />
                 </div>
               </CardContent>
             </Card>
@@ -536,28 +538,28 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
         )}
 
         <Card>
-          <CardHeader><CardTitle>معلومات الاتصال</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("members.contactCard")}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2"><Label>الهاتف المحمول</Label><Input value={form.phone} onChange={(e) => update("phone", e.target.value)} dir="ltr" className="text-right" /></div>
+            <div className="space-y-2"><Label>{t("members.mobilePhone")}</Label><Input value={form.phone} onChange={(e) => update("phone", e.target.value)} dir="ltr" className="text-right" /></div>
             {memberType === "ADULT" && (
-              <div className="space-y-2"><Label>الهاتف الثابت</Label><Input value={form.landline} onChange={(e) => update("landline", e.target.value)} dir="ltr" className="text-right" /></div>
+              <div className="space-y-2"><Label>{t("members.landline")}</Label><Input value={form.landline} onChange={(e) => update("landline", e.target.value)} dir="ltr" className="text-right" /></div>
             )}
-            <div className="space-y-2 md:col-span-2"><Label>العنوان</Label><Textarea value={form.address} onChange={(e) => update("address", e.target.value)} rows={2} /></div>
+            <div className="space-y-2 md:col-span-2"><Label>{t("members.address")}</Label><Textarea value={form.address} onChange={(e) => update("address", e.target.value)} rows={2} /></div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>الانخراط في الأقسام</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("members.sectionsCard")}</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Label>الأقسام</Label>
+              <Label>{t("members.sectionsLabel")}</Label>
               <div className="flex gap-6 flex-wrap">
                 {[
-                  { value: "EDUCATIONAL", label: "القسم التربوي" },
-                  { value: "SOCIAL", label: "القسم الاجتماعي" },
-                  { value: "QURAN", label: "قسم القرآن الكريم" },
-                  { value: "QUDAT", label: "مركز تأهيل القادة" },
-                  { value: "MEDIA", label: "القسم الإعلامي" },
+                  { value: "EDUCATIONAL", key: "members.sectionFull.EDUCATIONAL" },
+                  { value: "SOCIAL", key: "members.sectionFull.SOCIAL" },
+                  { value: "QURAN", key: "members.sectionFull.QURAN" },
+                  { value: "QUDAT", key: "members.sectionFull.QUDAT" },
+                  { value: "MEDIA", key: "members.sectionFull.MEDIA" },
                 ].map((section) => (
                   <div key={section.value} className="flex items-center gap-2">
                     <Checkbox
@@ -566,7 +568,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
                       onCheckedChange={() => toggleSection(section.value)}
                     />
                     <Label htmlFor={`edit-${section.value}`} className="cursor-pointer font-normal">
-                      {section.label}
+                      {t(section.key)}
                     </Label>
                   </div>
                 ))}
@@ -577,9 +579,9 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
 
         <div className="flex gap-3">
           <Button type="submit" disabled={saving}>
-            {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
+            {saving ? t("members.saving") : t("members.saveChanges")}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>إلغاء</Button>
+          <Button type="button" variant="outline" onClick={() => router.back()}>{t("members.cancel")}</Button>
         </div>
       </form>
 
@@ -587,25 +589,25 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
         <Card className="border-blue-200">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">صلاحيات الدخول</CardTitle>
+              <CardTitle className="text-lg">{t("members.accessCard")}</CardTitle>
               {access?.username ? (
                 <Badge variant={access.userIsActive ? "default" : "secondary"}>
-                  {access.userIsActive ? "مفعّل" : "معطّل"}
+                  {access.userIsActive ? t("members.accessEnabled") : t("members.accessDisabled")}
                 </Badge>
               ) : (
-                <Badge variant="outline">بدون حساب</Badge>
+                <Badge variant="outline">{t("members.noAccount")}</Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>اسم المستخدم</Label>
+                <Label>{t("members.username")}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={accessForm.username}
                     onChange={(e) => setAccessForm((p) => ({ ...p, username: e.target.value.toLowerCase() }))}
-                    placeholder="مثال: ahmed.alaoui"
+                    placeholder={t("members.usernameExample")}
                     dir="ltr"
                     className="text-right flex-1 min-w-0"
                   />
@@ -617,35 +619,35 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
                       onClick={() => setAccessForm((p) => ({ ...p, username: suggestUsernameFromName(form.fullName) }))}
                       className="whitespace-nowrap"
                     >
-                      ✨ اقتراح
+                      ✨ {t("members.suggest")}
                     </Button>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground">a-z و 0-9 والرموز . _ - فقط، 3-30 حرفا.</p>
+                <p className="text-[11px] text-muted-foreground">{t("members.usernameHint")}</p>
               </div>
               <div className="space-y-2">
-                <Label>{access?.username ? "كلمة مرور جديدة (اتركها فارغة للإبقاء)" : "كلمة المرور *"}</Label>
+                <Label>{access?.username ? t("members.passwordNew") : t("members.password")}</Label>
                 <Input type="password" value={accessForm.password} onChange={(e) => setAccessForm((p) => ({ ...p, password: e.target.value }))} dir="ltr" className="text-right" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>الأدوار</Label>
+              <Label>{t("members.roles")}</Label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {ALL_ROLES.map((role) => (
                   <div key={role} className="flex items-center gap-2">
                     <Checkbox id={`access-role-${role}`} checked={accessForm.roles.includes(role)} onCheckedChange={() => toggleAccessRole(role)} />
-                    <Label htmlFor={`access-role-${role}`} className="font-normal cursor-pointer text-sm">{ROLE_LABELS[role]}</Label>
+                    <Label htmlFor={`access-role-${role}`} className="font-normal cursor-pointer text-sm">{roleLabel(role, locale as Locale)}</Label>
                   </div>
                 ))}
               </div>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3 pt-2">
               <Button onClick={handleSaveAccess} disabled={savingAccess} className="flex-1 sm:flex-none min-w-0">
-                {savingAccess ? "جاري الحفظ..." : access?.username ? "تحديث الصلاحيات" : "منح صلاحيات الدخول"}
+                {savingAccess ? t("members.saving") : access?.username ? t("members.updateAccess") : t("members.grantAccess")}
               </Button>
               {access?.username && (
                 <Button variant="destructive" onClick={handleRevokeAccess} disabled={revokingAccess} className="flex-1 sm:flex-none min-w-0">
-                  {revokingAccess ? "جاري الإلغاء..." : "إلغاء الصلاحيات"}
+                  {revokingAccess ? t("members.revoking") : t("members.revokeAccess")}
                 </Button>
               )}
             </div>

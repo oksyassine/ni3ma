@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n/provider";
 
 type AssociationData = {
   name: string;
@@ -18,16 +19,18 @@ type AssociationData = {
   cndpRegistration: string;
   privacyNotice: string;
   registrationFees: Record<string, string>;
+  defaultLocale: string;
 };
 
 const REGISTRATION_TYPES = [
-  { value: "TAMM",          label: "تسجيل تام" },
-  { value: "DAAM_MADRASSI", label: "دعم مدرسي" },
-  { value: "QURAN_TAJWEED", label: "حفظ وتجويد القرآن" },
-  { value: "MOKHAYAM",      label: "مخيم" },
-];
+  { value: "TAMM",          labelKey: "admin.association.typeTamm" },
+  { value: "DAAM_MADRASSI", labelKey: "admin.association.typeDaamMadrassi" },
+  { value: "QURAN_TAJWEED", labelKey: "admin.association.typeQuranTajweed" },
+  { value: "MOKHAYAM",      labelKey: "admin.association.typeMokhayam" },
+] as const;
 
 export default function AssociationPage() {
+  const { t } = useT();
   const [data, setData] = useState<AssociationData>({
     name: "",
     address: "",
@@ -38,6 +41,7 @@ export default function AssociationPage() {
     cndpRegistration: "",
     privacyNotice: "",
     registrationFees: {},
+    defaultLocale: "ar",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,6 +66,7 @@ export default function AssociationPage() {
             cndpRegistration: d.cndpRegistration ?? "",
             privacyNotice: d.privacyNotice ?? "",
             registrationFees: feesStr,
+            defaultLocale: d.defaultLocale ?? "ar",
           });
         }
         setLoading(false);
@@ -83,44 +88,44 @@ export default function AssociationPage() {
     });
 
     if (res.ok) {
-      toast.success("تم حفظ المعلومات");
+      toast.success(t("admin.association.toastSaved"));
     } else {
-      toast.error("حدث خطأ");
+      toast.error(t("admin.error"));
     }
     setSaving(false);
   };
 
-  if (loading) return <div className="text-center py-12">جاري التحميل...</div>;
+  if (loading) return <div className="text-center py-12">{t("admin.loading")}</div>;
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold">معلومات الجمعية</h1>
-        <p className="text-muted-foreground">إدارة المعلومات الأساسية للجمعية</p>
+        <h1 className="text-2xl font-bold">{t("admin.association.title")}</h1>
+        <p className="text-muted-foreground">{t("admin.association.subtitle")}</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>المعلومات الأساسية</CardTitle>
+            <CardTitle>{t("admin.association.basicInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
-              <Label>اسم الجمعية</Label>
+              <Label>{t("admin.association.name")}</Label>
               <Input
                 value={data.name}
                 onChange={(e) => setData({ ...data, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>المدينة</Label>
+              <Label>{t("admin.association.city")}</Label>
               <Input
                 value={data.city}
                 onChange={(e) => setData({ ...data, city: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>الهاتف</Label>
+              <Label>{t("admin.association.phone")}</Label>
               <Input
                 value={data.phone}
                 onChange={(e) => setData({ ...data, phone: e.target.value })}
@@ -129,7 +134,7 @@ export default function AssociationPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>البريد الإلكتروني</Label>
+              <Label>{t("admin.association.email")}</Label>
               <Input
                 type="email"
                 value={data.email}
@@ -139,7 +144,7 @@ export default function AssociationPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>رابط فيسبوك</Label>
+              <Label>{t("admin.association.facebook")}</Label>
               <Input
                 value={data.facebookUrl}
                 onChange={(e) => setData({ ...data, facebookUrl: e.target.value })}
@@ -148,7 +153,7 @@ export default function AssociationPage() {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>العنوان</Label>
+              <Label>{t("admin.association.address")}</Label>
               <Textarea
                 value={data.address}
                 onChange={(e) => setData({ ...data, address: e.target.value })}
@@ -160,11 +165,11 @@ export default function AssociationPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>CNDP - حماية المعطيات الشخصية</CardTitle>
+            <CardTitle>{t("admin.association.cndpTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>رقم التسجيل في CNDP</Label>
+              <Label>{t("admin.association.cndpNumber")}</Label>
               <Input
                 value={data.cndpRegistration}
                 onChange={(e) => setData({ ...data, cndpRegistration: e.target.value })}
@@ -173,12 +178,12 @@ export default function AssociationPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>سياسة الخصوصية</Label>
+              <Label>{t("admin.association.privacyPolicy")}</Label>
               <Textarea
                 value={data.privacyNotice}
                 onChange={(e) => setData({ ...data, privacyNotice: e.target.value })}
                 rows={4}
-                placeholder="نص سياسة الخصوصية وحماية المعطيات الشخصية"
+                placeholder={t("admin.association.privacyPlaceholder")}
               />
             </div>
           </CardContent>
@@ -186,20 +191,20 @@ export default function AssociationPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>رسوم الانخراط حسب نوع التسجيل</CardTitle>
+            <CardTitle>{t("admin.association.feesByType")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            {REGISTRATION_TYPES.map((t) => (
-              <div key={t.value} className="space-y-2">
-                <Label>{t.label} (درهم)</Label>
+            {REGISTRATION_TYPES.map((rt) => (
+              <div key={rt.value} className="space-y-2">
+                <Label>{t("admin.association.feeLabel", { label: t(rt.labelKey) })}</Label>
                 <Input
                   type="number"
                   step="0.01"
-                  value={data.registrationFees[t.value] ?? ""}
+                  value={data.registrationFees[rt.value] ?? ""}
                   onChange={(e) =>
                     setData((p) => ({
                       ...p,
-                      registrationFees: { ...p.registrationFees, [t.value]: e.target.value },
+                      registrationFees: { ...p.registrationFees, [rt.value]: e.target.value },
                     }))
                   }
                   placeholder="0.00"
@@ -209,13 +214,38 @@ export default function AssociationPage() {
               </div>
             ))}
             <p className="text-sm text-muted-foreground md:col-span-2">
-              المبلغ سيُملأ تلقائيا في استمارة التسجيل عند اختيار النوع، ويمكن تعديله يدويا عند الحاجة.
+              {t("admin.association.feesHint")}
             </p>
           </CardContent>
         </Card>
 
+        {/* Default UI language */}
+
+        <div className="space-y-1.5">
+
+          <label className="text-sm font-medium">{t("admin.association.defaultLang")}</label>
+
+          <select
+
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+
+            value={data.defaultLocale}
+
+            onChange={(e) => setData((p) => ({ ...p, defaultLocale: e.target.value }))}
+
+          >
+
+            <option value="ar">{t("common.arabic")}</option>
+
+            <option value="fr">{t("common.french")}</option>
+
+          </select>
+
+        </div>
+
+
         <Button type="submit" disabled={saving}>
-          {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+          {saving ? t("admin.association.saving") : t("admin.association.saveChanges")}
         </Button>
       </form>
     </div>

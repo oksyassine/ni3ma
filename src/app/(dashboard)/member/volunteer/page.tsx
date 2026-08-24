@@ -1,18 +1,20 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getT } from "@/lib/i18n/server";
 import { MemberVolunteerClient } from "./client";
 
 export default async function Page() {
   const session = await auth();
   if (!session) redirect("/login");
+  const { t } = await getT();
 
   const me = await prisma.member.findFirst({
     where: { OR: [{ id: session.user.id }, { username: session.user.username }] },
     select: { id: true },
   });
   if (!me) {
-    return <p className="p-8 text-center text-muted-foreground">لا يوجد ملف منخرط مرتبط بحسابك</p>;
+    return <p className="p-8 text-center text-muted-foreground">{t("memberVol.notLinked")}</p>;
   }
 
   const records = await prisma.volunteerHours.findMany({

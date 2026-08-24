@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Section } from "@prisma/client";
 import { SECTION_LABELS } from "@/lib/section";
+import { useT } from "@/components/i18n/provider";
 import { Plus, Calendar, MapPin, Trash2, Upload, Download, ChevronDown } from "lucide-react";
 
 type Activity = {
@@ -49,14 +50,15 @@ type Program = {
   activities: Activity[];
 };
 
-const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-  PLANNED: { label: "مخطط", variant: "outline" },
-  ONGOING: { label: "جار", variant: "default" },
-  DONE: { label: "منجز", variant: "secondary" },
-  CANCELLED: { label: "ملغى", variant: "outline" },
+const STATUS_META: Record<string, { key: string; variant: "default" | "secondary" | "outline" }> = {
+  PLANNED: { key: "educational.statusPlanned", variant: "outline" },
+  ONGOING: { key: "educational.statusOngoing", variant: "default" },
+  DONE: { key: "educational.statusDone", variant: "secondary" },
+  CANCELLED: { key: "educational.statusCancelled", variant: "outline" },
 };
 
 export function ProgramsPage({ section }: { section: Section }) {
+  const { t } = useT();
   const perms = usePermissions();
   const canWrite = perms.canWriteSection(section);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -101,7 +103,7 @@ export function ProgramsPage({ section }: { section: Section }) {
   const submitProgram = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!progForm.title.trim()) {
-      toast.error("العنوان مطلوب");
+      toast.error(t("educational.titleRequired"));
       return;
     }
     const r = await fetch("/api/programs", {
@@ -110,17 +112,17 @@ export function ProgramsPage({ section }: { section: Section }) {
       body: JSON.stringify({ ...progForm, section }),
     });
     if (r.ok) {
-      toast.success("تم إنشاء البرنامج");
+      toast.success(t("educational.programCreatedToast"));
       setOpenProgram(false);
       setProgForm({ title: "", description: "", startDate: "", endDate: "" });
       load();
-    } else toast.error("فشل الإنشاء");
+    } else toast.error(t("educational.createFailedToast"));
   };
 
   const submitActivity = async (e: React.FormEvent, programId: string) => {
     e.preventDefault();
     if (!actForm.title.trim()) {
-      toast.error("العنوان مطلوب");
+      toast.error(t("educational.titleRequired"));
       return;
     }
     const r = await fetch("/api/activities", {
@@ -129,7 +131,7 @@ export function ProgramsPage({ section }: { section: Section }) {
       body: JSON.stringify({ ...actForm, programId }),
     });
     if (r.ok) {
-      toast.success("تم إضافة النشاط");
+      toast.success(t("educational.activityAddedToast"));
       setOpenActivity(null);
       setActForm({
         title: "",
@@ -141,24 +143,24 @@ export function ProgramsPage({ section }: { section: Section }) {
         status: "PLANNED",
       });
       load();
-    } else toast.error("فشل الإضافة");
+    } else toast.error(t("educational.addFailedToast"));
   };
 
   const deleteActivity = async (id: string) => {
-    if (!confirm("حذف النشاط؟")) return;
+    if (!confirm(t("educational.deleteActivityConfirm"))) return;
     const r = await fetch(`/api/activities/${id}`, { method: "DELETE" });
     if (r.ok) {
-      toast.success("تم الحذف");
+      toast.success(t("educational.deletedToast"));
       load();
-    } else toast.error("فشل");
+    } else toast.error(t("educational.failedToast"));
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">برامج وأنشطة {SECTION_LABELS[section]}</h1>
-          <p className="text-muted-foreground">تنظيم البرامج السنوية وأنشطتها</p>
+          <h1 className="text-2xl font-bold">{t("educational.programsTitle", { section: SECTION_LABELS[section] })}</h1>
+          <p className="text-muted-foreground">{t("educational.programsSubtitle")}</p>
         </div>
         {canWrite ? (
           <ProgramActionsMenu
@@ -167,42 +169,42 @@ export function ProgramsPage({ section }: { section: Section }) {
             onImported={load}
           />
         ) : perms.hasSectionRead(section) ? (
-          <Badge variant="outline">قراءة فقط</Badge>
+          <Badge variant="outline">{t("educational.readOnly")}</Badge>
         ) : null}
         <Dialog open={openProgram} onOpenChange={setOpenProgram}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>برنامج جديد</DialogTitle>
+              <DialogTitle>{t("educational.newProgram")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={submitProgram} className="space-y-4">
               <div>
-                <Label>العنوان</Label>
+                <Label>{t("educational.titleLabel")}</Label>
                 <Input value={progForm.title} onChange={(e) => setProgForm({ ...progForm, title: e.target.value })} />
               </div>
               <div>
-                <Label>الوصف</Label>
+                <Label>{t("educational.descLabel")}</Label>
                 <Textarea value={progForm.description} onChange={(e) => setProgForm({ ...progForm, description: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>تاريخ البداية</Label>
+                  <Label>{t("educational.startDate")}</Label>
                   <Input type="date" value={progForm.startDate} onChange={(e) => setProgForm({ ...progForm, startDate: e.target.value })} />
                 </div>
                 <div>
-                  <Label>تاريخ النهاية</Label>
+                  <Label>{t("educational.endDate")}</Label>
                   <Input type="date" value={progForm.endDate} onChange={(e) => setProgForm({ ...progForm, endDate: e.target.value })} />
                 </div>
               </div>
-              <Button type="submit" className="w-full">إنشاء</Button>
+              <Button type="submit" className="w-full">{t("educational.create")}</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {loading && <p className="text-center text-muted-foreground">جاري التحميل...</p>}
+      {loading && <p className="text-center text-muted-foreground">{t("educational.loading")}</p>}
 
       {!loading && programs.length === 0 && (
-        <Card><CardContent className="py-8 text-center text-muted-foreground">لا توجد برامج بعد</CardContent></Card>
+        <Card><CardContent className="py-8 text-center text-muted-foreground">{t("educational.noProgramsYet")}</CardContent></Card>
       )}
 
       <div className="space-y-4">
@@ -216,52 +218,52 @@ export function ProgramsPage({ section }: { section: Section }) {
                   <div className="flex gap-3 text-xs text-muted-foreground mt-2">
                     {p.startDate && <span>{p.startDate} ← {p.endDate ?? "..."}</span>}
                     <Badge variant="outline">{p.year}</Badge>
-                    <span>{p.activities.length} نشاط</span>
+                    <span>{t("educational.activitiesCount", { count: p.activities.length })}</span>
                   </div>
                 </div>
                 <div className="flex gap-1">
                 {canWrite && <ProgramEditButton program={p} reload={load} />}
                 {canWrite && <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={async () => {
-                  if (!confirm("حذف البرنامج وكل أنشطته؟")) return;
+                  if (!confirm(t("educational.deleteProgramConfirm"))) return;
                   const r = await fetch(`/api/programs/${p.id}`, { method: "DELETE" });
-                  if (r.ok) { toast.success("تم الحذف"); load(); } else toast.error("فشل");
-                }} title="حذف">
+                  if (r.ok) { toast.success(t("educational.deletedToast")); load(); } else toast.error(t("educational.failedToast"));
+                }} title={t("educational.deleteTitle")}>
                   <Trash2 size={14} />
                 </Button>}
                 {canWrite && <Dialog open={openActivity === p.id} onOpenChange={(o) => setOpenActivity(o ? p.id : null)}>
-                  <DialogTrigger render={<Button size="sm" variant="outline"><Plus size={14} />نشاط</Button>} />
+                  <DialogTrigger render={<Button size="sm" variant="outline"><Plus size={14} />{t("educational.activityBtn")}</Button>} />
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>إضافة نشاط</DialogTitle>
+                      <DialogTitle>{t("educational.addActivity")}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={(e) => submitActivity(e, p.id)} className="space-y-3">
                       <div>
-                        <Label>العنوان</Label>
+                        <Label>{t("educational.titleLabel")}</Label>
                         <Input value={actForm.title} onChange={(e) => setActForm({ ...actForm, title: e.target.value })} />
                       </div>
                       <div>
-                        <Label>الوصف</Label>
+                        <Label>{t("educational.descLabel")}</Label>
                         <Textarea value={actForm.description} onChange={(e) => setActForm({ ...actForm, description: e.target.value })} />
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <Label>التاريخ</Label>
+                          <Label>{t("educational.date")}</Label>
                           <Input type="date" value={actForm.activityDate} onChange={(e) => setActForm({ ...actForm, activityDate: e.target.value })} />
                         </div>
                         <div>
-                          <Label>من</Label>
+                          <Label>{t("educational.fromTime")}</Label>
                           <Input type="time" value={actForm.timeStart} onChange={(e) => setActForm({ ...actForm, timeStart: e.target.value })} />
                         </div>
                         <div>
-                          <Label>إلى</Label>
+                          <Label>{t("educational.toTime")}</Label>
                           <Input type="time" value={actForm.timeEnd} onChange={(e) => setActForm({ ...actForm, timeEnd: e.target.value })} />
                         </div>
                       </div>
                       <div>
-                        <Label>المكان</Label>
+                        <Label>{t("educational.locationLabel")}</Label>
                         <Input value={actForm.location} onChange={(e) => setActForm({ ...actForm, location: e.target.value })} />
                       </div>
-                      <Button type="submit" className="w-full">إضافة</Button>
+                      <Button type="submit" className="w-full">{t("educational.add")}</Button>
                     </form>
                   </DialogContent>
                 </Dialog>}
@@ -270,10 +272,10 @@ export function ProgramsPage({ section }: { section: Section }) {
             </CardHeader>
             <CardContent className="space-y-2">
               {p.activities.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-2">لا توجد أنشطة بعد</p>
+                <p className="text-sm text-muted-foreground text-center py-2">{t("educational.noActivitiesYet")}</p>
               ) : (
                 p.activities.map((a) => {
-                  const status = STATUS_LABELS[a.status] ?? { label: a.status, variant: "outline" as const };
+                  const meta = STATUS_META[a.status];
                   return (
                     <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
                       <div className="flex-1">
@@ -292,9 +294,9 @@ export function ProgramsPage({ section }: { section: Section }) {
                           )}
                         </div>
                       </div>
-                      <Badge variant={status.variant}>{status.label}</Badge>
+                      {meta ? <Badge variant={meta.variant}>{t(meta.key)}</Badge> : <Badge variant="outline">{a.status}</Badge>}
                       {canWrite && <ActivityEditButton activity={a} reload={load} />}
-                      {canWrite && <Button size="icon" variant="ghost" onClick={() => deleteActivity(a.id)} title="حذف">
+                      {canWrite && <Button size="icon" variant="ghost" onClick={() => deleteActivity(a.id)} title={t("educational.deleteTitle")}>
                         <Trash2 size={14} />
                       </Button>}
                     </div>
@@ -325,6 +327,7 @@ function ProgramActionsMenu({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const { t } = useT();
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
@@ -352,13 +355,13 @@ function ProgramActionsMenu({
       body: JSON.stringify({ rows, section, dryRun: true }),
     });
     if (!dryRes.ok) {
-      toast.error("فشل التحقق");
+      toast.error(t("educational.importVerifyFailedToast"));
       setImporting(false);
       return;
     }
     const dry = await dryRes.json();
     const ok = confirm(
-      `سيتم استيراد:\n- ${dry.programs} برنامج\n- ${dry.activities} نشاط\n\nهل تريد المتابعة؟`
+      t("educational.importedConfirm", { programs: dry.programs, activities: dry.activities })
     );
     if (!ok) {
       setImporting(false);
@@ -373,9 +376,9 @@ function ProgramActionsMenu({
     });
     if (r.ok) {
       const data = await r.json();
-      toast.success(`تم استيراد ${data.programs} برنامج و ${data.activities} نشاط`);
+      toast.success(t("educational.importedToast", { programs: data.programs, activities: data.activities }));
       onImported();
-    } else toast.error("فشل الاستيراد");
+    } else toast.error(t("educational.importFailedToast"));
     setImporting(false);
     e.target.value = "";
   };
@@ -386,19 +389,19 @@ function ProgramActionsMenu({
       <DropdownMenu>
         <DropdownMenuTrigger render={
           <Button>
-            <Plus size={16} />برنامج
+            <Plus size={16} />{t("educational.programBtn")}
             <ChevronDown size={14} />
           </Button>
         } />
         <DropdownMenuContent>
           <DropdownMenuItem onClick={openCreate}>
-            <Plus size={14} />إضافة يدوية
+            <Plus size={14} />{t("educational.addManually")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => fileRef.current?.click()} disabled={importing}>
-            <Upload size={14} />استيراد من Excel
+            <Upload size={14} />{t("educational.importFromExcel")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={downloadTemplate}>
-            <Download size={14} />تنزيل النموذج
+            <Download size={14} />{t("educational.downloadTemplate")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -407,6 +410,7 @@ function ProgramActionsMenu({
 }
 
 function ProgramEditButton({ program, reload }: { program: { id: string; title: string; description: string | null; startDate: string | null; endDate: string | null }; reload: () => void }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: program.title,
@@ -417,28 +421,28 @@ function ProgramEditButton({ program, reload }: { program: { id: string; title: 
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title.trim()) return toast.error("العنوان مطلوب");
+    if (!form.title.trim()) return toast.error(t("educational.titleRequired"));
     const r = await fetch(`/api/programs/${program.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    if (r.ok) { toast.success("تم التعديل"); setOpen(false); reload(); } else toast.error("فشل");
+    if (r.ok) { toast.success(t("educational.editedToast")); setOpen(false); reload(); } else toast.error(t("educational.failedToast"));
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="icon" variant="ghost" title="تعديل"><Plus size={14} className="rotate-45" /></Button>} />
+      <DialogTrigger render={<Button size="icon" variant="ghost" title={t("educational.editTitle")}><Plus size={14} className="rotate-45" /></Button>} />
       <DialogContent>
-        <DialogHeader><DialogTitle>تعديل البرنامج</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("educational.editProgram")}</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div><Label>العنوان</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-          <div><Label>الوصف</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div><Label>{t("educational.titleLabel")}</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+          <div><Label>{t("educational.descLabel")}</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>تاريخ البداية</Label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
-            <div><Label>تاريخ النهاية</Label><Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
+            <div><Label>{t("educational.startDate")}</Label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
+            <div><Label>{t("educational.endDate")}</Label><Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
           </div>
-          <Button type="submit" className="w-full">حفظ التعديلات</Button>
+          <Button type="submit" className="w-full">{t("educational.saveChanges")}</Button>
         </form>
       </DialogContent>
     </Dialog>
@@ -446,6 +450,7 @@ function ProgramEditButton({ program, reload }: { program: { id: string; title: 
 }
 
 function ActivityEditButton({ activity, reload }: { activity: { id: string; title: string; description: string | null; activityDate: string | null; timeStart: string | null; timeEnd: string | null; location: string | null; status: string }; reload: () => void }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: activity.title,
@@ -464,33 +469,33 @@ function ActivityEditButton({ activity, reload }: { activity: { id: string; titl
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    if (r.ok) { toast.success("تم التعديل"); setOpen(false); reload(); } else toast.error("فشل");
+    if (r.ok) { toast.success(t("educational.editedToast")); setOpen(false); reload(); } else toast.error(t("educational.failedToast"));
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="icon" variant="ghost" title="تعديل"><Plus size={14} className="rotate-45" /></Button>} />
+      <DialogTrigger render={<Button size="icon" variant="ghost" title={t("educational.editTitle")}><Plus size={14} className="rotate-45" /></Button>} />
       <DialogContent>
-        <DialogHeader><DialogTitle>تعديل النشاط</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("educational.editActivity")}</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div><Label>العنوان</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-          <div><Label>الوصف</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div><Label>{t("educational.titleLabel")}</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+          <div><Label>{t("educational.descLabel")}</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div className="grid grid-cols-3 gap-3">
-            <div><Label>التاريخ</Label><Input type="date" value={form.activityDate} onChange={(e) => setForm({ ...form, activityDate: e.target.value })} /></div>
-            <div><Label>من</Label><Input type="time" value={form.timeStart} onChange={(e) => setForm({ ...form, timeStart: e.target.value })} /></div>
-            <div><Label>إلى</Label><Input type="time" value={form.timeEnd} onChange={(e) => setForm({ ...form, timeEnd: e.target.value })} /></div>
+            <div><Label>{t("educational.date")}</Label><Input type="date" value={form.activityDate} onChange={(e) => setForm({ ...form, activityDate: e.target.value })} /></div>
+            <div><Label>{t("educational.fromTime")}</Label><Input type="time" value={form.timeStart} onChange={(e) => setForm({ ...form, timeStart: e.target.value })} /></div>
+            <div><Label>{t("educational.toTime")}</Label><Input type="time" value={form.timeEnd} onChange={(e) => setForm({ ...form, timeEnd: e.target.value })} /></div>
           </div>
-          <div><Label>المكان</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
+          <div><Label>{t("educational.locationLabel")}</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
           <div>
-            <Label>الحالة</Label>
+            <Label>{t("educational.statusLabel")}</Label>
             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full h-9 px-3 rounded-md border bg-background text-sm">
-              <option value="PLANNED">مخطط</option>
-              <option value="ONGOING">جار</option>
-              <option value="DONE">منجز</option>
-              <option value="CANCELLED">ملغى</option>
+              <option value="PLANNED">{t("educational.statusPlanned")}</option>
+              <option value="ONGOING">{t("educational.statusOngoing")}</option>
+              <option value="DONE">{t("educational.statusDone")}</option>
+              <option value="CANCELLED">{t("educational.statusCancelled")}</option>
             </select>
           </div>
-          <Button type="submit" className="w-full">حفظ التعديلات</Button>
+          <Button type="submit" className="w-full">{t("educational.saveChanges")}</Button>
         </form>
       </DialogContent>
     </Dialog>

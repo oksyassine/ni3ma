@@ -4,9 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
+import { getT } from "@/lib/i18n/server";
 
 export default async function PublicProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug: rawSlug } = await params;
+  const { t } = await getT();
   // Defensive: handle both URL-encoded (e.g. %D8%B9...) and decoded (عيد) forms
   let slug = rawSlug;
   try {
@@ -42,9 +44,9 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
         <header className="text-center space-y-2 pt-4">
           <div className="flex items-center justify-center gap-2">
             <Image src="/logo.jpg" alt="logo" width={48} height={48} className="rounded-lg" />
-            <h2 className="text-lg font-bold">{association?.name ?? "جمعية النعمة"}</h2>
+            <h2 className="text-lg font-bold">{association?.name ?? t("social.defaultAssocName")}</h2>
           </div>
-          <Badge variant="outline" className="text-xs">{project.kind === "NACHAT" ? "نشاط" : "مشروع"}</Badge>
+          <Badge variant="outline" className="text-xs">{project.kind === "NACHAT" ? t("social.kindActivity") : t("social.kindProject")}</Badge>
         </header>
 
         {project.coverPhotoUrl && (
@@ -63,23 +65,23 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
             {target > 0 && (
               <div className="space-y-2 pt-3 border-t">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold">جمع التبرعات</h3>
-                  <span className="text-2xl font-bold text-emerald-600">{totalCollected.toFixed(0)} د.م</span>
+                  <h3 className="font-bold">{t("social.donationCollection")}</h3>
+                  <span className="text-2xl font-bold text-emerald-600">{totalCollected.toFixed(0)} {t("social.mad")}</span>
                 </div>
                 <Progress value={pct} indicatorClassName="bg-emerald-600" className="h-3" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{pct.toFixed(0)}% من الهدف</span>
-                  <span>الهدف: {target.toFixed(0)} د.م</span>
+                  <span>{t("social.pctOfGoal", { pct: pct.toFixed(0) })}</span>
+                  <span>{t("social.goalLabel")}: {target.toFixed(0)} {t("social.mad")}</span>
                 </div>
-                {cashPledged > 0 && <p className="text-xs text-amber-700">+ {cashPledged.toFixed(0)} د.م تبرعات موعودة</p>}
+                {cashPledged > 0 && <p className="text-xs text-amber-700">{t("social.pledgedDonations", { amount: `${cashPledged.toFixed(0)} ${t("social.mad")}` })}</p>}
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3 pt-3 border-t text-sm">
-              {project.location && <div><p className="text-xs text-muted-foreground">المكان</p><p className="font-medium">{project.location}</p></div>}
-              {project.expectedBeneficiaries && <div><p className="text-xs text-muted-foreground">المستفيدون المتوقعون</p><p className="font-medium">{project.expectedBeneficiaries}</p></div>}
-              {project.partners && <div><p className="text-xs text-muted-foreground">الشركاء</p><p className="font-medium">{project.partners}</p></div>}
-              {project.startDate && <div><p className="text-xs text-muted-foreground">التاريخ</p><p className="font-medium">{project.startDate.toISOString().slice(0, 10)}</p></div>}
+              {project.location && <div><p className="text-xs text-muted-foreground">{t("social.locationLabel")}</p><p className="font-medium">{project.location}</p></div>}
+              {project.expectedBeneficiaries && <div><p className="text-xs text-muted-foreground">{t("social.expectedBeneficiariesList")}</p><p className="font-medium">{project.expectedBeneficiaries}</p></div>}
+              {project.partners && <div><p className="text-xs text-muted-foreground">{t("social.partnersLabel")}</p><p className="font-medium">{project.partners}</p></div>}
+              {project.startDate && <div><p className="text-xs text-muted-foreground">{t("common.date")}</p><p className="font-medium">{project.startDate.toISOString().slice(0, 10)}</p></div>}
             </div>
           </CardContent>
         </Card>
@@ -87,16 +89,16 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
         {/* How to donate */}
         <Card>
           <CardContent className="py-6 space-y-3">
-            <h2 className="text-xl font-bold">كيف تتبرّع؟</h2>
+            <h2 className="text-xl font-bold">{t("social.howToDonateTitle")}</h2>
             <p className="text-sm">
-              تواصل مع الجمعية مباشرة:
+              {t("social.contactAssociation")}
               {association?.phone && <> <a href={`tel:${association.phone}`} className="text-emerald-600 underline" dir="ltr">{association.phone}</a></>}
-              {association?.phone && <> أو على </>}
-              {association?.phone && <a href={`https://wa.me/${association.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline">واتساب</a>}
+              {association?.phone && <> {t("social.orOn")} </>}
+              {association?.phone && <a href={`https://wa.me/${association.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline">{t("social.whatsappLink")}</a>}
             </p>
-            {association?.address && <p className="text-sm text-muted-foreground">العنوان: {association.address}, {association.city}</p>}
+            {association?.address && <p className="text-sm text-muted-foreground">{t("social.addressValue", { address: association.address, city: association.city ?? "" })}</p>}
             {association?.facebookUrl && (
-              <a href={association.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 underline">📘 صفحة الجمعية</a>
+              <a href={association.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 underline">{t("social.assocPageLink")}</a>
             )}
           </CardContent>
         </Card>
@@ -104,7 +106,7 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
         {/* Photos */}
         {project.photos.length > 0 && (
           <div>
-            <h2 className="text-xl font-bold mb-3">صور</h2>
+            <h2 className="text-xl font-bold mb-3">{t("social.photosTitle")}</h2>
             <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
               {project.photos.map((ph) => (
                 <div key={ph.id} className="rounded-lg overflow-hidden border bg-card">
@@ -118,7 +120,7 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
         )}
 
         <footer className="text-center text-xs text-muted-foreground py-6">
-          <p>{association?.name ?? "جمعية النعمة"} · {association?.city ?? "مكناس"}</p>
+          <p>{association?.name ?? t("social.defaultAssocName")} · {association?.city ?? t("social.defaultCity")}</p>
           {association?.cndpRegistration && <p className="text-[10px] mt-1">CNDP: {association.cndpRegistration}</p>}
         </footer>
       </div>

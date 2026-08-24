@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-
-const REG_TYPE_LABEL: Record<string, string> = {
-  TAMM: "تسجيل تام",
-  DAAM_MADRASSI: "دعم مدرسي",
-  QURAN_TAJWEED: "حفظ وتجويد القرآن",
-  MOKHAYAM: "مخيم",
-};
+import { useT } from "@/components/i18n/provider";
 
 type Me = {
   id: string;
@@ -36,6 +30,13 @@ type Me = {
 };
 
 export default function MemberProfilePage() {
+  const { t } = useT();
+  const regTypeLabels: Record<string, string> = {
+    TAMM: t("memberProfile.regTypeTamm"),
+    DAAM_MADRASSI: t("memberProfile.regTypeDaamMadrassi"),
+    QURAN_TAJWEED: t("memberProfile.regTypeQuranTajweed"),
+    MOKHAYAM: t("memberProfile.regTypeMokhayam"),
+  };
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,7 +53,7 @@ export default function MemberProfilePage() {
     const r = await fetch("/api/member/me");
     if (!r.ok) {
       const d = await r.json().catch(() => ({}));
-      setError(d.error ?? "تعذّر جلب الملف");
+      setError(d.error ?? t("memberProfile.fetchFailed"));
       setLoading(false);
       return;
     }
@@ -86,10 +87,10 @@ export default function MemberProfilePage() {
     if (r.ok) {
       const data = await r.json();
       setMe({ ...me, photoUrl: (data.photoUrl as string) + "?t=" + Date.now() });
-      toast.success("تم رفع الصورة");
+      toast.success(t("memberProfile.photoUploaded"));
     } else {
       const data = await r.json().catch(() => ({}));
-      toast.error(data.error ?? "فشل رفع الصورة");
+      toast.error(data.error ?? t("memberProfile.photoUploadFailed"));
     }
     setUploadingPhoto(false);
     e.target.value = "";
@@ -102,15 +103,15 @@ export default function MemberProfilePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    if (r.ok) { toast.success("تم تحديث المعلومات"); load(); }
+    if (r.ok) { toast.success(t("memberProfile.infoUpdated")); load(); }
     else {
       const d = await r.json().catch(() => ({}));
-      toast.error(d.error ?? "فشل");
+      toast.error(d.error ?? t("misc.failed"));
     }
     setSaving(false);
   };
 
-  if (loading) return <div className="text-center py-12">جاري التحميل...</div>;
+  if (loading) return <div className="text-center py-12">{t("misc.loading")}</div>;
   if (error) {
     return (
       <Card className="max-w-lg">
@@ -123,23 +124,23 @@ export default function MemberProfilePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold">ملفي الشخصي</h1>
-        <p className="text-muted-foreground">يمكنك تحديث معلومات الاتصال الخاصة بك. باقي المعلومات تتطلب موافقة الإدارة.</p>
+        <h1 className="text-2xl font-bold">{t("memberProfile.title")}</h1>
+        <p className="text-muted-foreground">{t("memberProfile.subtitle")}</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>الصورة الشخصية</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("memberProfile.photoTitle")}</CardTitle></CardHeader>
         <CardContent className="flex items-center gap-6">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-border shrink-0">
             {me.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={me.photoUrl} alt="صورتي" className="w-full h-full object-cover" />
+              <img src={me.photoUrl} alt={t("memberProfile.photoAlt")} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-3xl text-muted-foreground">👤</div>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="photo-upload">رفع صورة جديدة</Label>
+            <Label htmlFor="photo-upload">{t("memberProfile.uploadNew")}</Label>
             <input
               id="photo-upload"
               type="file"
@@ -148,38 +149,38 @@ export default function MemberProfilePage() {
               disabled={uploadingPhoto}
               className="block text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground cursor-pointer"
             />
-            <p className="text-xs text-muted-foreground">JPG / PNG / WEBP، أقل من 5 ميغابايت</p>
-            {uploadingPhoto && <p className="text-xs text-muted-foreground">جاري الرفع...</p>}
+            <p className="text-xs text-muted-foreground">{t("memberProfile.photoHint")}</p>
+            {uploadingPhoto && <p className="text-xs text-muted-foreground">{t("memberProfile.uploading")}</p>}
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>المعلومات الأساسية</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("memberProfile.basicInfo")}</CardTitle></CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 text-sm">
-          <div><div className="text-muted-foreground">الاسم الكامل</div><div className="font-medium">{me.fullName}</div></div>
-          <div><div className="text-muted-foreground">رقم التسجيل</div><div className="font-medium" dir="ltr">{me.registrationNumber}</div></div>
-          {me.cin && <div><div className="text-muted-foreground">ب.و.ت</div><div className="font-medium" dir="ltr">{me.cin}</div></div>}
-          {me.registrationType && <div><div className="text-muted-foreground">نوع التسجيل</div><div><Badge variant="outline">{REG_TYPE_LABEL[me.registrationType] ?? me.registrationType}</Badge></div></div>}
+          <div><div className="text-muted-foreground">{t("member.fullName")}</div><div className="font-medium">{me.fullName}</div></div>
+          <div><div className="text-muted-foreground">{t("memberProfile.regNumber")}</div><div className="font-medium" dir="ltr">{me.registrationNumber}</div></div>
+          {me.cin && <div><div className="text-muted-foreground">{t("memberProfile.cin")}</div><div className="font-medium" dir="ltr">{me.cin}</div></div>}
+          {me.registrationType && <div><div className="text-muted-foreground">{t("memberProfile.regType")}</div><div><Badge variant="outline">{regTypeLabels[me.registrationType] ?? me.registrationType}</Badge></div></div>}
           <p className="md:col-span-2 text-xs text-muted-foreground">
-            ⓘ لتعديل الاسم أو رقم البطاقة، تواصل مع الإدارة.
+            {t("memberProfile.editNote")}
           </p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>معلومات الاتصال</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("memberProfile.contactInfo")}</CardTitle></CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1">
-            <Label>الهاتف المحمول</Label>
+            <Label>{t("memberProfile.mobile")}</Label>
             <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="06XXXXXXXX" dir="ltr" className="text-right" />
           </div>
           <div className="space-y-1">
-            <Label>الهاتف الثابت</Label>
+            <Label>{t("memberProfile.landline")}</Label>
             <Input value={form.landline} onChange={(e) => update("landline", e.target.value)} placeholder="05XXXXXXXX" dir="ltr" className="text-right" />
           </div>
           <div className="md:col-span-2 space-y-1">
-            <Label>العنوان</Label>
+            <Label>{t("memberProfile.address")}</Label>
             <Textarea rows={2} value={form.address} onChange={(e) => update("address", e.target.value)} />
           </div>
         </CardContent>
@@ -187,36 +188,36 @@ export default function MemberProfilePage() {
 
       {me.memberType === "ADULT" && (
         <Card>
-          <CardHeader><CardTitle>المهنة والاهتمامات</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("memberProfile.jobAndInterests")}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <Label>المهنة</Label>
+              <Label>{t("memberProfile.profession")}</Label>
               <Input value={form.profession} onChange={(e) => update("profession", e.target.value)} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.interestJtima3iya} onChange={(e) => update("interestJtima3iya", e.target.checked)} />
-                اجتماعية
+                {t("memberProfile.interestSocial")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.interestTarbawiya} onChange={(e) => update("interestTarbawiya", e.target.checked)} />
-                تربوية
+                {t("memberProfile.interestEducational")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.interestFikriya} onChange={(e) => update("interestFikriya", e.target.checked)} />
-                فكرية
+                {t("memberProfile.interestIntellectual")}
               </label>
             </div>
             <div className="space-y-1">
-              <Label>اهتمامات أخرى</Label>
-              <Input value={form.interests} onChange={(e) => update("interests", e.target.value)} placeholder="مثال: التربية، القرآن الكريم، الرياضة..." />
+              <Label>{t("memberProfile.otherInterests")}</Label>
+              <Input value={form.interests} onChange={(e) => update("interests", e.target.value)} placeholder={t("memberProfile.interestsPlaceholder")} />
             </div>
           </CardContent>
         </Card>
       )}
 
       <Button onClick={save} disabled={saving}>
-        {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+        {saving ? t("memberProfile.saving") : t("memberProfile.saveChanges")}
       </Button>
     </div>
   );

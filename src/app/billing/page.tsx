@@ -5,10 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { PLANS } from "@/lib/plans";
 import { youcanPayConfigured } from "@/lib/payments/youcan";
 import { BillingActions } from "./billing-actions";
+import { getT } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/config";
 
 export default async function BillingPage() {
   const session = await auth();
   if (!session) redirect("/login");
+  const { t, locale } = await getT();
 
   const tenant = await getTenantContext();
 
@@ -24,19 +27,19 @@ export default async function BillingPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-2xl font-extrabold">الاشتراك والفاتورة</h1>
+      <h1 className="text-2xl font-extrabold">{t("billing.title")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        {tenant ? `فضاء: ${tenant.name} (${tenant.slug})` : "هذه الصفحة خاصة بفضاءات الجمعيات المشتركة"}
+        {tenant ? `${t("billing.space")}: ${tenant.name} (${tenant.slug})` : t("billing.tenantsOnly")}
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-5">
-          <p className="text-sm text-muted-foreground">الخطة الحالية</p>
-          <p className="mt-1 text-xl font-bold">{plan.label}</p>
-          {!tenant && <p className="mt-1 text-xs text-muted-foreground">منصة رئيسية — بدون قيود</p>}
+          <p className="text-sm text-muted-foreground">{t("billing.currentPlan")}</p>
+          <p className="mt-1 text-xl font-bold">{t(`plan.${planKey}.label`)}</p>
+          {!tenant && <p className="mt-1 text-xs text-muted-foreground">{t("billing.mainPlatform")}</p>}
         </div>
         <div className="rounded-xl border bg-card p-5">
-          <p className="text-sm text-muted-foreground">المنخرطون النشطون</p>
+          <p className="text-sm text-muted-foreground">{t("billing.activeMembers")}</p>
           <p className="mt-1 text-xl font-bold">
             {memberCount}
             {cap !== null ? <span className="text-sm font-normal text-muted-foreground"> / {cap}</span> : null}
@@ -51,27 +54,27 @@ export default async function BillingPage() {
           )}
         </div>
         <div className="rounded-xl border bg-card p-5">
-          <p className="text-sm text-muted-foreground">صلاحية الاشتراك</p>
+          <p className="text-sm text-muted-foreground">{t("billing.validUntil")}</p>
           <p className="mt-1 font-bold">
-            {paidUntil ? new Intl.DateTimeFormat("ar-MA", { dateStyle: "long" }).format(paidUntil) : "—"}
+            {paidUntil ? new Intl.DateTimeFormat(locale === "fr" ? "fr-MA" : "ar-MA", { dateStyle: "long" }).format(paidUntil) : "—"}
           </p>
           {trialLeft !== null && !paidUntil && (
-            <p className="mt-1 text-xs text-muted-foreground">تبقّى {trialLeft} يوما من التجربة المجانية</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("billing.trialLeft", { days: trialLeft ?? 0 })}</p>
           )}
         </div>
       </div>
 
-      <h2 className="mt-12 text-lg font-bold">تغيير الخطة</h2>
+      <h2 className="mt-12 text-lg font-bold">{t("billing.changePlan")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        الدفع عبر بطاقة بنكية أو CashPlus. التفعيل فوري بعد نجاح الدفع.
+        {t("billing.changeNote")}
       </p>
       <div className="mt-6">
         <BillingActions
           plans={Object.values(PLANS).map((p) => ({
             key: p.key,
-            label: p.label,
+            label: t(`plan.\${p.key}.label`),
             priceMad: p.priceMad,
-            features: p.features,
+            features: p.features.map((_, i) => t(`plan.\${p.key}.f\${i + 1}`)),
           }))}
           currentPlan={planKey}
           youcanConfigured={youcanPayConfigured()}
