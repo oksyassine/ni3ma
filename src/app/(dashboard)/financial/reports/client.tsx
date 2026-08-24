@@ -76,6 +76,12 @@ export function ReportsClient({ years }: { years: Year[] }) {
           <Button onClick={exportXlsx} variant="outline">
             <Download size={16} />Excel
           </Button>
+          <a
+            href={`/financial/annual-report${yearId ? `?academicYearId=${yearId}` : ""}`}
+            className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            {t("financial.annualReport")}
+          </a>
         </div>
       </div>
 

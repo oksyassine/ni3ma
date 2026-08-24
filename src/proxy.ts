@@ -37,7 +37,11 @@ export default auth(async (req) => {
     pathname.startsWith("/api/invite") ||
     pathname.startsWith("/api/public") ||
     pathname.startsWith("/api/start") ||
-    pathname.startsWith("/api/webhooks")
+    pathname.startsWith("/api/webhooks") ||
+    pathname === "/sw.js" ||
+    pathname === "/manifest.json" ||
+    pathname.startsWith("/icons/") ||
+    pathname.startsWith("/offline")
   ) {
     return NextResponse.next();
   }

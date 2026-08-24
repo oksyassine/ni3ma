@@ -3,6 +3,7 @@ import { Cairo } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { I18nProvider } from "@/components/i18n/provider";
+import { SWRegister } from "@/components/pwa/sw-register";
 import { getLocale } from "@/lib/i18n/server";
 import { isRtl } from "@/lib/i18n/config";
 import "./globals.css";
@@ -16,6 +17,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  themeColor: "#16a34a",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,6 +29,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: ar
       ? "نظام إدارة الجمعيات المغربية ودور حفظ القرآن: الأعضاء، الحضور، المالية، المشاريع والحالات الاجتماعية."
       : "Gestion des associations marocaines et écoles coraniques : adhérents, présence, finances, projets et dossiers sociaux.",
+    manifest: "/manifest.json",
+    icons: {
+      icon: "/icons/icon-192.png",
+      apple: "/icons/apple-touch-icon.png",
+    },
   };
 }
 
@@ -43,6 +50,7 @@ export default async function RootLayout({
           <I18nProvider locale={locale}>
             {children}
             <Toaster position="top-center" />
+            <SWRegister />
           </I18nProvider>
         </ThemeProvider>
       </body>

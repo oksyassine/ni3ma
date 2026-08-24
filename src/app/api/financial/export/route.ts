@@ -59,6 +59,64 @@ export async function GET(req: NextRequest) {
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(donRows), "التبرعات");
 
+  // Journal sheet — PCGE-style livre journal for accountants/auditors.
+  // Cotisations → 7142, dons → 7143, subventions not tracked here,
+  // expenses mapped to 6x charge classes by category.
+  const EXPENSE_ACCOUNT: Record<string, string> = {
+    EDUCATIONAL: "6142",
+    SOCIAL: "6145",
+    QURAN: "6147",
+    ADMINISTRATIVE: "6141",
+    MAINTENANCE: "6133",
+    OTHER: "6167",
+  };
+  type JournalRow = {
+    date: string; piece: string; account: string;
+    label: string; debit: number; credit: number;
+  };
+  const journal: JournalRow[] = [];
+  for (const c of contributions) {
+    journal.push({
+      date: c.weekStart.toISOString().slice(0, 10),
+      piece: `COT-${c.id.slice(-8)}`,
+      account: "7142",
+      label: `Cotisation ${c.member.fullName}`,
+      debit: 0,
+      credit: Number(c.amount),
+    });
+  }
+  for (const d of donations.filter((x) => x.isPaid)) {
+    journal.push({
+      date: d.donationDate.toISOString().slice(0, 10),
+      piece: `DON-${d.id.slice(-8)}`,
+      account: "7143",
+      label: `Don ${d.isAnonymous ? "-" : d.donorName ?? ""}`.trim(),
+      debit: 0,
+      credit: Number(d.amount),
+    });
+  }
+  for (const e of expenses) {
+    journal.push({
+      date: e.expenseDate.toISOString().slice(0, 10),
+      piece: `DEP-${e.id.slice(-8)}`,
+      account: EXPENSE_ACCOUNT[e.category] ?? "6167",
+      label: e.description.slice(0, 80),
+      debit: Number(e.amount),
+      credit: 0,
+    });
+  }
+  const journalRows = journal
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((r) => ({
+      "التاريخ / Date": r.date,
+      "الوصل / Pièce": r.piece,
+      "الحساب / Compte": r.account,
+      "البيان / Libellé": r.label,
+      "مدين / Débit": r.debit,
+      "دائن / Crédit": r.credit,
+    }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(journalRows), "اليومية-Journal");
+
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
 
   return new NextResponse(new Uint8Array(buf), {

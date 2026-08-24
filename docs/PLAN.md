@@ -93,8 +93,8 @@ Tenant resolution: `{slug}.neimaa.ma` subdomains + custom domain mapping (CNAME)
 ### Phase 3 — Market fit (month 2) — i18n ✅ implemented
 - [x] French i18n layer: full AR/FR dictionaries (~15 namespaces), per-association default locale (AssociationInfo.defaultLocale) + user cookie override, dynamic lang/dir, localized metadata/dates/role labels; all surfaces swept
 - [ ] WhatsApp notification channel (via WhatsApp Cloud API or CallMeBot-style gateway initially)
-- [ ] Authority-ready exports: annual moral+financial report PDF, Excel/FEC
-- [ ] PWA installability + offline-tolerant attendance
+- [x] Authority-ready exports: print-optimized annual moral & financial report page (`/financial/annual-report`, browser → PDF) + PCGE-style journal sheet (7142/7143/6xx) in the XLSX export
+- [x] PWA: manifest + icons + service worker (static cache, offline fallback page `/offline`); queued offline attendance deferred
 
 ### Phase 4 — Growth (month 3+)
 - [ ] Custom domains, federation dashboards
