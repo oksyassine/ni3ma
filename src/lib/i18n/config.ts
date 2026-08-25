@@ -24,6 +24,7 @@ import { educational } from "./dict/educational";
 import { social } from "./dict/social";
 import { quran } from "./dict/quran";
 import { misc } from "./dict/misc";
+import { legal } from "./dict/legal";
 import { errors } from "./dict/errors";
 
 const namespaces = {
@@ -41,6 +42,7 @@ const namespaces = {
   social,
   quran,
   misc,
+  legal,
   errors,
 };
 

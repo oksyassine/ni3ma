@@ -128,6 +128,10 @@ export default async function LandingPage() {
       <footer className="border-t py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{t("landing.brand")}</span>
+          <div className="flex gap-4">
+            <Link href="/terms" className="hover:text-foreground">{t("legal.terms.title")}</Link>
+            <Link href="/privacy" className="hover:text-foreground">{t("legal.privacy.title")}</Link>
+          </div>
           <span>© {new Date().getFullYear()} — {t("landing.footer.copyright")}</span>
         </div>
       </footer>

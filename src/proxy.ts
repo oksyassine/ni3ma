@@ -41,7 +41,9 @@ export default auth(async (req) => {
     pathname === "/sw.js" ||
     pathname === "/manifest.json" ||
     pathname.startsWith("/icons/") ||
-    pathname.startsWith("/offline")
+    pathname.startsWith("/offline") ||
+    pathname === "/terms" ||
+    pathname === "/privacy"
   ) {
     return NextResponse.next();
   }
