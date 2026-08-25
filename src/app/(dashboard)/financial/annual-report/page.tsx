@@ -5,6 +5,7 @@ import { isAdmin, hasBureauRead } from "@/lib/permissions";
 import { getT } from "@/lib/i18n/server";
 import { headers } from "next/headers";
 import { normalizeHost, rootDomain } from "@/lib/tenants";
+import { PrintButton } from "./print-button";
 
 // Print-optimized annual moral & financial report (التقرير الأدبي والمعنوي
 // والمالي) — the document Moroccan associations submit to their general
@@ -114,12 +115,7 @@ export default async function AnnualReportPage({
             </a>
           ))}
         </div>
-        <button
-          onClick={() => window.print()}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          {t("common.print")} / PDF
-        </button>
+        <PrintButton label={t("common.print")} />
       </div>
 
       {/* Header */}
