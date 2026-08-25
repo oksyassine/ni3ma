@@ -1,6 +1,10 @@
 export const auth = {
   ar: {
     "auth.login.title": "تسجيل الدخول",
+    "auth.login.tagline": "نظام التسيير · مكناس",
+    "auth.login.newHere": "جديد في الجمعية؟",
+    "auth.login.signingIn": "جاري الدخول...",
+    "auth.login.usernamePlaceholder": "أدخل اسم المستخدم",
     "auth.login.username": "اسم المستخدم",
     "auth.login.password": "كلمة المرور",
     "auth.login.submit": "دخول",
@@ -125,6 +129,10 @@ export const auth = {
   },
   fr: {
     "auth.login.title": "Connexion",
+    "auth.login.tagline": "Système de gestion · Meknès",
+    "auth.login.newHere": "Nouveau dans l'association ?",
+    "auth.login.signingIn": "Connexion en cours...",
+    "auth.login.usernamePlaceholder": "Entrez votre nom d'utilisateur",
     "auth.login.username": "Nom d'utilisateur",
     "auth.login.password": "Mot de passe",
     "auth.login.submit": "Se connecter",

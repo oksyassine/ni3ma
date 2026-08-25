@@ -192,7 +192,7 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
-  const { t } = useT();
+  const { t, rtl } = useT();
   const userRoles = (session?.user?.roles ?? []) as Role[];
 
   const accessibleItems = navItems.filter((item) =>
@@ -208,7 +208,7 @@ export function AppSidebar() {
   });
 
   return (
-    <Sidebar side="right" collapsible="icon">
+    <Sidebar side={rtl ? "right" : "left"} collapsible="icon">
       <SidebarHeader className="border-b px-3 py-3">
         <Link href="/" className="flex items-center gap-3 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 shadow-sm bg-white">
