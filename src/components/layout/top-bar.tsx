@@ -28,7 +28,7 @@ export function TopBar() {
     ?.split(" ")
     .map((n) => n[0])
     .join("")
-    .slice(0, 2) ?? "؟";
+    .slice(0, 2) ?? (locale === "fr" ? "?" : "؟");
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">

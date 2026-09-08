@@ -17,8 +17,17 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const PRIVATE_KEY = process.env.YOUCAN_PAY_PRIVATE_KEY ?? "";
 const SANDBOX = (process.env.YOUCAN_PAY_MODE ?? "sandbox") !== "live";
 
+// 5s timeout for tokenize calls — a hung YouCan can't pin an event-loop
+// thread or pile up requests on a cPanel worker.
+const TOKENIZE_TIMEOUT_MS = 5_000;
+
+// Allowlist for `lang` parameter on the payment-form URL. Anything outside
+// this set is replaced with the safe default — defends against URL-injection
+// when a malicious caller passes `lang` into the URL builder.
+const SAFE_LANGS = new Set(["ar", "fr", "en"]);
+
 export function youcanPayConfigured(): boolean {
-  return PRIVATE_KEY.startsWith("pri_");
+  return PRIVATE_KEY.startsWith("pri_") && PRIVATE_KEY.length > 8;
 }
 
 function apiBase(): string {
@@ -26,12 +35,13 @@ function apiBase(): string {
 }
 
 export function paymentFormUrl(tokenId: string, lang = "ar"): string {
-  return `https://youcanpay.com/${SANDBOX ? "sandbox/" : ""}payment-form/${tokenId}?lang=${lang}`;
+  const safeLang = SAFE_LANGS.has(lang) ? lang : "ar";
+  return `https://youcanpay.com/${SANDBOX ? "sandbox/" : ""}payment-form/${tokenId}?lang=${safeLang}`;
 }
 
 export type TokenizeInput = {
   orderId: string;
-  /** Amount in the smallest practical unit — YouCan expects a decimal string like "99.00". */
+  /** Amount in MAD — YouCan expects a decimal string like "99.00". */
   amountMad: number;
   successUrl: string;
   errorUrl: string;
@@ -43,6 +53,16 @@ export type TokenizeInput = {
 export type TokenizeResult =
   | { ok: true; tokenId: string }
   | { ok: false; message: string };
+
+// Strip the platform's own private key from any error text returned by the
+// gateway (or by us) so a developer reading logs doesn't accidentally leak
+// the credential via an echo from YouCan.
+function sanitizeMessage(msg: string): string {
+  if (!msg) return msg;
+  return msg
+    .replace(/pri_[A-Za-z0-9_]+/g, "[REDACTED]")
+    .replace(/pri-test_[A-Za-z0-9_]+/g, "[REDACTED]");
+}
 
 export async function tokenize(input: TokenizeInput): Promise<TokenizeResult> {
   if (!youcanPayConfigured()) {
@@ -66,6 +86,7 @@ export async function tokenize(input: TokenizeInput): Promise<TokenizeResult> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       cache: "no-store",
+      signal: AbortSignal.timeout(TOKENIZE_TIMEOUT_MS),
     });
     const json = (await res.json().catch(() => ({}))) as {
       token?: { id?: string };
@@ -74,20 +95,27 @@ export async function tokenize(input: TokenizeInput): Promise<TokenizeResult> {
     if (res.ok && json.token?.id) {
       return { ok: true, tokenId: json.token.id };
     }
-    return { ok: false, message: json.message ?? `YouCan Pay error (HTTP ${res.status})` };
+    return { ok: false, message: sanitizeMessage(json.message ?? `YouCan Pay error (HTTP ${res.status})`) };
   } catch (err) {
-    return { ok: false, message: String(err instanceof Error ? err.message : err) };
+    return { ok: false, message: sanitizeMessage(String(err instanceof Error ? err.message : err)) };
   }
 }
 
-/** Verify a webhook signature against the raw request body (HMAC-SHA256). */
+/**
+ * Verify a webhook signature against the raw request body (HMAC-SHA256).
+ *
+ * The signature header is normalized before comparison: whitespace stripped,
+ * lowercase, and any non-hex characters rejected. Without this, a signature
+ * like `"ab cd ef"` or `"abCDef"` short-circuits `timingSafeEqual`'s
+ * length check and bypasses the comparison.
+ */
 export function verifyWebhookSignature(signature: string | null, rawBody: string): boolean {
   if (!signature || !PRIVATE_KEY) return false;
+  const normalized = signature.trim().toLowerCase().replace(/\s+/g, "");
+  if (!/^[0-9a-f]+$/.test(normalized)) return false;
   const expected = createHmac("sha256", PRIVATE_KEY).update(rawBody).digest("hex");
-  const a = Buffer.from(expected, "utf8");
-  const b = Buffer.from(signature, "utf8");
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
+  if (normalized.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(normalized, "utf8"), Buffer.from(expected, "utf8"));
 }
 
 export type YouCanWebhookEvent = {

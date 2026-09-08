@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { isAdmin, isBureauRW, hasBureauRead, isFinancial } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
-import { checkMemberCap } from "@/lib/plan-enforce";
+import { createCappedMember, CapReachedError } from "@/lib/plan-enforce";
+import { Prisma } from "@prisma/client";
 
 const CREATABLE_FIELDS = [
   "memberType", "fullName", "dateOfBirth", "placeOfBirth", "gender",
@@ -22,9 +23,9 @@ const CREATABLE_FIELDS = [
 const INT_FIELDS = ["siblingsCount", "siblingsBoys", "siblingsGirls", "siblingOrder", "childrenBoys", "childrenGirls"] as const;
 const BOOL_FIELDS = ["interestJtima3iya", "interestTarbawiya", "interestFikriya"] as const;
 const DATE_FIELDS = ["dateOfBirth", "registrationDate"] as const;
+const SECTION_VALUES = new Set(["EDUCATIONAL", "SOCIAL", "QURAN"]);
+const MAX_LIMIT = 100;
 
-// Safe fields for any authenticated user (used by member-picker UIs).
-// NEVER includes passwordHash, checkinToken, or sensitive PII.
 const MEMBER_SAFE_SELECT = {
   id: true,
   registrationNumber: true,
@@ -53,8 +54,8 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search") ?? "";
   const type = searchParams.get("type") ?? "";
   const section = searchParams.get("section") ?? "";
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
+  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get("limit") ?? "20") || 20));
   const skip = (page - 1) * limit;
 
   const hasAccess = searchParams.get("hasAccess") === "1";
@@ -73,10 +74,6 @@ export async function GET(req: NextRequest) {
     where.username = null;
   }
 
-  // Privilege gate: only ADMIN, BUREAU_RW (i.e. ra2is), BUREAU READ (maktab read),
-  // and FINANCIAL (treasury) get full PII. Everyone else sees a safe subset
-  // (id/name/registrationNumber) so member-picker dropdowns still work without
-  // leaking CIN/parent phones/addresses/health.
   const canSeeFullData = isAdmin(session.user.roles)
     || isFinancial(session.user.roles)
     || (await hasBureauRead(session));
@@ -101,7 +98,6 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (hasAccess) {
-    // hasAccess listing is for the access-management UI (admin-only via proxy).
     return NextResponse.json(
       (members as Array<{ id: string; username: string | null; fullName: string; registrationNumber: number; userIsActive: boolean; userRoles?: { role: string }[] }>).map((m) => ({
         id: m.id,
@@ -121,15 +117,9 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Member creation is admin/bureau-RW only — creating a member sets fees,
-  // permissions, and feeds into the audit log.
   if (!isAdmin(session.user.roles) && !(await isBureauRW(session))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-
-  // Plan limit: FREE/STARTER tiers cap active members.
-  const cap = await checkMemberCap(1);
-  if (!cap.ok) return NextResponse.json({ error: cap.message, code: cap.code }, { status: 402 });
 
   const body = await req.json();
   const { sections: sectionList } = body;
@@ -149,13 +139,19 @@ export async function POST(req: NextRequest) {
   }
   if (data.subscriptionAmount !== undefined) {
     const n = parseFiniteFloat(data.subscriptionAmount);
-    if (n === undefined) return NextResponse.json({ error: "مبلغ الانخراط غير صالح" }, { status: 400 });
-    data.subscriptionAmount = n;
+    if (n === undefined || n < 0) {
+      return NextResponse.json({ error: "مبلغ الانخراط غير صالح" }, { status: 400 });
+    }
+    // Use Prisma.Decimal for monetary columns to avoid float-rounding
+    // drift (e.g. 0.1 + 0.2 → 0.30000000000000004).
+    data.subscriptionAmount = new Prisma.Decimal(n.toFixed(2));
   }
   for (const f of INT_FIELDS) {
     if (data[f] !== undefined) {
       const n = parseFiniteInt(data[f]);
-      if (n === undefined) return NextResponse.json({ error: `قيمة غير صالحة: ${f}` }, { status: 400 });
+      if (n === undefined || n < 0) {
+        return NextResponse.json({ error: `قيمة غير صالحة: ${f}` }, { status: 400 });
+      }
       data[f] = n;
     }
   }
@@ -163,24 +159,39 @@ export async function POST(req: NextRequest) {
     if (data[f] !== undefined) data[f] = !!data[f];
   }
 
-  const member = await prisma.member.create({
-    data: {
+  // Validate sections against the enum values — the cast `section as …`
+  // in the create payload is a TypeScript lie Prisma would reject at
+  // runtime with an unhelpful error.
+  const validSections = Array.isArray(sectionList)
+    ? sectionList.filter((s): s is string => typeof s === "string" && SECTION_VALUES.has(s))
+    : [];
+
+  try {
+    const member = await createCappedMember({
       ...(data as Parameters<typeof prisma.member.create>[0]["data"]),
-      sections: sectionList && sectionList.length > 0
-        ? { create: sectionList.map((section: string) => ({ section })) }
+      sections: validSections.length > 0
+        ? { create: validSections.map((section) => ({ section: section as "EDUCATIONAL" | "SOCIAL" | "QURAN" })) }
         : undefined,
-    },
-    include: { sections: true },
-  });
+    } as Parameters<typeof prisma.member.create>[0]["data"]);
 
-  await recordAudit({
-    userId: session.user.id,
-    action: "CREATE",
-    entity: "member",
-    entityId: member.id,
-    after: member,
-    req,
-  });
+    await recordAudit({
+      userId: session.user.id,
+      action: "CREATE",
+      entity: "member",
+      entityId: member.id,
+      after: { fullName: member.fullName, memberType: member.memberType, registrationNumber: member.registrationNumber },
+      req,
+    });
 
-  return NextResponse.json(member, { status: 201 });
+    return NextResponse.json(member, { status: 201 });
+  } catch (err) {
+    if (err instanceof CapReachedError) {
+      return NextResponse.json({ error: err.message, code: "CAP_REACHED" }, { status: 402 });
+    }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "ب.و.ت مكرر" }, { status: 409 });
+    }
+    console.error("member create failed", err);
+    return NextResponse.json({ error: "تعذر إضافة المنخرط" }, { status: 500 });
+  }
 }

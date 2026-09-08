@@ -1,0 +1,11 @@
+var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/sponsorships/route.js")
+R.c("server/chunks/[root-of-the-server]__0kk5-oy._.js")
+R.c("server/chunks/_13kr4bd._.js")
+R.c("server/chunks/node_modules_bcryptjs_index_0bjz0ul.js")
+R.c("server/chunks/node_modules_zod_v4_classic_external_131y~ke.js")
+R.c("server/chunks/[root-of-the-server]__0j8-xkl._.js")
+R.c("server/chunks/src_lib_rbac_ts_06q9fqo._.js")
+R.c("server/chunks/_0z_ma8m._.js")
+R.c("server/chunks/_next-internal_server_app_api_sponsorships_route_actions_0fdmcg6.js")
+R.m(101228)
+module.exports=R.m(101228).exports

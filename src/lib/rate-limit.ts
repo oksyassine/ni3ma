@@ -39,10 +39,15 @@ export function rateLimit(key: string, max: number, windowMs: number): RateLimit
   return { allowed: true, remaining: max - existing.hits, resetInMs: existing.resetAt - now };
 }
 
-/** Extract a best-effort client IP from the request headers. */
+/** Extract a best-effort client IP from the request headers.
+ *  Cloudflare's `cf-connecting-ip` is trusted first because it's set by
+ *  the edge and can't be spoofed by clients. Falls back to the first hop
+ *  of `x-forwarded-for` (only safe when the upstream proxy strips the
+ *  client-supplied header). Returns `"unknown"` if neither is present. */
 export function clientIp(req: { headers: { get(name: string): string | null } }): string {
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    req.headers.get("cf-connecting-ip")
+    ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     ?? req.headers.get("x-real-ip")
     ?? "unknown"
   );

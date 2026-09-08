@@ -64,8 +64,6 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const dateLocale = locale === "fr" ? "fr-MA" : "ar-MA";
-
   useEffect(() => {
     fetch(`/api/members/${id}`)
       .then((res) => res.json())
@@ -93,7 +91,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
 
   const formatDate = (d: string | null) => {
     if (!d) return null;
-    return new Date(d).toLocaleDateString(dateLocale);
+    return new Date(d).toLocaleDateString(locale);
   };
 
   return (
@@ -121,6 +119,9 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex gap-2">
           <Button onClick={() => router.push(`/admin/members/${id}/edit`)}>
             {t("members.editData")}
+          </Button>
+          <Button variant="outline" onClick={() => window.open(`/bureau/members-card/${id}`, "_blank")}>
+            🪪 {t("memberCard.title")}
           </Button>
           <Button variant="outline" onClick={toggleActive}>
             {member.isActive ? t("members.deactivate") : t("members.activate")}
@@ -252,7 +253,6 @@ type Note = {
 
 function NotesPanel({ memberId }: { memberId: string }) {
   const { t, locale } = useT();
-  const noteDateLocale = locale === "fr" ? "fr-MA" : "ar-MA";
   const [notes, setNotes] = useState<Note[]>([]);
   const [content, setContent] = useState("");
   const [isPrivate, setIsPrivate] = useState(true);
@@ -345,7 +345,7 @@ function NotesPanel({ memberId }: { memberId: string }) {
                   <p className="whitespace-pre-wrap">{note.content}</p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-muted-foreground">
-                      {note.author.fullName} · {new Date(note.createdAt).toLocaleDateString(noteDateLocale)}
+                      {note.author.fullName} · {new Date(note.createdAt).toLocaleDateString(locale)}
                       {note.isPrivate && ` · ${t("members.privateTag")}`}
                     </p>
                     <div className="flex gap-1">

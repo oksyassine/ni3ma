@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
-import { checkMemberCap } from "@/lib/plan-enforce";
+import { CapReachedError, checkMemberCap } from "@/lib/plan-enforce";
 import { isAdmin, isBureauRW } from "@/lib/permissions";
+import { Prisma } from "@prisma/client";
 import type { Gender, MemberType } from "@prisma/client";
+
+const MAX_IMPORT_ROWS = 5000;
+const MAX_BODY_BYTES = 5 * 1024 * 1024;
+const SECTION_VALUES = new Set(["EDUCATIONAL", "SOCIAL", "QURAN"]);
 
 type ImportRow = {
   fullName?: string;
@@ -42,7 +47,6 @@ const GENDER_MAP: Record<string, Gender> = {
 
 function parseDate(v: string | undefined | null): Date | null {
   if (!v) return null;
-  // Accept yyyy-mm-dd or dd/mm/yyyy
   if (/^\d{4}-\d{2}-\d{2}/.test(v)) return new Date(v);
   const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (m) return new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`);
@@ -52,13 +56,13 @@ function parseDate(v: string | undefined | null): Date | null {
 function parseInt2(v: string | number | undefined | null): number | null {
   if (v === undefined || v === null || v === "") return null;
   const n = typeof v === "number" ? v : parseInt(String(v), 10);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 function parseFloat2(v: string | number | undefined | null): number | null {
   if (v === undefined || v === null || v === "") return null;
   const n = typeof v === "number" ? v : parseFloat(String(v));
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -68,19 +72,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Body-size guard. Default Next limit is 1MB, but we allow up to 5MB for
+  // legitimate bulk imports while still blocking OOM via huge payloads.
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "حجم الملف يتجاوز الحد المسموح" }, { status: 413 });
+  }
+
   const { rows, dryRun }: { rows: ImportRow[]; dryRun?: boolean } = await req.json();
   if (!Array.isArray(rows)) {
     return NextResponse.json({ error: "rows must be array" }, { status: 400 });
   }
-
-  // Plan limit: block early when the batch would exceed the tier's member cap.
-  if (!dryRun) {
-    const cap = await checkMemberCap(rows.length);
-    if (!cap.ok) return NextResponse.json({ error: cap.message, code: cap.code }, { status: 402 });
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return NextResponse.json(
+      { error: `الحد الأقصى ${MAX_IMPORT_ROWS} صف في المرة الواحدة` },
+      { status: 413 },
+    );
   }
 
   const errors: { index: number; reason: string }[] = [];
-  const valid: { index: number; data: Record<string, unknown>; sections: string[] }[] = [];
+  const valid: { index: number; data: Record<string, unknown>; sections: ("EDUCATIONAL" | "SOCIAL" | "QURAN")[] }[] = [];
 
   rows.forEach((r, i) => {
     if (!r.fullName?.trim()) {
@@ -97,8 +108,9 @@ export async function POST(req: NextRequest) {
       .toString()
       .split(/[,;\s]+/)
       .map((s) => s.trim().toUpperCase())
-      .filter((s) => ["EDUCATIONAL", "SOCIAL", "QURAN"].includes(s));
+      .filter((s): s is "EDUCATIONAL" | "SOCIAL" | "QURAN" => SECTION_VALUES.has(s));
 
+    const subscriptionAmount = parseFloat2(r.subscriptionAmount);
     valid.push({
       index: i,
       sections,
@@ -123,7 +135,7 @@ export async function POST(req: NextRequest) {
         profession: r.profession ?? null,
         interests: r.interests ?? null,
         associationRole: r.associationRole ?? null,
-        subscriptionAmount: parseFloat2(r.subscriptionAmount),
+        subscriptionAmount: subscriptionAmount !== null ? new Prisma.Decimal(subscriptionAmount.toFixed(2)) : null,
         isActive: true,
       },
     });
@@ -138,22 +150,47 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Cap check against the *valid* count, not the raw count — invalid rows
+  // don't consume cap slots. Done before the transaction so the caller can
+  // retry with a narrower file.
+  const cap = await checkMemberCap(valid.length);
+  if (!cap.ok) {
+    return NextResponse.json({ error: cap.message, code: cap.code }, { status: 402 });
+  }
+
+  // Insert all valid rows in a single transaction. A failure rolls back
+  // everything, so the cap count never drifts from reality and partial
+  // failures don't leave orphan members + sections.
   let imported = 0;
-  for (const v of valid) {
-    await prisma.member.create({
-      data: {
-        ...(v.data as object),
-        sections: { create: v.sections.map((s) => ({ section: s as "EDUCATIONAL" | "SOCIAL" | "QURAN" })) },
-      } as never,
-    });
-    imported++;
+  try {
+    imported = await prisma.$transaction(async (tx) => {
+      let count = 0;
+      for (const v of valid) {
+        await tx.member.create({
+          data: {
+            ...(v.data as object),
+            sections: v.sections.length > 0
+              ? { create: v.sections.map((s) => ({ section: s })) }
+              : undefined,
+          } as never,
+        });
+        count++;
+      }
+      return count;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (err) {
+    if (err instanceof CapReachedError) {
+      return NextResponse.json({ error: err.message, code: "CAP_REACHED" }, { status: 402 });
+    }
+    console.error("bulk import failed", err);
+    return NextResponse.json({ error: "فشل الاستيراد — لم يحفظ أي صف (تم التراجع)" }, { status: 500 });
   }
 
   await recordAudit({
     userId: session.user.id,
     action: "CREATE",
     entity: "member",
-    after: { bulkImport: true, count: imported },
+    after: { bulkImport: true, count: imported, total: rows.length, invalid: errors.length },
     req,
   });
 

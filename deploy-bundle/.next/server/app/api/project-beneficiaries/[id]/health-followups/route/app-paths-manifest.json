@@ -1,0 +1,3 @@
+{
+  "/api/project-beneficiaries/[id]/health-followups/route": "app/api/project-beneficiaries/[id]/health-followups/route.js"
+}

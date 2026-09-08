@@ -6,7 +6,6 @@ import { PLANS } from "@/lib/plans";
 import { youcanPayConfigured } from "@/lib/payments/youcan";
 import { BillingActions } from "./billing-actions";
 import { getT } from "@/lib/i18n/server";
-import { translate } from "@/lib/i18n/config";
 
 export default async function BillingPage() {
   const session = await auth();
@@ -56,7 +55,7 @@ export default async function BillingPage() {
         <div className="rounded-xl border bg-card p-5">
           <p className="text-sm text-muted-foreground">{t("billing.validUntil")}</p>
           <p className="mt-1 font-bold">
-            {paidUntil ? new Intl.DateTimeFormat(locale === "fr" ? "fr-MA" : "ar-MA", { dateStyle: "long" }).format(paidUntil) : "—"}
+            {paidUntil ? new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(paidUntil) : "—"}
           </p>
           {trialLeft !== null && !paidUntil && (
             <p className="mt-1 text-xs text-muted-foreground">{t("billing.trialLeft", { days: trialLeft ?? 0 })}</p>
@@ -72,9 +71,9 @@ export default async function BillingPage() {
         <BillingActions
           plans={Object.values(PLANS).map((p) => ({
             key: p.key,
-            label: t(`plan.\${p.key}.label`),
+            label: t(`plan.${p.key}.label`),
             priceMad: p.priceMad,
-            features: p.features.map((_, i) => t(`plan.\${p.key}.f\${i + 1}`)),
+            features: p.features.map((_, i) => t(`plan.${p.key}.f${i + 1}`)),
           }))}
           currentPlan={planKey}
           youcanConfigured={youcanPayConfigured()}

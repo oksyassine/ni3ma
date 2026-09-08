@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HIFZ_GRADE_LABELS, HIFZ_GRADE_COLORS } from "@/lib/quran";
 import { getT } from "@/lib/i18n/server";
+import { fmtMoney } from "@/lib/i18n/format";
 import { Calendar, BookOpen, Coins, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 
 export default async function FamilyPage() {
   const session = await auth();
   if (!session) redirect("/login");
-  const { t } = await getT();
+  const { t, locale } = await getT();
 
   // Find this user's member row to use as the parent
   const me = await prisma.member.findFirst({
@@ -118,7 +119,7 @@ export default async function FamilyPage() {
                           <span className="text-muted-foreground flex items-center gap-1">
                             <Calendar size={11} />{co.weekStart.toISOString().slice(0, 10)}
                           </span>
-                          <span className="font-mono">{Number(co.amount).toFixed(2)} {t("bureau.currencyMad")}</span>
+                          <span className="font-mono">{fmtMoney(Number(co.amount), locale)} {t("bureau.currencyMad")}</span>
                         </div>
                       ))}
                     </div>

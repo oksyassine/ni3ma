@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 import { Check, X, Trash2, HandHeart, Pencil } from "lucide-react";
 import { SECTION_LABELS } from "@/lib/section";
 import type { Section } from "@prisma/client";
@@ -30,7 +31,7 @@ type Hours = {
 };
 
 export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[]; activities: Activity[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [hours, setHours] = useState<Hours[]>([]);
   const [filter, setFilter] = useState<"" | "true" | "false">("");
   const [form, setForm] = useState({
@@ -160,8 +161,8 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
           <Button size="sm" variant={filter === "true" ? "default" : "outline"} onClick={() => setFilter("true")}>{t("misc.approved")}</Button>
         </div>
         <div className="flex gap-2">
-          <Badge variant="secondary">{t("vol.totalApproved", { total: totalApproved.toFixed(1) })}</Badge>
-          {totalFromTasks > 0 && <Badge variant="outline">{t("vol.fromTasks", { total: totalFromTasks.toFixed(1) })}</Badge>}
+          <Badge variant="secondary">{t("vol.totalApproved", { total: fmtMoney(totalApproved, locale, 1) })}</Badge>
+          {totalFromTasks > 0 && <Badge variant="outline">{t("vol.fromTasks", { total: fmtMoney(totalFromTasks, locale, 1) })}</Badge>}
         </div>
       </div>
 
@@ -176,7 +177,7 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium">{h.member.fullName}</span>
                     <Badge variant="outline">{SECTION_LABELS[h.section]}</Badge>
-                    <span className="text-sm font-mono">{Number(h.hours).toFixed(1)} {t("misc.hoursShort")}</span>
+                    <span className="text-sm font-mono">{fmtMoney(Number(h.hours), locale, 1)} {t("misc.hoursShort")}</span>
                     {fromTask ? (
                       <Badge className="bg-purple-100 text-purple-800 text-[10px]">{t("vol.fromTaskBadge")}</Badge>
                     ) : h.approved ? (
@@ -221,7 +222,7 @@ export function VolunteerLeaderClient({ adults, activities }: { adults: Adult[];
 }
 
 function VolunteerHoursEditButton({ hours, reload }: { hours: Hours; reload: () => void }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     hours: hours.hours,

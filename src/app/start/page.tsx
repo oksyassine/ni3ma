@@ -145,7 +145,7 @@ export default function StartPage() {
               placeholder="my-association"
               className="w-full bg-transparent px-3 py-2 text-sm outline-none"
             />
-            <span className="shrink-0 border-r px-3 py-2 text-sm text-muted-foreground">.neimaa.carbtrim.online</span>
+            <span className="shrink-0 border-r px-3 py-2 text-sm text-muted-foreground">.{ROOT}</span>
           </div>
           <p className="text-xs text-muted-foreground">
             {slugState === "ok" && <span className="text-green-600">{t("start.slugAvailable")}</span>}

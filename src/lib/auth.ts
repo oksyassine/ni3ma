@@ -1,13 +1,29 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
+import { compare, hashSync } from "bcryptjs";
 import { prisma } from "./prisma";
 import { rateLimit } from "./rate-limit";
 import type { Role } from "./rbac";
 
 // Dummy bcrypt hash to keep "user not found" timing similar to "wrong password".
-// Defends against timing-based username enumeration.
-const DUMMY_HASH = "$2b$12$0000000000000000000000.00000000000000000000000000000000";
+// Defends against timing-based username enumeration. Generated synchronously
+// at module load so the salt is a valid bcryptjs format — a hand-written
+// string of zeros is rejected by bcryptjs and would throw inside compare(),
+// defeating the timing protection.
+const DUMMY_HASH = hashSync("dummy-never-used", 12);
+
+// Best-effort client IP from a NextRequest-like headers bag. Trusts the first
+// hop of x-forwarded-for; deployments behind Cloudflare should also set the
+// CF-Connecting-IP header at the edge to harden this.
+function clientIpFromHeaders(headers?: { get(name: string): string | null }): string | null {
+  if (!headers) return null;
+  return (
+    headers.get("cf-connecting-ip")
+    ?? headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    ?? headers.get("x-real-ip")
+    ?? null
+  );
+}
 
 // Permission tables grant section/bureau access independently of the legacy
 // Role enum. The proxy + sidebar still gate on Role, so we synthesize the
@@ -66,6 +82,7 @@ declare module "next-auth" {
       roles: Role[];
       sectionLevels?: SectionLevels;
       bureauLevel?: BLvl;
+      subjectKind?: "user" | "member";
     };
   }
   interface User {
@@ -111,7 +128,10 @@ async function freshRolesFor(token: { id: string; subjectKind?: "user" | "member
   return null;
 }
 
-const ROLE_REFRESH_INTERVAL_MS = 60_000; // re-query at most once per minute
+// 10 seconds — short enough that revoking ADMIN/BUREAU_RW takes effect
+// promptly, long enough to avoid hammering the source-of-truth tables on
+// every request.
+const ROLE_REFRESH_INTERVAL_MS = 10_000;
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -121,31 +141,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         username: { label: "اسم المستخدم", type: "text" },
         password: { label: "كلمة المرور", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        // Throttle by username: 5 failed attempts per 5 minutes. Successful
-        // logins also consume budget — could be smarter, but this is enough
-        // to defeat brute force without locking honest users out.
         const username = String(credentials.username).toLowerCase();
-        const rl = rateLimit(`login:${username}`, 5, 5 * 60 * 1000);
-        if (!rl.allowed) {
+        const ip = clientIpFromHeaders(request?.headers);
+        const userRl = rateLimit(`login:user:${username}`, 5, 5 * 60 * 1000);
+        const ipRl = ip ? rateLimit(`login:ip:${ip}`, 20, 5 * 60 * 1000) : { allowed: true, remaining: 0, resetInMs: 0 };
+        if (!userRl.allowed || !ipRl.allowed) {
           // Burn cycles equivalent to a bcrypt compare so timing stays similar
           await compare(String(credentials.password), DUMMY_HASH);
           return null;
         }
 
-        // 1. Check system User table (admin accounts not tied to a member)
-        const user = await prisma.user.findUnique({
-          where: { username: credentials.username as string },
-          include: { roles: true },
-        });
+        // Parallel lookup — keeps the User-vs-Member timing identical so an
+        // attacker can't enumerate which table holds a given username.
+        const [user, member] = await Promise.all([
+          prisma.user.findUnique({
+            where: { username },
+            include: { roles: true },
+          }),
+          prisma.member.findUnique({
+            where: { username },
+            include: { userRoles: true },
+          }),
+        ]);
+        const password = String(credentials.password);
 
         if (user && user.isActive) {
-          const isValid = await compare(
-            credentials.password as string,
-            user.passwordHash
-          );
+          const isValid = await compare(password, user.passwordHash);
           if (isValid) {
             const baseRoles = user.roles.map((r) => r.role) as Role[];
             const synth = await synthesizeRoles({ userId: user.id, baseRoles });
@@ -159,43 +183,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               subjectKind: "user",
             };
           }
-        }
-
-        // 2. Check Member table (adult members with login access)
-        const member = await prisma.member.findUnique({
-          where: { username: credentials.username as string },
-          include: { userRoles: true },
-        });
-
-        if (
-          !member ||
-          !member.userIsActive ||
-          !member.passwordHash ||
-          !member.username
-        ) {
-          // Constant-time-ish: still do a bcrypt compare so attackers can't
-          // distinguish "user not found" from "wrong password" via response time.
-          await compare(credentials.password as string, DUMMY_HASH);
+          // User exists but password wrong: still burn a bcrypt cycle on the
+          // dummy hash so timing matches "user doesn't exist" exactly.
+          await compare(password, DUMMY_HASH);
           return null;
         }
 
-        const isValid = await compare(
-          credentials.password as string,
-          member.passwordHash
-        );
-        if (!isValid) return null;
+        if (
+          member &&
+          member.userIsActive &&
+          member.passwordHash &&
+          member.username
+        ) {
+          const isValid = await compare(password, member.passwordHash);
+          if (isValid) {
+            const baseRoles = member.userRoles.map((r) => r.role) as Role[];
+            const synth = await synthesizeRoles({ memberId: member.id, baseRoles });
+            return {
+              id: member.id,
+              username: member.username,
+              fullName: member.fullName,
+              roles: synth.roles,
+              sectionLevels: synth.sectionLevels,
+              bureauLevel: synth.bureauLevel,
+              subjectKind: "member",
+            };
+          }
+          await compare(password, DUMMY_HASH);
+          return null;
+        }
 
-        const baseRoles = member.userRoles.map((r) => r.role) as Role[];
-        const synth = await synthesizeRoles({ memberId: member.id, baseRoles });
-        return {
-          id: member.id,
-          username: member.username,
-          fullName: member.fullName,
-          roles: synth.roles,
-          sectionLevels: synth.sectionLevels,
-          bureauLevel: synth.bureauLevel,
-          subjectKind: "member",
-        };
+        // Neither user matched (or both exist but inactive/wrong-pw):
+        // burn one more bcrypt cycle so the timing for "no row" matches
+        // "user exists, wrong password" or "member exists, wrong password".
+        await compare(password, DUMMY_HASH);
+        return null;
       },
     }),
   ],
@@ -233,6 +255,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         roles: token.roles,
         sectionLevels: token.sectionLevels,
         bureauLevel: token.bureauLevel,
+        subjectKind: token.subjectKind,
       };
       return session;
     },

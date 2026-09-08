@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
+import { postExpense } from "@/lib/journal";
 import { getCurrentAcademicYearId } from "@/lib/academic-year";
 import { isFinancial, hasBureauRead } from "@/lib/permissions";
 
@@ -60,6 +61,11 @@ export async function POST(req: NextRequest) {
       academicYearId,
     },
   });
+
+  // Auto-post to the PCAF journal (debit expense account, credit treasury).
+  await postExpense(expense.id).catch((err) =>
+    console.error("[journal] postExpense failed", err),
+  );
 
   await recordAudit({
     userId: session.user.id,

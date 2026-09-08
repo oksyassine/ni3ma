@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { translate } from "@/lib/i18n/config";
+import { translate, type Locale } from "@/lib/i18n/config";
 
-type Ctx = { locale: string };
+type Ctx = { locale: Locale };
 
 const I18nContext = createContext<Ctx>({ locale: "ar" });
 
@@ -14,7 +14,7 @@ export function I18nProvider({
   locale,
   children,
 }: {
-  locale: string;
+  locale: Locale;
   children: React.ReactNode;
 }) {
   return <I18nContext.Provider value={{ locale }}>{children}</I18nContext.Provider>;
@@ -26,6 +26,6 @@ export function useT() {
   return {
     locale,
     rtl,
-    t: (key: string, vars?: Record<string, string | number>) => translate(locale as "ar" | "fr", key, vars),
+    t: (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars),
   };
 }

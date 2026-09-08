@@ -36,6 +36,25 @@ export function getAccessibleDashboards(userRoles: Role[]): string[] {
     .map(([path]) => path);
 }
 
+// Governance & compliance records (meetings/PV, grants, assets, sponsorships)
+// are bureau business: maktab manages, treasurer reads.
+export function canViewGovernance(userRoles: Role[]): boolean {
+  return (
+    userRoles.includes("ADMIN") ||
+    userRoles.includes("BUREAU") ||
+    userRoles.includes("BUREAU_RW") ||
+    userRoles.includes("FINANCIAL")
+  );
+}
+
+export function canManageGovernance(userRoles: Role[]): boolean {
+  return (
+    userRoles.includes("ADMIN") ||
+    userRoles.includes("BUREAU") ||
+    userRoles.includes("BUREAU_RW")
+  );
+}
+
 export function getDefaultDashboard(userRoles: Role[]): string {
   if (userRoles.includes("ADMIN")) return "/admin";
   if (userRoles.includes("BUREAU")) return "/bureau";

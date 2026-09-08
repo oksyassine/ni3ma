@@ -58,7 +58,9 @@ export default async function AnnualReportPage({
     prisma.member.groupBy({ by: ["memberType"], where: { isActive: true }, _count: true }),
     prisma.member.groupBy({ by: ["gender"], where: { isActive: true }, _count: true }),
     prisma.memberSection.groupBy({ by: ["section"], where: { isActive: true }, _count: true }),
-    prisma.programActivity.count(),
+    prisma.programActivity.count({
+      where: year ? { program: { academicYearId: year.id } } : {},
+    }),
     prisma.attendance.count({ where: { isPresent: true, ...scope } }),
     prisma.weeklyContribution.aggregate({ where: scope, _sum: { amount: true }, _count: true }),
     prisma.expense.groupBy({ by: ["category"], where: scope, _sum: { amount: true }, _count: true }),

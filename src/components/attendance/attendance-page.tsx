@@ -127,7 +127,7 @@ export function AttendancePage({ section }: { section: Section }) {
       </Card>
 
       <div className="flex items-center justify-between">
-        <Badge variant="secondary">{t("educational.presentCount", { present: presentCount, total: members.length })}</Badge>
+        <Badge variant="secondary">{t("educational.presentCount", { count: presentCount, total: members.length })}</Badge>
         <Button onClick={save} disabled={saving}>
           <Save size={14} />{saving ? "..." : t("educational.save")}
         </Button>

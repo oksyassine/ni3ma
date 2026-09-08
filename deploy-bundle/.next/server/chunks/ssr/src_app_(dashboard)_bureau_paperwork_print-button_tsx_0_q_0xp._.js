@@ -1,0 +1,3 @@
+module.exports=[859218,a=>{"use strict";var b=a.i(187924),c=a.i(699570);a.s(["PrintButton",0,function({label:a}){return(0,b.jsxs)("div",{className:"flex justify-end gap-2 mb-4 print:hidden",children:[(0,b.jsx)(c.Button,{variant:"outline",onClick:()=>window.history.back(),children:"←"}),(0,b.jsx)(c.Button,{onClick:()=>window.print(),children:a??"🖨️"})]})}])}];
+
+//# sourceMappingURL=src_app_%28dashboard%29_bureau_paperwork_print-button_tsx_0_q_0xp._.js.map

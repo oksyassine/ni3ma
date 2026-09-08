@@ -1,0 +1,3 @@
+{
+  "/api/project-beneficiaries/[id]/school-followups/[fid]/route": "app/api/project-beneficiaries/[id]/school-followups/[fid]/route.js"
+}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/components/i18n/provider";
+import { fmtDate } from "@/lib/i18n/format";
 
 export type TenantRow = {
   id: string;
@@ -29,7 +30,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 function fmt(d: string | null, locale: string): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA");
+  return fmtDate(d, locale);
 }
 
 export function PlatformTenantsTable({ initial }: { initial: TenantRow[] }) {

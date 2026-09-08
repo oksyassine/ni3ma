@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { useT } from "@/components/i18n/provider";
+import { fmtDate, fmtMoney } from "@/lib/i18n/format";
 
 type CaseDetail = {
   id: string;
@@ -46,7 +47,7 @@ type HealthFollowup = { id: string; hasSpecialOperation: boolean; illness: strin
 
 export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { t, locale } = useT();
+  const { t } = useT();
   const [data, setData] = useState<CaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
@@ -243,8 +244,8 @@ function SchoolFollowupTab({ caseId, items, reload }: { caseId: string; items: S
               <div className="flex items-center justify-between gap-2">
                 <div className="font-medium">{f.semester ?? "—"}</div>
                 <div className="flex items-center gap-2">
-                  {f.gpa && <Badge variant="outline">{t("social.gpaBadge", { gpa: Number(f.gpa).toFixed(2) })}</Badge>}
-                  <span className="text-xs text-muted-foreground">{new Date(f.createdAt).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA")}</span>
+                  {f.gpa && <Badge variant="outline">{t("social.gpaBadge", { gpa: fmtMoney(Number(f.gpa), locale, 2) })}</Badge>}
+                  <span className="text-xs text-muted-foreground">{fmtDate(f.createdAt, locale)}</span>
                   <Button size="icon" variant="ghost" onClick={() => del(f.id)}><Trash2 size={13} /></Button>
                 </div>
               </div>
@@ -306,7 +307,7 @@ function HealthFollowupTab({ caseId, items, reload }: { caseId: string; items: H
                   {f.hasSpecialOperation && <Badge className="bg-red-100 text-red-700 text-[10px]">{t("social.specialOperationBadge")}</Badge>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{new Date(f.createdAt).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA")}</span>
+                  <span className="text-xs text-muted-foreground">{fmtDate(f.createdAt, locale)}</span>
                   <Button size="icon" variant="ghost" onClick={() => del(f.id)}><Trash2 size={13} /></Button>
                 </div>
               </div>

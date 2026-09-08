@@ -66,7 +66,6 @@ type InviteResult = {
 export default function UsersPage() {
   const router = useRouter();
   const { t, locale } = useT();
-  const dateLocale = locale === "fr" ? "fr-MA" : "ar-MA";
   const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
   const [adultsNoAccess, setAdultsNoAccess] = useState<AdultNoAccess[]>([]);
   const [memberUsers, setMemberUsers] = useState<MemberWithAccess[]>([]);
@@ -203,7 +202,7 @@ export default function UsersPage() {
                       <p className="text-sm text-muted-foreground" dir="ltr">{m.phone}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      {new Date(m.createdAt).toLocaleDateString(dateLocale)}
+                      {new Date(m.createdAt).toLocaleDateString(locale)}
                     </p>
                   </div>
                   <div className="flex gap-2">

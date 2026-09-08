@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# oversized deploy artifacts (exceed GitHub's 100 MB file limit; keep locally for rsync)
+ni3ma-deploy-*.tar.gz
+deploy-bundle/node_modules/@next/swc-*/next-swc.*.node

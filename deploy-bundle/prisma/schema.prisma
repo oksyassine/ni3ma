@@ -1,0 +1,1721 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  ADMIN
+  BUREAU
+  FINANCIAL
+  EDUCATIONAL
+  SOCIAL
+  QURAN
+  MEMBER
+  BAHT_IJTIMA3I_TEAM // Field-research team — privileged read on full beneficiary records
+}
+
+enum PermissionLevel {
+  READ
+  RW
+  ADMIN
+}
+
+enum BureauLevel {
+  READ
+  RW
+}
+
+enum RegistrationType {
+  TAMM // التسجيل التام
+  DAAM_MADRASSI // الدعم المدرسي
+  QURAN_TAJWEED // دروس الحفظ والتجويد
+  MOKHAYAM // المخيم
+}
+
+enum HealthStatus {
+  HEALTHY
+  SICK
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum BeneficiaryType {
+  GENERAL
+  YATIM
+  MOZWIZ
+}
+
+enum MemberType {
+  CHILD
+  ADULT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Section {
+  EDUCATIONAL
+  SOCIAL
+  QURAN
+  QUDAT          // مركز تأهيل القضاة
+  MEDIA          // قسم الإعلامي
+}
+
+enum ExpenseCategory {
+  EDUCATIONAL
+  SOCIAL
+  QURAN
+  ADMINISTRATIVE
+  MAINTENANCE
+  OTHER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum HifzGrade {
+  EXCELLENT
+  GOOD
+  AVERAGE
+  NEEDS_WORK
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  LOGIN
+  LOGOUT
+}
+
+enum ProjectKind {
+  NACHAT // نشاط — one-off activity/event
+  MACHROO3 // مشروع — ongoing initiative
+}
+
+enum DonationKind {
+  CASH // نقدي
+  IN_KIND // عيني
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RiskStatus {
+  OPEN
+  MITIGATED
+  OCCURRED
+  CLOSED
+}
+
+// Governance & compliance pack — Moroccan association law (Dahir 1-58-376 as
+// amended by lois 75-00 / 07-09) requires: general assemblies with signed PVs,
+// bureau-change declarations, and justification of public subsidies (>10k MAD)
+// to funders. The models below digitize that lifecycle.
+
+enum MeetingKind {
+  AGO    // الجمع العام العادي
+  AGE    // الجمع العام غير العادي
+  BUREAU // جلسة المكتب الإداري
+  OTHER
+}
+
+enum GrantFunderKind {
+  INDH          // المبادرة الوطنية للتنمية البشرية
+  COMMUNE       // جماعة ترابية
+  MINISTRY      // وزارة / مؤسسة عمومية
+  INTERNATIONAL // تعاون دولي (الاتحاد الأوروبي، الوكالات...)
+  FOUNDATION    // مؤسسة خاصة
+  OTHER
+}
+
+enum GrantStatus {
+  APPLIED   // ملف مقدم قيد الدراسة
+  APPROVED  // مصادق عليها (لم تُوقّع الاتفاقية)
+  ACTIVE    // اتفاقية موقعة — جاري التنفيذ
+  COMPLETED // أنجزت وتم تقديم الحصيلة
+  CANCELLED
+}
+
+enum AssetCondition {
+  GOOD
+  NEEDS_REPAIR
+  OUT_OF_SERVICE
+}
+
+enum SponsorshipKind {
+  YATIM   // كفالة يتيم
+  STUDENT // كفالة طالب علم
+  FAMILY  // رعاية أسرة معوزة
+}
+
+enum SponsorshipStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum OfficialDocKind {
+  STATUTES     // القانون الأساسي
+  INTERNAL_RULES // النظام الداخلي
+  PV           // محضر
+  DECLARATION  // تصريح إيداع / تعديل
+  BANK         // وثيقة بنكية
+  CNSS         // تصريح CNSS
+  AGREEMENT    // اتفاقية شراكة
+  INSURANCE    // تأمين
+  RECEIPT      // وصل جمعياتي (الجريدة الرسمية)
+  OTHER
+}
+
+enum DistributionKind {
+  RAMADAN_BASKET // قفة رمضان
+  IFTAR          // إفطار الصائم / موائد الرحمن
+  ADHI           // الهدي والأضاحي
+  EID_CLOTHES    // كسوة العيد والشتاء
+  FOOD_BASKET    // سلة غذائية عادية
+  SCHOOL_KIT     // حقيبة مدرسية
+  OTHER
+}
+
+// Cross-cutting digitalization pack — records every Moroccan association is
+// expected to keep (correspondence register, branches, trainings) plus the
+// written volunteer contracts made mandatory by law 06-18 (Aug 2021).
+
+enum MailDirection {
+  INCOMING // وارد
+  OUTGOING // صادر
+}
+
+enum MailStatus {
+  PENDING   // قيد المعالجة
+  PROCESSED // تمت المعالجة
+  ARCHIVED
+}
+
+enum CourseStatus {
+  PLANNED
+  ONGOING
+  DONE
+  CANCELLED
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  TERMINATED
+}
+
+// Staff/employee management — associations that employ anyone must run
+// payroll + CNSS monthly and keep signed contracts on file.
+enum EmployeeContractType {
+  CDI          // عقد دائم
+  CDD          // عقد محدد المدة
+  APPRENTICESHIP // تكوين بالتناوب
+  STAGE        // تدريب
+  ANAPEC       // عقد أنابيك / إدماج
+  OTHER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum PayrollStatus {
+  PENDING
+  PAID
+  CNSS_DECLARED
+}
+
+// Non-financial partnership agreements (different from Grants which track
+// money): schools, clinics, communes, peer NGOs, corporate CSR partners.
+enum PartnershipKind {
+  PUBLIC_INSTITUTION // جماعة، وزارة، مؤسسة عمومية
+  PRIVATE_COMPANY
+  NGO
+  SCHOOL             // مؤسسات تعليمية
+  HEALTH             // مصحة، مستشفى
+  INTERNATIONAL
+  OTHER
+}
+
+enum PartnershipStatus {
+  DRAFT
+  SIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+// Library catalog — quran schools, cultural and literacy associations all
+// lend books; copies are tracked separately from holdings.
+enum BookCategory {
+  QURAN
+  TAFSIR
+  HADITH
+  FIQH
+  AQIDA
+  ARABIC_LANGUAGE
+  GENERAL
+  CHILDREN
+  OTHER
+}
+
+enum BorrowingStatus {
+  OPEN
+  RETURNED
+  LATE
+  LOST
+}
+
+// ==================== AUTH ====================
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  email        String?
+  phone        String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  roles                   UserRole[]
+  recordedContributions   WeeklyContribution[] @relation("RecordedBy")
+  recordedExpenses        Expense[]            @relation("RecordedBy")
+  approvedExpenses        Expense[]            @relation("ApprovedBy")
+  recordedDonations       Donation[]           @relation("RecordedBy")
+  memberNotes             MemberNote[]
+  createdPrograms         AnnualProgram[]
+  uploadedResources       SectionResource[]
+  recordedAttendance      Attendance[]
+  recordedQuranProgress   QuranProgress[]      @relation("QuranRecorder")
+  approvedVolunteerHours  VolunteerHours[]     @relation("VolunteerApprover")
+  auditLogs               AuditLog[]
+  recordedInKindDonations InKindDonation[]     @relation("InKindRecorder")
+  createdProjects         SocialProject[]      @relation("ProjectCreator")
+  evaluatedProjects       SocialProject[]      @relation("ProjectEvaluator")
+  createdTasks            ProjectTask[]        @relation("TaskCreator")
+  sectionPermissions      SectionPermission[]  @relation("UserSectionPerms")
+  bureauPermissions       BureauPermission[]   @relation("UserBureauPerms")
+  grantedSectionPerms     SectionPermission[]  @relation("SectionPermGranter")
+  grantedBureauPerms      BureauPermission[]   @relation("BureauPermGranter")
+
+  @@map("users")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  role   Role
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("user_roles")
+}
+
+// ==================== MEMBERS ====================
+
+model Member {
+  id                 String            @id @default(cuid())
+  registrationNumber Int               @unique @default(autoincrement()) @map("registration_number")
+  memberType         MemberType        @map("member_type")
+  photoUrl           String?           @map("photo_url")
+  fullName           String            @map("full_name")
+  dateOfBirth        DateTime?         @map("date_of_birth") @db.Date
+  placeOfBirth       String?           @map("place_of_birth")
+  gender             Gender?
+  cin                String? // For adults
+  parentCin          String?           @map("parent_cin") // For children — kept for compatibility
+  // FATHER (children)
+  fatherName         String?           @map("father_name")
+  fatherPhone        String?           @map("father_phone")
+  fatherCin          String?           @map("father_cin")
+  fatherProfession   String?           @map("father_profession")
+  fatherEducation    String?           @map("father_education")
+  fatherLandline     String?           @map("father_landline")
+  fatherAddress      String?           @map("father_address")
+  // MOTHER (children)
+  motherName         String?           @map("mother_name")
+  motherPhone        String?           @map("mother_phone")
+  motherCin          String?           @map("mother_cin")
+  motherProfession   String?           @map("mother_profession")
+  motherEducation    String?           @map("mother_education")
+  motherLandline     String?           @map("mother_landline")
+  motherAddress      String?           @map("mother_address")
+  siblingsCount      Int?              @map("siblings_count") // legacy — sum of boys+girls
+  siblingsBoys       Int?              @map("siblings_boys")
+  siblingsGirls      Int?              @map("siblings_girls")
+  siblingOrder       Int?              @map("sibling_order")
+  healthStatus       HealthStatus?     @map("health_status") // 3adi / marid
+  healthConditions   String?           @map("health_conditions") // naw3 marad (free text)
+  educationalLevel   String?           @map("educational_level")
+  address            String?
+  phone              String?
+  landline           String? // الهاتف الثابت (adults)
+  profession         String? // For adults
+  // Adult marital + children
+  maritalStatus      MaritalStatus?    @map("marital_status")
+  childrenBoys       Int?              @map("children_boys")
+  childrenGirls      Int?              @map("children_girls")
+  // Adult interests — checkboxes + free-text other
+  interestJtima3iya  Boolean           @default(false) @map("interest_jtima3iya")
+  interestTarbawiya  Boolean           @default(false) @map("interest_tarbawiya")
+  interestFikriya    Boolean           @default(false) @map("interest_fikriya")
+  interests          String? // free-text — "other" / details
+  associationRole    String?           @map("association_role") // For adults
+  registrationType   RegistrationType? @map("registration_type")
+  registrationDate   DateTime          @default(now()) @map("registration_date") @db.Date
+  subscriptionAmount Decimal?          @map("subscription_amount") @db.Decimal(10, 2)
+  isActive           Boolean           @default(true) @map("is_active")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  // Auth fields — only used for adult members with login access
+  username     String? @unique
+  passwordHash String? @map("password_hash")
+  userIsActive Boolean @default(false) @map("user_is_active")
+
+  // Stable token used as QR badge content for attendance check-in
+  checkinToken String? @unique @map("checkin_token")
+
+  sections           MemberSection[]
+  contributions      WeeklyContribution[]
+  notes              MemberNote[]
+  attendance         Attendance[]
+  userRoles          MemberRole[]
+  invitations        Invitation[]
+  quranProgress      QuranProgress[]
+  volunteerHours     VolunteerHours[]
+  parentLinks        FamilyLink[]         @relation("ParentLinks")
+  childLinks         FamilyLink[]         @relation("ChildLinks")
+  taskAssignments    TaskAssignment[]
+  taskWorklogs       TaskWorklog[]
+  sectionPermissions SectionPermission[]  @relation("MemberSectionPerms")
+  bureauPermissions  BureauPermission[]   @relation("MemberBureauPerms")
+  mandates           BureauMandate[]
+  volunteerContracts VolunteerContract[]
+  borrowings         BookBorrowing[]
+
+  @@map("members")
+}
+
+// ==================== FAMILY ====================
+
+model FamilyLink {
+  id        String   @id @default(cuid())
+  parentId  String   @map("parent_id")
+  childId   String   @map("child_id")
+  relation  String? // أب، أم، ولي
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent Member @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
+  child  Member @relation("ChildLinks", fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+  @@map("family_links")
+}
+
+model Invitation {
+  id        String    @id @default(cuid())
+  memberId  String    @map("member_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
+
+model MemberRole {
+  id       String @id @default(cuid())
+  memberId String @map("member_id")
+  role     Role
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, role])
+  @@map("member_roles")
+}
+
+model MemberSection {
+  id         String   @id @default(cuid())
+  memberId   String   @map("member_id")
+  section    Section
+  enrolledAt DateTime @default(now()) @map("enrolled_at") @db.Date
+  isActive   Boolean  @default(true) @map("is_active")
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, section])
+  @@map("member_sections")
+}
+
+// ==================== FINANCIAL ====================
+
+model WeeklyContribution {
+  id             String   @id @default(cuid())
+  memberId       String   @map("member_id")
+  amount         Decimal  @db.Decimal(10, 2)
+  weekStart      DateTime @map("week_start") @db.Date
+  paidAt         DateTime @default(now()) @map("paid_at")
+  recordedBy     String?  @map("recorded_by")
+  notes          String?
+  academicYearId String?  @map("academic_year_id")
+
+  member       Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recorder     User?         @relation("RecordedBy", fields: [recordedBy], references: [id])
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
+
+  @@unique([memberId, weekStart])
+  @@map("weekly_contributions")
+}
+
+model Expense {
+  id             String          @id @default(cuid())
+  category       ExpenseCategory
+  section        Section?
+  description    String
+  amount         Decimal         @db.Decimal(10, 2)
+  expenseDate    DateTime        @map("expense_date") @db.Date
+  receiptUrl     String?         @map("receipt_url")
+  recordedBy     String?         @map("recorded_by")
+  approvedBy     String?         @map("approved_by")
+  academicYearId String?         @map("academic_year_id")
+  // Project budget linkage (all optional)
+  projectId      String?         @map("project_id")
+  planId         String?         @map("plan_id")
+  planLineItemId String?         @map("plan_line_item_id")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  recorder     User?          @relation("RecordedBy", fields: [recordedBy], references: [id])
+  approver     User?          @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  academicYear AcademicYear?  @relation(fields: [academicYearId], references: [id])
+  project      SocialProject? @relation("ProjectExpenses", fields: [projectId], references: [id], onDelete: SetNull)
+  plan         ProjectPlan?   @relation("PlanExpenses", fields: [planId], references: [id], onDelete: SetNull)
+  planLineItem PlanLineItem?  @relation("PlanLineItemExpenses", fields: [planLineItemId], references: [id], onDelete: SetNull)
+
+  @@map("expenses")
+}
+
+model Donation {
+  id             String    @id @default(cuid())
+  donorName      String?   @map("donor_name")
+  donorPhone     String?   @map("donor_phone")
+  amount         Decimal   @db.Decimal(10, 2)
+  section        Section   @default(SOCIAL)
+  projectId      String?   @map("project_id")
+  donationDate   DateTime  @default(now()) @map("donation_date") @db.Date
+  isAnonymous    Boolean   @default(false) @map("is_anonymous")
+  // Pledged donation flow (committed but not yet paid)
+  isPaid         Boolean   @default(true) @map("is_paid")
+  pledgedAt      DateTime? @map("pledged_at")
+  paidAt         DateTime? @map("paid_at")
+  notes          String?
+  recordedBy     String?   @map("recorded_by")
+  academicYearId String?   @map("academic_year_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  project      SocialProject? @relation(fields: [projectId], references: [id])
+  recorder     User?          @relation("RecordedBy", fields: [recordedBy], references: [id])
+  academicYear AcademicYear?  @relation(fields: [academicYearId], references: [id])
+
+  @@map("donations")
+}
+
+model SocialProject {
+  id                    String        @id @default(cuid())
+  name                  String
+  slug                  String?       @unique
+  isPublic              Boolean       @default(false) @map("is_public")
+  coverPhotoUrl         String?       @map("cover_photo_url")
+  recurringFromId       String?       @map("recurring_from_id")
+  kind                  ProjectKind   @default(MACHROO3)
+  description           String?
+  // البطاقة التقنية fields
+  objective             String? // الهدف
+  targetAudience        String?       @map("target_audience") // الفئة المستهدفة
+  expectedBeneficiaries Int?          @map("expected_beneficiaries")
+  location              String?
+  partners              String? // الشركاء
+  // Financials & timeline
+  targetAmount          Decimal?      @map("target_amount") @db.Decimal(10, 2)
+  startDate             DateTime?     @map("start_date") @db.Date
+  endDate               DateTime?     @map("end_date") @db.Date
+  status                ProjectStatus @default(ACTIVE)
+  section               Section       @default(SOCIAL)
+  academicYearId        String?       @map("academic_year_id")
+  createdBy             String?       @map("created_by")
+  // Evaluation (filled at project completion)
+  evaluationReport      String?       @map("evaluation_report")
+  evaluationScore       Int?          @map("evaluation_score") // 1-5
+  evaluationLessons     String?       @map("evaluation_lessons") // الدروس المستفادة
+  evaluationRecommend   String?       @map("evaluation_recommend") // التوصيات
+  actualBeneficiaries   Int?          @map("actual_beneficiaries")
+  evaluatedAt           DateTime?     @map("evaluated_at")
+  evaluatedBy           String?       @map("evaluated_by")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  donations          Donation[]
+  inKindDonations    InKindDonation[]
+  grants             Grant[]              @relation("GrantProject")
+  plans              ProjectPlan[]
+  tasks              ProjectTask[]
+  expenses           Expense[]            @relation("ProjectExpenses")
+  photos             ProjectPhoto[]
+  beneficiaries      ProjectBeneficiary[]
+  risks              ProjectRisk[]
+  stakeholders       ProjectStakeholder[]
+  academicYear       AcademicYear?        @relation(fields: [academicYearId], references: [id])
+  creator            User?                @relation("ProjectCreator", fields: [createdBy], references: [id])
+  evaluator          User?                @relation("ProjectEvaluator", fields: [evaluatedBy], references: [id])
+  recurringFrom      SocialProject?       @relation("RecurringInstances", fields: [recurringFromId], references: [id], onDelete: SetNull)
+  recurringInstances SocialProject[]      @relation("RecurringInstances")
+
+  @@map("social_projects")
+}
+
+model InKindDonation {
+  id             String   @id @default(cuid())
+  projectId      String?  @map("project_id")
+  donorName      String?  @map("donor_name")
+  donorPhone     String?  @map("donor_phone")
+  itemName       String   @map("item_name")
+  quantity       Decimal  @db.Decimal(10, 2)
+  unit           String? // كجم، علبة، قطعة...
+  estimatedValue Decimal? @map("estimated_value") @db.Decimal(10, 2)
+  donationDate   DateTime @default(now()) @map("donation_date") @db.Date
+  isAnonymous    Boolean  @default(false) @map("is_anonymous")
+  notes          String?
+  recordedBy     String?  @map("recorded_by")
+  academicYearId String?  @map("academic_year_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  project      SocialProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  recorder     User?          @relation("InKindRecorder", fields: [recordedBy], references: [id])
+  academicYear AcademicYear?  @relation(fields: [academicYearId], references: [id])
+
+  @@map("in_kind_donations")
+}
+
+model ProjectPlan {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  name          String
+  description   String?
+  estimatedCost Decimal? @map("estimated_cost") @db.Decimal(10, 2)
+  isActive      Boolean  @default(false) @map("is_active") // The selected plan
+  position      Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  project   SocialProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lineItems PlanLineItem[]
+  expenses  Expense[]      @relation("PlanExpenses")
+  taskPlans TaskPlan[]
+
+  @@map("project_plans")
+}
+
+model PlanLineItem {
+  id        String   @id @default(cuid())
+  planId    String   @map("plan_id")
+  name      String
+  amount    Decimal  @db.Decimal(10, 2)
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan     ProjectPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  expenses Expense[]   @relation("PlanLineItemExpenses")
+
+  @@map("plan_line_items")
+}
+
+model ProjectTask {
+  id               String       @id @default(cuid())
+  projectId        String       @map("project_id")
+  title            String
+  description      String?
+  status           TaskStatus   @default(TODO)
+  priority         TaskPriority @default(MEDIUM)
+  dueDate          DateTime?    @map("due_date") @db.Date
+  estimatedHours   Decimal?     @map("estimated_hours") @db.Decimal(6, 2)
+  // Task-level budget: planned (assigner's estimate) + actual (entered by assignee at completion)
+  plannedExpense   Decimal?     @map("planned_expense") @db.Decimal(10, 2)
+  actualExpense    Decimal?     @map("actual_expense") @db.Decimal(10, 2)
+  position         Int          @default(0)
+  parentTaskId     String?      @map("parent_task_id")
+  createdBy        String?      @map("created_by")
+  completedAt      DateTime?    @map("completed_at")
+  // Allow SECTION_READ users to self-claim. Default off to prevent task hijacking.
+  openForSelfClaim Boolean      @default(false) @map("open_for_self_claim")
+  // When true, surfaces in the Media section's cross-project Kanban (poster,
+  // social-media story, etc.). Same row — status sync is automatic.
+  needsMedia       Boolean      @default(false) @map("needs_media")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  project   SocialProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    ProjectTask?     @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks  ProjectTask[]    @relation("Subtasks")
+  assignees TaskAssignment[]
+  worklogs  TaskWorklog[]
+  taskPlans TaskPlan[]
+  creator   User?            @relation("TaskCreator", fields: [createdBy], references: [id])
+
+  @@index([projectId, status])
+  @@map("project_tasks")
+}
+
+model TaskPlan {
+  id        String   @id @default(cuid())
+  taskId    String   @map("task_id")
+  planId    String   @map("plan_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  plan ProjectPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, planId])
+  @@map("task_plans")
+}
+
+model TaskAssignment {
+  id        String   @id @default(cuid())
+  taskId    String   @map("task_id")
+  memberId  String   @map("member_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task   ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  member Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, memberId])
+  @@map("task_assignments")
+}
+
+model TaskWorklog {
+  id          String   @id @default(cuid())
+  taskId      String   @map("task_id")
+  memberId    String   @map("member_id")
+  hours       Decimal  @db.Decimal(5, 2)
+  workedDate  DateTime @map("worked_date") @db.Date
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  task   ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  member Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([memberId, workedDate])
+  @@map("task_worklogs")
+}
+
+model ProjectPhoto {
+  id         String   @id @default(cuid())
+  projectId  String   @map("project_id")
+  url        String
+  caption    String?
+  uploadedBy String?  @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project SocialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_photos")
+}
+
+// Master record for the baht-ijtima3i team. Independent of any project.
+// Column set is intentionally modest; user will iterate later.
+model SocialCase {
+  id              String          @id @default(cuid())
+  caseNumber      Int             @unique @default(autoincrement()) @map("case_number")
+  type            BeneficiaryType @default(YATIM)
+  fullName        String          @map("full_name")
+  dateOfBirth     DateTime?       @map("date_of_birth") @db.Date
+  gender          Gender?
+  cin             String?
+  phone           String?
+  address         String?
+  fatherName      String?  @map("father_name")
+  fatherDeceased  Boolean? @map("father_deceased")
+  motherName      String?  @map("mother_name")
+  motherDeceased  Boolean? @map("mother_deceased")
+  guardianName    String?  @map("guardian_name")
+  guardianRelation String? @map("guardian_relation")
+  guardianPhone   String?  @map("guardian_phone")
+  monthlyIncome     Decimal? @map("monthly_income") @db.Decimal(10, 2)
+  familySize        Int?     @map("family_size")
+  housingStatus     String?  @map("housing_status")
+  financialProofUrl String?  @map("financial_proof_url")
+  yatimOverrideReason String?  @map("yatim_override_reason")
+  yatimOverrideBy     String?  @map("yatim_override_by")
+  yatimOverrideAt     DateTime? @map("yatim_override_at")
+  notes               String?
+  createdBy           String?  @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt        @map("updated_at")
+
+  projectLinks    ProjectBeneficiary[]
+  schoolFollowups CaseSchoolFollowup[]
+  healthFollowups CaseHealthFollowup[]
+  sponsorships    Sponsorship[]
+  distributionEntries DistributionEntry[]
+
+  @@index([type])
+  @@index([fullName])
+  @@map("social_cases")
+}
+
+model CaseSchoolFollowup {
+  id             String   @id @default(cuid())
+  caseId         String   @map("case_id")
+  semester       String?
+  gpa            Decimal? @db.Decimal(4, 2)
+  progressNotes  String?  @map("progress_notes")
+  createdBy      String?  @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  socialCase SocialCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@map("case_school_followups")
+}
+
+model CaseHealthFollowup {
+  id                  String   @id @default(cuid())
+  caseId              String   @map("case_id")
+  hasSpecialOperation Boolean  @default(false) @map("has_special_operation")
+  illness             String?
+  treatmentNotes      String?  @map("treatment_notes")
+  progressNotes       String?  @map("progress_notes")
+  createdBy           String?  @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  socialCase SocialCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@map("case_health_followups")
+}
+
+model ProjectBeneficiary {
+  id                  String          @id @default(cuid())
+  projectId           String          @map("project_id")
+  socialCaseId        String?         @map("social_case_id")
+  type                BeneficiaryType @default(GENERAL)
+  name                String
+  dateOfBirth         DateTime?       @map("date_of_birth") @db.Date
+  gender              Gender?
+  phone               String?
+  address             String?
+  itemsReceived       String?         @map("items_received")
+  amount              Decimal?        @db.Decimal(10, 2)
+  notes               String?
+  // Yatim
+  fatherDeceased      Boolean?        @map("father_deceased")
+  motherDeceased      Boolean?        @map("mother_deceased")
+  guardianName        String?         @map("guardian_name")
+  guardianRelation    String?         @map("guardian_relation")
+  guardianPhone       String?         @map("guardian_phone")
+  // Mo3wiz
+  monthlyIncome       Decimal?        @map("monthly_income") @db.Decimal(10, 2)
+  familySize          Int?            @map("family_size")
+  housingStatus       String?         @map("housing_status")
+  financialProofUrl   String?         @map("financial_proof_url")
+  // Override audit (for yatim hard-block bypass)
+  yatimOverrideReason String?         @map("yatim_override_reason")
+  yatimOverrideBy     String?         @map("yatim_override_by")
+  yatimOverrideAt     DateTime?       @map("yatim_override_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  project         SocialProject               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  socialCase      SocialCase?                 @relation(fields: [socialCaseId], references: [id], onDelete: SetNull)
+  schoolFollowups BeneficiarySchoolFollowup[]
+  healthFollowups BeneficiaryHealthFollowup[]
+
+  @@index([projectId])
+  @@index([socialCaseId])
+  @@index([type])
+  @@map("project_beneficiaries")
+}
+
+model BeneficiarySchoolFollowup {
+  id            String   @id @default(cuid())
+  beneficiaryId String   @map("beneficiary_id")
+  semester      String? // e.g., "S1 2025-2026"
+  gpa           Decimal? @db.Decimal(4, 2) // mo3dal dawra madrassiya
+  progressNotes String?  @map("progress_notes")
+  createdBy     String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  beneficiary ProjectBeneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+
+  @@index([beneficiaryId])
+  @@map("beneficiary_school_followups")
+}
+
+model BeneficiaryHealthFollowup {
+  id                  String   @id @default(cuid())
+  beneficiaryId       String   @map("beneficiary_id")
+  hasSpecialOperation Boolean  @default(false) @map("has_special_operation")
+  illness             String?
+  treatmentNotes      String?  @map("treatment_notes")
+  progressNotes       String?  @map("progress_notes")
+  createdBy           String?  @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  beneficiary ProjectBeneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+
+  @@index([beneficiaryId])
+  @@map("beneficiary_health_followups")
+}
+
+model ProjectRisk {
+  id          String       @id @default(cuid())
+  projectId   String       @map("project_id")
+  description String
+  mitigation  String?
+  severity    RiskSeverity @default(MEDIUM)
+  status      RiskStatus   @default(OPEN)
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  project SocialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_risks")
+}
+
+model ProjectStakeholder {
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  name      String
+  role      String?
+  phone     String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project SocialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_stakeholders")
+}
+
+// ==================== NOTES ====================
+
+model MemberNote {
+  id        String   @id @default(cuid())
+  memberId  String   @map("member_id")
+  authorId  String   @map("author_id")
+  content   String
+  isPrivate Boolean  @default(true) @map("is_private")
+  visibleTo Role[]   @default([]) @map("visible_to")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@map("member_notes")
+}
+
+// ==================== PROGRAMS ====================
+
+model AnnualProgram {
+  id             String    @id @default(cuid())
+  section        Section
+  year           Int
+  academicYearId String?   @map("academic_year_id")
+  title          String
+  description    String?
+  startDate      DateTime? @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  creator      User?             @relation(fields: [createdBy], references: [id])
+  academicYear AcademicYear?     @relation(fields: [academicYearId], references: [id])
+  activities   ProgramActivity[]
+  resources    SectionResource[]
+
+  @@unique([section, year])
+  @@map("annual_programs")
+}
+
+model ProgramActivity {
+  id           String    @id @default(cuid())
+  programId    String    @map("program_id")
+  title        String
+  description  String?
+  activityDate DateTime? @map("activity_date") @db.Date
+  timeStart    String?   @map("time_start")
+  timeEnd      String?   @map("time_end")
+  location     String?
+  status       String    @default("PLANNED")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  program        AnnualProgram    @relation(fields: [programId], references: [id], onDelete: Cascade)
+  attendance     Attendance[]
+  volunteerHours VolunteerHours[]
+
+  @@map("program_activities")
+}
+
+model SectionResource {
+  id          String   @id @default(cuid())
+  section     Section
+  programId   String?  @map("program_id")
+  title       String
+  description String?
+  fileUrl     String?  @map("file_url")
+  fileType    String?  @map("file_type")
+  uploadedBy  String?  @map("uploaded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  program  AnnualProgram? @relation(fields: [programId], references: [id])
+  uploader User?          @relation(fields: [uploadedBy], references: [id])
+
+  @@map("section_resources")
+}
+
+// ==================== ATTENDANCE ====================
+
+model Attendance {
+  id             String   @id @default(cuid())
+  memberId       String   @map("member_id")
+  section        Section
+  activityId     String?  @map("activity_id")
+  date           DateTime @db.Date
+  isPresent      Boolean  @default(true) @map("is_present")
+  checkinMethod  String?  @map("checkin_method") // MANUAL | QR
+  recordedBy     String?  @map("recorded_by")
+  academicYearId String?  @map("academic_year_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  member       Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  activity     ProgramActivity? @relation(fields: [activityId], references: [id])
+  recorder     User?            @relation(fields: [recordedBy], references: [id])
+  academicYear AcademicYear?    @relation(fields: [academicYearId], references: [id])
+
+  @@unique([memberId, section, date, activityId])
+  @@map("attendance")
+}
+
+// ==================== ASSOCIATION INFO ====================
+
+model AssociationInfo {
+  id                  Int      @id @default(1)
+  name                String   @default("جمعية النعمة")
+  address             String?
+  city                String   @default("مكناس")
+  phone               String?
+  email               String?
+  facebookUrl         String?  @map("facebook_url")
+  cndpRegistration    String?  @map("cndp_registration")
+  dataRetentionPolicy String?  @map("data_retention_policy")
+  privacyNotice       String?  @map("privacy_notice")
+  logoUrl             String?  @map("logo_url")
+  // Per-RegistrationType fees, JSON map e.g. { "TAMM": 100, "DAAM_MADRASSI": 50, ... }
+  registrationFees    Json?    @map("registration_fees")
+  // Default UI language for this association's space ("ar" | "fr").
+  defaultLocale       String   @default("ar") @map("default_locale")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("association_info")
+}
+
+// ==================== PERMISSIONS ====================
+//
+// Granular access grants. Either userId OR memberId is set (one of them).
+// SectionPermission: per-section (EDU/SOCIAL/QURAN) READ/RW/ADMIN.
+// BureauPermission:  global maktab READ or RW. RW lockout-protected at app layer.
+// BAHT_IJTIMA3I_TEAM is modeled as a Role (see Role enum).
+
+model SectionPermission {
+  id        String          @id @default(cuid())
+  userId    String?         @map("user_id")
+  memberId  String?         @map("member_id")
+  section   Section
+  level     PermissionLevel
+  grantedBy String?         @map("granted_by")
+  grantedAt DateTime        @default(now()) @map("granted_at")
+
+  user    User?   @relation("UserSectionPerms", fields: [userId], references: [id], onDelete: Cascade)
+  member  Member? @relation("MemberSectionPerms", fields: [memberId], references: [id], onDelete: Cascade)
+  granter User?   @relation("SectionPermGranter", fields: [grantedBy], references: [id])
+
+  @@unique([userId, section])
+  @@unique([memberId, section])
+  @@index([section, level])
+  @@map("section_permissions")
+}
+
+model BureauPermission {
+  id        String      @id @default(cuid())
+  userId    String?     @map("user_id")
+  memberId  String?     @map("member_id")
+  level     BureauLevel
+  grantedBy String?     @map("granted_by")
+  grantedAt DateTime    @default(now()) @map("granted_at")
+
+  user    User?   @relation("UserBureauPerms", fields: [userId], references: [id], onDelete: Cascade)
+  member  Member? @relation("MemberBureauPerms", fields: [memberId], references: [id], onDelete: Cascade)
+  granter User?   @relation("BureauPermGranter", fields: [grantedBy], references: [id])
+
+  @@unique([userId])
+  @@unique([memberId])
+  @@index([level])
+  @@map("bureau_permissions")
+}
+
+// ==================== ACADEMIC YEAR ====================
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  label     String   @unique // e.g., "2025-2026"
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  isCurrent Boolean  @default(false) @map("is_current")
+  isClosed  Boolean  @default(false) @map("is_closed")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  contributions   WeeklyContribution[]
+  expenses        Expense[]
+  donations       Donation[]
+  attendance      Attendance[]
+  programs        AnnualProgram[]
+  quranProgress   QuranProgress[]
+  volunteerHours  VolunteerHours[]
+  socialProjects  SocialProject[]
+  inKindDonations InKindDonation[]
+
+  @@map("academic_years")
+}
+
+// ==================== MULTI-TENANCY (control plane) ====================
+//
+// DB-per-tenant architecture. This registry lives in the PRIMARY database
+// (DATABASE_URL); each association gets its own isolated database whose URL
+// is derived from TENANT_DB_URL_TEMPLATE. The primary DB also serves as the
+// default/fallback for requests that arrive without a tenant host (apex
+// marketing site, local dev) — which is why legacy Ni3ma data lives there.
+
+enum TenantStatus {
+  PENDING_PROVISIONING
+  ACTIVE
+  SUSPENDED
+  PROVISION_FAILED
+}
+
+enum TenantPlan {
+  FREE
+  STARTER
+  PRO
+  CUSTOM
+}
+
+model Tenant {
+  id                 String       @id @default(cuid())
+  name               String // association display name (Arabic)
+  slug               String       @unique // subdomain label, [a-z0-9-]
+  city               String?
+  plan               TenantPlan   @default(FREE)
+  status             TenantStatus @default(PENDING_PROVISIONING)
+  dbUrl              String       @unique @map("db_url")
+  customDomain       String?      @unique @map("custom_domain") // future: CNAME mappings
+  contactName        String?      @map("contact_name")
+  contactPhone       String?      @map("contact_phone")
+  contactEmail       String?      @map("contact_email")
+  trialEndsAt        DateTime?    @map("trial_ends_at")
+  provisionedAt      DateTime?    @map("provisioned_at")
+  lastProvisionError String?      @map("last_provision_error")
+  // Paid subscription window (null while on free/trial)
+  currentPeriodEnd   DateTime?    @map("current_period_end")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  payments TenantPayment[]
+
+  @@index([status])
+  @@map("tenants")
+}
+
+enum TenantPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+// Subscription invoices created before redirecting the payer to YouCan Pay.
+// Lives in the PLATFORM database only (like Tenant).
+model TenantPayment {
+  id            String             @id @default(cuid())
+  tenantId      String             @map("tenant_id")
+  plan          TenantPlan
+  amount        Decimal            @db.Decimal(10, 2)
+  currency      String             @default("MAD")
+  months        Int                @default(1)
+  provider      String             @default("youcanpay")
+  // Our unique reference sent as order_id to the gateway; echoed back in webhooks.
+  orderId       String             @unique @map("order_id")
+  tokenId       String?            @map("token_id")
+  transactionId String?            @map("transaction_id")
+  status        TenantPaymentStatus @default(PENDING)
+  periodStart   DateTime?          @map("period_start")
+  periodEnd     DateTime?          @map("period_end")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("tenant_payments")
+}
+
+// ==================== AUDIT LOG ====================
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?     @map("user_id")
+  action    AuditAction
+  entity    String // e.g., "member", "contribution"
+  entityId  String?     @map("entity_id")
+  before    Json?
+  after     Json?
+  ip        String?
+  userAgent String?     @map("user_agent")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ==================== QURAN PROGRESS ====================
+
+model QuranProgress {
+  id                     String     @id @default(cuid())
+  memberId               String     @map("member_id")
+  recitationDate         DateTime   @map("recitation_date") @db.Date
+  currentSurah           String?    @map("current_surah")
+  surahFromAyah          Int?       @map("surah_from_ayah")
+  surahToAyah            Int?       @map("surah_to_ayah")
+  hizb                   Int?
+  juz                    Int?
+  pagesMemorized         Int?       @map("pages_memorized")
+  hifzGrade              HifzGrade? @map("hifz_grade")
+  // Tajweed rubric (1-5 scale each) — full classical قواعد
+  tajweedMakharij        Int?       @map("tajweed_makharij") // مخارج الحروف
+  tajweedSifaat          Int?       @map("tajweed_sifaat") // صفات الحروف
+  tajweedNoonMeem        Int?       @map("tajweed_noon_meem") // أحكام النون الساكنة والتنوين
+  tajweedMeemSakinah     Int?       @map("tajweed_meem_sakinah") // أحكام الميم الساكنة
+  tajweedMudood          Int?       @map("tajweed_mudood") // أحكام المدود
+  tajweedLamTareef       Int?       @map("tajweed_lam_tareef") // أحكام لام التعريف
+  tajweedQalqala         Int?       @map("tajweed_qalqala") // القلقلة
+  tajweedTarqeeqTafkheem Int?       @map("tajweed_tarqeeq_tafkheem") // الترقيق والتفخيم
+  tajweedRaa             Int?       @map("tajweed_raa") // أحكام الراء
+  tajweedWaqf            Int?       @map("tajweed_waqf") // الوقف والابتداء
+  tajweedImalah          Int?       @map("tajweed_imalah") // الإمالة والتسهيل
+  tajweedFluency         Int?       @map("tajweed_fluency") // طلاقة التلاوة
+  tajweedOverall         Int?       @map("tajweed_overall") // التقييم العام
+  notes                  String?
+  recordedBy             String?    @map("recorded_by")
+  academicYearId         String?    @map("academic_year_id")
+  createdAt              DateTime   @default(now()) @map("created_at")
+
+  member       Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recorder     User?         @relation("QuranRecorder", fields: [recordedBy], references: [id])
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
+
+  @@index([memberId, recitationDate])
+  @@map("quran_progress")
+}
+
+// ==================== VOLUNTEER HOURS ====================
+
+model VolunteerHours {
+  id             String    @id @default(cuid())
+  memberId       String    @map("member_id")
+  section        Section
+  activityId     String?   @map("activity_id")
+  hoursDate      DateTime  @map("hours_date") @db.Date
+  hours          Decimal   @db.Decimal(6, 2)
+  description    String?
+  approved       Boolean   @default(false)
+  approvedBy     String?   @map("approved_by")
+  approvedAt     DateTime? @map("approved_at")
+  academicYearId String?   @map("academic_year_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  member       Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  activity     ProgramActivity? @relation(fields: [activityId], references: [id])
+  approver     User?            @relation("VolunteerApprover", fields: [approvedBy], references: [id])
+  academicYear AcademicYear?    @relation(fields: [academicYearId], references: [id])
+
+  @@index([memberId, hoursDate])
+  @@map("volunteer_hours")
+}
+
+// ==================== GOVERNANCE & COMPLIANCE ====================
+
+model Meeting {
+  id                String      @id @default(cuid())
+  kind              MeetingKind @default(AGO)
+  title             String
+  heldAt            DateTime    @map("held_at") @db.Date
+  location          String?
+  convocationMethod String?     @map("convocation_method") // واتساب، هاتف، بريد...
+  agenda            String? // جدول الأعمال
+  minutes           String? // نص المحضر (PV)
+  minutesUrl        String?     @map("minutes_url") // نسخة ممسوحة ضوئيا موقعة
+  expectedCount     Int         @default(0) @map("expected_count")
+  presentCount      Int         @default(0) @map("present_count")
+  quorumPct         Int         @default(50) @map("quorum_pct") // حسب القانون الأساسي
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  decisions MeetingDecision[]
+
+  @@index([heldAt])
+  @@map("meetings")
+}
+
+model MeetingDecision {
+  id           String   @id @default(cuid())
+  meetingId    String   @map("meeting_id")
+  title        String
+  body         String?
+  votesFor     Int      @default(0) @map("votes_for")
+  votesAgainst Int      @default(0) @map("votes_against")
+  votesAbstain Int      @default(0) @map("votes_abstain")
+  passed       Boolean  @default(true)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("meeting_decisions")
+}
+
+model Grant {
+  id           String          @id @default(cuid())
+  funderName   String          @map("funder_name")
+  funderKind   GrantFunderKind @default(OTHER) @map("funder_kind")
+  projectName  String          @map("project_name")
+  reference    String? // رقم الاتفاقية
+  amount       Decimal         @db.Decimal(10, 2)
+  status       GrantStatus     @default(APPLIED)
+  signedAt     DateTime?       @map("signed_at") @db.Date
+  startDate    DateTime?       @map("start_date") @db.Date
+  endDate      DateTime?       @map("end_date") @db.Date
+  projectId    String?         @map("project_id")
+  contactName  String?         @map("contact_name")
+  contactPhone String?         @map("contact_phone")
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  project  SocialProject? @relation("GrantProject", fields: [projectId], references: [id], onDelete: SetNull)
+  tranches GrantTranche[]
+
+  @@index([status])
+  @@index([endDate])
+  @@map("grants")
+}
+
+model GrantTranche {
+  id         String    @id @default(cuid())
+  grantId    String    @map("grant_id")
+  label      String    @default("شطر")
+  amount     Decimal   @db.Decimal(10, 2)
+  expectedAt DateTime? @map("expected_at") @db.Date
+  receivedAt DateTime? @map("received_at") @db.Date
+  reportDueAt DateTime? @map("report_due_at") @db.Date
+  reportedAt DateTime? @map("reported_at") @db.Date
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  grant Grant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId])
+  @@map("grant_tranches")
+}
+
+model Asset {
+  id           String         @id @default(cuid())
+  name         String
+  category     String? // أثاث، عتاد معلوماتي، وسائل بيداغوجية، عقار، نقل...
+  quantity     Int            @default(1)
+  value        Decimal?       @db.Decimal(10, 2)
+  serialNumber String?        @map("serial_number")
+  location     String?
+  condition    AssetCondition @default(GOOD)
+  acquiredAt   DateTime?      @map("acquired_at") @db.Date
+  source       String? // شراء، تبرع، منحة
+  notes        String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("assets")
+}
+
+model Sponsorship {
+  id              String            @id @default(cuid())
+  kind            SponsorshipKind   @default(YATIM)
+  beneficiaryName String            @map("beneficiary_name")
+  socialCaseId    String?           @map("social_case_id")
+  sponsorName     String            @map("sponsor_name")
+  sponsorPhone    String?           @map("sponsor_phone")
+  monthlyAmount   Decimal           @map("monthly_amount") @db.Decimal(10, 2)
+  dayOfMonth      Int               @default(5) @map("day_of_month") // يوم التسليم الشهري (1-28)
+  startedAt       DateTime          @map("started_at") @db.Date
+  endedAt         DateTime?         @map("ended_at") @db.Date
+  status          SponsorshipStatus @default(ACTIVE)
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  socialCase SocialCase? @relation(fields: [socialCaseId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("sponsorships")
+}
+
+// Registry of statutory/critical documents with expiry alerts. Moroccan
+// bureaus juggle statutes, official-gazette receipts, bank/CNSS papers and
+// partnership agreements — losing track of these blocks subsidy files.
+model OfficialDocument {
+  id           String          @id @default(cuid())
+  kind         OfficialDocKind @default(OTHER)
+  title        String
+  reference    String?
+  issuedAt     DateTime?       @map("issued_at") @db.Date
+  expiresAt    DateTime?       @map("expires_at") @db.Date // null = دائمة الصلاحية
+  reminderDays Int             @default(30) @map("reminder_days")
+  fileUrl      String?         @map("file_url")
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("official_documents")
+}
+
+// Bureau composition with mandate windows. Art. 5 of the Dahir (as amended by
+// loi 07-09) requires declaring bureau changes to the local authority within
+// ONE MONTH — declaredAt tracks that filing.
+model BureauMandate {
+  id         String    @id @default(cuid())
+  memberId   String?   @map("member_id")
+  memberName String    @map("member_name")
+  position   String // الرئيس، نائب الرئيس، الكاتب العام...
+  positionOrder Int    @default(99) @map("position_order") // sort key for the org chart
+  startedAt  DateTime  @map("started_at") @db.Date
+  endedAt    DateTime? @map("ended_at") @db.Date
+  declaredAt DateTime? @map("declared_at") @db.Date // تاريخ إيداع التصريح
+  isActive   Boolean   @default(true) @map("is_active")
+  notes      String?
+
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([isActive])
+  @@map("bureau_mandates")
+}
+
+// Seasonal distribution campaigns (Ramadan baskets, iftar, adhi...). Entries
+// log delivered units per beneficiary for funder-facing reports.
+model DistributionCampaign {
+  id            String           @id @default(cuid())
+  kind          DistributionKind @default(OTHER)
+  name          String
+  yearLabel     String?          @map("year_label") // e.g., "1447هـ / 2026"
+  unitLabel     String?          @map("unit_label") // سلة، وجبة، ثوب...
+  plannedUnits  Int              @default(0) @map("planned_units")
+  budget        Decimal?         @db.Decimal(10, 2)
+  startDate     DateTime?        @map("start_date") @db.Date
+  endDate       DateTime?        @map("end_date") @db.Date
+  notes         String?
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  entries DistributionEntry[]
+
+  @@index([kind])
+  @@map("distribution_campaigns")
+}
+
+model DistributionEntry {
+  id              String   @id @default(cuid())
+  campaignId      String   @map("campaign_id")
+  beneficiaryName String   @map("beneficiary_name")
+  socialCaseId    String?  @map("social_case_id")
+  quantity        Int      @default(1)
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  campaign   DistributionCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  socialCase SocialCase?          @relation(fields: [socialCaseId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@map("distribution_entries")
+}
+
+// سجل المراسلات — the serial-numbered incoming/outgoing mail register every
+// bureau keeps when dealing with authorities, funders and partners.
+model MailItem {
+  id            String        @id @default(cuid())
+  direction     MailDirection @default(INCOMING)
+  reference     String // e.g., "و/2026/012" or "ص/2026/008"
+  subject       String
+  correspondent String // الجهة المرسلة أو المرسل إليها
+  mailDate      DateTime      @map("mail_date") @db.Date
+  channel       String? // عادي، مُوصى عليه، إلكتروني، يد بيد...
+  status        MailStatus    @default(PENDING)
+  responseDueAt DateTime?     @map("response_due_at") @db.Date
+  respondedAt   DateTime?     @map("responded_at") @db.Date
+  fileUrl       String?       @map("file_url")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@index([direction, status])
+  @@index([mailDate])
+  @@map("mail_items")
+}
+
+// Branch / antenna registry for federations, multi-site associations and
+// parents'-association chapters (one per school institution).
+model Branch {
+  id              String    @id @default(cuid())
+  name            String
+  city            String?
+  address         String?
+  phone           String?
+  email           String?
+  responsibleName String?   @map("responsible_name")
+  openedAt        DateTime? @map("opened_at") @db.Date
+  isActive        Boolean   @default(true) @map("is_active")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([isActive])
+  @@map("branches")
+}
+
+// Capacity-building courses (literacy, vocational, administrative training) —
+// heavily funded by INDH/ministry programs; participants tracked per course.
+model TrainingCourse {
+  id           String       @id @default(cuid())
+  title        String
+  field        String? // محو الأمية، تكوين إداري، مهن...
+  trainerName  String?      @map("trainer_name")
+  partner      String? // الشريك / الممول
+  location     String?
+  seatsTotal   Int          @default(0) @map("seats_total")
+  startDate    DateTime?    @map("start_date") @db.Date
+  endDate      DateTime?    @map("end_date") @db.Date
+  status       CourseStatus @default(PLANNED)
+  notes        String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  participants CourseParticipant[]
+
+  @@index([status])
+  @@map("training_courses")
+}
+
+model CourseParticipant {
+  id       String  @id @default(cuid())
+  courseId String  @map("course_id")
+  fullName String  @map("full_name")
+  phone    String?
+  note     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  course TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@map("course_participants")
+}
+
+// Written volunteer contracts mandated by law 06-18 (contractual volunteering,
+// in force since 5 Aug 2021): identity, mission, weekly hours, duration and
+// insurance must all appear on the signed contract.
+model VolunteerContract {
+  id             String         @id @default(cuid())
+  memberId       String?        @map("member_id")
+  volunteerName  String         @map("volunteer_name")
+  cin            String?
+  phone          String?
+  birthDate      DateTime?      @map("birth_date") @db.Date
+  address        String?
+  missionTitle   String         @map("mission_title")
+  missionDetails String?        @map("mission_details")
+  weeklyHours    Decimal?       @map("weekly_hours") @db.Decimal(4, 1)
+  startDate      DateTime       @map("start_date") @db.Date
+  endDate        DateTime?      @map("end_date") @db.Date
+  insuranceRef   String?        @map("insurance_ref")
+  status         ContractStatus @default(DRAFT)
+  signedAt       DateTime?      @map("signed_at") @db.Date
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("volunteer_contracts")
+}
+
+// Employees & monthly payroll — associations that hire staff must track
+// CNSS-numbered contracts, gross/net salaries and monthly payment status.
+model Employee {
+  id             String              @id @default(cuid())
+  fullName       String              @map("full_name")
+  cin            String?
+  cnssNumber     String?             @map("cnss_number")
+  position       String
+  contractType   EmployeeContractType @default(CDI) @map("contract_type")
+  status         EmployeeStatus      @default(ACTIVE)
+  hireDate       DateTime            @map("hire_date") @db.Date
+  endDate        DateTime?           @map("end_date") @db.Date
+  grossSalary    Decimal?            @map("gross_salary") @db.Decimal(10, 2)
+  bankName       String?             @map("bank_name")
+  bankRib        String?             @map("bank_rib")
+  phone          String?
+  email          String?
+  address        String?
+  contractDocUrl String?             @map("contract_doc_url")
+  notes          String?
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  payrolls PayrollRun[]
+
+  @@index([status])
+  @@map("employees")
+}
+
+model PayrollRun {
+  id          String        @id @default(cuid())
+  employeeId  String        @map("employee_id")
+  period      String // YYYY-MM, e.g. "2026-08"
+  grossAmount Decimal       @map("gross_amount") @db.Decimal(10, 2)
+  cnssAmount  Decimal?      @map("cnss_amount") @db.Decimal(10, 2)
+  netAmount   Decimal       @map("net_amount") @db.Decimal(10, 2)
+  paidAt      DateTime?     @map("paid_at") @db.Date
+  status      PayrollStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, period])
+  @@index([period])
+  @@map("payroll_runs")
+}
+
+// Non-financial partnership agreements (Grants already cover funded
+// partnerships); track school/clinic/commune/NGO conventions and CSR
+// partnerships with auto-expiry tracking.
+model Partnership {
+  id           String            @id @default(cuid())
+  partnerName  String            @map("partner_name")
+  kind         PartnershipKind   @default(OTHER)
+  contactName  String?           @map("contact_name")
+  contactPhone String?           @map("contact_phone")
+  contactEmail String?           @map("contact_email")
+  object       String // موضوع الاتفاقية
+  signedAt     DateTime?         @map("signed_at") @db.Date
+  startDate    DateTime?         @map("start_date") @db.Date
+  endDate      DateTime?         @map("end_date") @db.Date
+  status       PartnershipStatus @default(DRAFT)
+  fileUrl      String?           @map("file_url")
+  notes        String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  @@index([status])
+  @@index([endDate])
+  @@map("partnerships")
+}
+
+// Library catalog (quran schools, cultural & literacy associations lend books
+// to members and students). Physical copies tracked separately so multiple
+// copies of the same title can be lent independently.
+model LibraryBook {
+  id             String       @id @default(cuid())
+  title          String
+  author         String?
+  category       BookCategory @default(OTHER)
+  isbn           String?
+  copiesTotal    Int          @default(1) @map("copies_total")
+  shelf          String? // reference / location
+  acquiredAt     DateTime?    @map("acquired_at") @db.Date
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  borrowings BookBorrowing[]
+
+  @@index([category])
+  @@map("library_books")
+}
+
+model BookBorrowing {
+  id           String          @id @default(cuid())
+  bookId       String          @map("book_id")
+  borrowerName String          @map("borrower_name")
+  memberId     String?         @map("member_id")
+  borrowedAt   DateTime        @map("borrowed_at") @db.Date
+  dueAt        DateTime        @map("due_at") @db.Date
+  returnedAt   DateTime?       @map("returned_at") @db.Date
+  status       BorrowingStatus @default(OPEN)
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  book   LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  member Member?     @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([bookId])
+  @@index([status])
+  @@map("book_borrowings")
+}

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { SECTION_LABELS } from "@/lib/section";
 import { usePermissions } from "@/lib/use-permissions";
 import { useT } from "@/components/i18n/provider";
+import { fmtTime } from "@/lib/i18n/format";
 import { Camera, CameraOff, Check } from "lucide-react";
 import type { Section } from "@prisma/client";
 
@@ -79,7 +80,7 @@ export function CheckinScanner({
     const data = await r.json();
     if (r.ok) {
       toast.success(`✓ ${data.member.fullName}`);
-      setRecent((p) => [{ name: data.member.fullName, time: new Date().toLocaleTimeString(locale === "fr" ? "fr-MA" : "ar-MA") }, ...p.slice(0, 9)]);
+      setRecent((p) => [{ name: data.member.fullName, time: fmtTime(new Date(), locale) }, ...p.slice(0, 9)]);
     } else toast.error(data.error ?? t("misc.failed"));
   };
 

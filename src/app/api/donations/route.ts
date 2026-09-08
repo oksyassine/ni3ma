@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
+import { postDonation } from "@/lib/journal";
 import { getCurrentAcademicYearId } from "@/lib/academic-year";
 import { isFinancial, hasBureauRead } from "@/lib/permissions";
+import { revalidateFinancial } from "@/lib/revalidate";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -52,9 +54,13 @@ export async function POST(req: NextRequest) {
     data: {
       donorName: body.isAnonymous ? null : body.donorName,
       donorPhone: body.donorPhone || null,
+      donorCin: body.donorCin || null,
+      donorAddress: body.donorAddress || null,
+      donorEmail: body.donorEmail || null,
       amount,
       section: body.section || "SOCIAL",
       projectId: body.projectId || null,
+      campaignId: body.campaignId || null,
       isAnonymous: body.isAnonymous || false,
       isPaid: !isPledge,
       pledgedAt: isPledge ? new Date() : null,
@@ -65,6 +71,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Auto-post to the PCAF journal (debit treasury, credit income).
+  // Only paid donations — pledges are posted when they convert.
+  if (donation.isPaid) {
+    await postDonation(donation.id).catch((err) =>
+      console.error("[journal] postDonation failed", err),
+    );
+  }
+
   await recordAudit({
     userId: session.user.id,
     action: "CREATE",
@@ -73,6 +87,8 @@ export async function POST(req: NextRequest) {
     after: donation,
     req,
   });
+
+  revalidateFinancial();
 
   return NextResponse.json(donation, { status: 201 });
 }

@@ -23,6 +23,7 @@ import { financial } from "./dict/financial";
 import { educational } from "./dict/educational";
 import { social } from "./dict/social";
 import { quran } from "./dict/quran";
+import { governance } from "./dict/governance";
 import { misc } from "./dict/misc";
 import { legal } from "./dict/legal";
 import { errors } from "./dict/errors";
@@ -41,10 +42,11 @@ const namespaces = {
   educational,
   social,
   quran,
+  governance,
   misc,
   legal,
   errors,
-};
+} as const;
 
 type Flat = Record<string, string>;
 
@@ -61,12 +63,32 @@ function flatten(): Record<Locale, Flat> {
 
 export const dictionaries = flatten();
 
+// Tracks which keys were missing from each locale on first request —
+// dev-only sanity check that catches untranslated or stale keys without
+// spamming the console every render.
+const warnedKeys = new Set<string>();
+
 export function translate(locale: Locale, key: string, vars?: Record<string, string | number>): string {
-  let text = dictionaries[locale][key] ?? dictionaries.ar[key] ?? key;
-  if (vars) {
-    for (const [k, v] of Object.entries(vars)) {
-      text = text.replaceAll(`{${k}}`, String(v));
-    }
+  const localized = dictionaries[locale][key];
+  const fallback = dictionaries.ar[key];
+  if (localized !== undefined) {
+    return interpolate(localized, vars);
   }
-  return text;
+  if (fallback !== undefined) {
+    return interpolate(fallback, vars);
+  }
+  if (process.env.NODE_ENV !== "production" && !warnedKeys.has(key)) {
+    warnedKeys.add(key);
+    console.warn(`[i18n] missing key: ${key} (locale=${locale})`);
+  }
+  return key;
+}
+
+function interpolate(text: string, vars?: Record<string, string | number>): string {
+  if (!vars) return text;
+  let out = text;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replaceAll(`{${k}}`, String(v));
+  }
+  return out;
 }

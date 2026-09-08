@@ -31,6 +31,7 @@ import {
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/components/i18n/provider";
+import { fmtDate, fmtMoney } from "@/lib/i18n/format";
 
 const CATEGORY_KEYS: Record<string, string> = {
   EDUCATIONAL: "financial.cat.educational",
@@ -194,7 +195,7 @@ export default function ExpensesPage() {
         <div>
           <h1 className="text-2xl font-bold">{t("financial.expensesTitle")}</h1>
           <p className="text-muted-foreground">
-            {t("financial.totalWithAmount", { total: total.toFixed(2) })}
+            {t("financial.totalWithAmount", { total: fmtMoney(total, locale) })}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
@@ -350,7 +351,7 @@ export default function ExpensesPage() {
             ) : (
               expenses.map((expense) => (
                 <TableRow key={expense.id}>
-                  <TableCell>{new Date(expense.expenseDate).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA")}</TableCell>
+                  <TableCell>{fmtDate(expense.expenseDate, locale)}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{categoryLabel(expense.category)}</Badge>
                   </TableCell>
@@ -360,7 +361,7 @@ export default function ExpensesPage() {
                     ) : "-"}
                   </TableCell>
                   <TableCell className="max-w-xs truncate">{expense.description}</TableCell>
-                  <TableCell className="font-medium">{parseFloat(expense.amount).toFixed(2)} {t("financial.mad")}</TableCell>
+                  <TableCell className="font-medium">{fmtMoney(parseFloat(expense.amount), locale)} {t("financial.mad")}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {expense.recorder?.fullName ?? "-"}
                   </TableCell>

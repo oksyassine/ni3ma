@@ -104,6 +104,8 @@ enum AuditAction {
   REJECT
   LOGIN
   LOGOUT
+  PUBLISH // publish of an election minute, donor story, etc.
+  SKIP    // an operation that was intentionally not performed
 }
 
 enum ProjectKind {
@@ -114,6 +116,23 @@ enum ProjectKind {
 enum DonationKind {
   CASH // نقدي
   IN_KIND // عيني
+  ZAKAT_FITRA // زكاة الفطر
+  ZAKAT_MAL // زكاة المال
+  SADAQA // صدقة
+  WAQF // وقف
+  KAFFARA // كفارة
+}
+
+// The 8 categories (asnaf) of Zakat recipients, per Quran 9:60.
+enum ZakatAsnaaf {
+  FAQIR // الفقراء
+  MISKEEN // المساكين
+  AMIL // العاملون عليها
+  MUALLAFATUL_QULOOB // المؤلفة قلوبهم
+  FIR_RIQAB // في الرقاب
+  AL_GHARIMIN // الغارمون
+  FI_SABILILLAH // في سبيل الله
+  IBN_AL_SABIL // ابن السبيل
 }
 
 enum TaskStatus {
@@ -144,6 +163,169 @@ enum RiskStatus {
   CLOSED
 }
 
+// Governance & compliance pack — Moroccan association law (Dahir 1-58-376 as
+// amended by lois 75-00 / 07-09) requires: general assemblies with signed PVs,
+// bureau-change declarations, and justification of public subsidies (>10k MAD)
+// to funders. The models below digitize that lifecycle.
+
+enum MeetingKind {
+  AGO    // الجمع العام العادي
+  AGE    // الجمع العام غير العادي
+  BUREAU // جلسة المكتب الإداري
+  OTHER
+}
+
+enum GrantFunderKind {
+  INDH          // المبادرة الوطنية للتنمية البشرية
+  COMMUNE       // جماعة ترابية
+  MINISTRY      // وزارة / مؤسسة عمومية
+  INTERNATIONAL // تعاون دولي (الاتحاد الأوروبي، الوكالات...)
+  FOUNDATION    // مؤسسة خاصة
+  OTHER
+}
+
+enum GrantStatus {
+  APPLIED   // ملف مقدم قيد الدراسة
+  APPROVED  // مصادق عليها (لم تُوقّع الاتفاقية)
+  ACTIVE    // اتفاقية موقعة — جاري التنفيذ
+  COMPLETED // أنجزت وتم تقديم الحصيلة
+  CANCELLED
+}
+
+enum AssetCondition {
+  GOOD
+  NEEDS_REPAIR
+  OUT_OF_SERVICE
+}
+
+enum SponsorshipKind {
+  YATIM   // كفالة يتيم
+  STUDENT // كفالة طالب علم
+  FAMILY  // رعاية أسرة معوزة
+}
+
+enum SponsorshipStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum OfficialDocKind {
+  STATUTES     // القانون الأساسي
+  INTERNAL_RULES // النظام الداخلي
+  PV           // محضر
+  DECLARATION  // تصريح إيداع / تعديل
+  BANK         // وثيقة بنكية
+  CNSS         // تصريح CNSS
+  AGREEMENT    // اتفاقية شراكة
+  INSURANCE    // تأمين
+  RECEIPT      // وصل جمعياتي (الجريدة الرسمية)
+  OTHER
+}
+
+enum DistributionKind {
+  RAMADAN_BASKET // قفة رمضان
+  IFTAR          // إفطار الصائم / موائد الرحمن
+  ADHI           // الهدي والأضاحي
+  EID_CLOTHES    // كسوة العيد والشتاء
+  FOOD_BASKET    // سلة غذائية عادية
+  SCHOOL_KIT     // حقيبة مدرسية
+  OTHER
+}
+
+// Cross-cutting digitalization pack — records every Moroccan association is
+// expected to keep (correspondence register, branches, trainings) plus the
+// written volunteer contracts made mandatory by law 06-18 (Aug 2021).
+
+enum MailDirection {
+  INCOMING // وارد
+  OUTGOING // صادر
+}
+
+enum MailStatus {
+  PENDING   // قيد المعالجة
+  PROCESSED // تمت المعالجة
+  ARCHIVED
+}
+
+enum CourseStatus {
+  PLANNED
+  ONGOING
+  DONE
+  CANCELLED
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  TERMINATED
+}
+
+// Staff/employee management — associations that employ anyone must run
+// payroll + CNSS monthly and keep signed contracts on file.
+enum EmployeeContractType {
+  CDI          // عقد دائم
+  CDD          // عقد محدد المدة
+  APPRENTICESHIP // تكوين بالتناوب
+  STAGE        // تدريب
+  ANAPEC       // عقد أنابيك / إدماج
+  OTHER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum PayrollStatus {
+  PENDING
+  PAID
+  CNSS_DECLARED
+}
+
+// Non-financial partnership agreements (different from Grants which track
+// money): schools, clinics, communes, peer NGOs, corporate CSR partners.
+enum PartnershipKind {
+  PUBLIC_INSTITUTION // جماعة، وزارة، مؤسسة عمومية
+  PRIVATE_COMPANY
+  NGO
+  SCHOOL             // مؤسسات تعليمية
+  HEALTH             // مصحة، مستشفى
+  INTERNATIONAL
+  OTHER
+}
+
+enum PartnershipStatus {
+  DRAFT
+  SIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+// Library catalog — quran schools, cultural and literacy associations all
+// lend books; copies are tracked separately from holdings.
+enum BookCategory {
+  QURAN
+  TAFSIR
+  HADITH
+  FIQH
+  AQIDA
+  ARABIC_LANGUAGE
+  GENERAL
+  CHILDREN
+  OTHER
+}
+
+enum BorrowingStatus {
+  OPEN
+  RETURNED
+  LATE
+  LOST
+}
+
 // ==================== AUTH ====================
 
 model User {
@@ -162,7 +344,14 @@ model User {
   recordedExpenses        Expense[]            @relation("RecordedBy")
   approvedExpenses        Expense[]            @relation("ApprovedBy")
   recordedDonations       Donation[]           @relation("RecordedBy")
+  signedDonationReceipts  Donation[]           @relation("DonationSigner")
+  signedBeneficiaryReceipts BeneficiaryReceipt[] @relation("BeneficiaryReceiptSigner")
+  closedInventoryRegisters InventoryRegister[] @relation("InventoryCloser")
   memberNotes             MemberNote[]
+  electionsCreated        Election[]           @relation("ElectionCreator")
+  electionMinutesSigned   ElectionMinute[]     @relation("ElectionMinuteSigner")
+  eventsCreated           Event[]              @relation("EventCreator")
+  ticketsCheckedIn        Ticket[]             @relation("TicketChecker")
   createdPrograms         AnnualProgram[]
   uploadedResources       SectionResource[]
   recordedAttendance      Attendance[]
@@ -229,8 +418,9 @@ model Member {
   healthConditions   String?           @map("health_conditions") // naw3 marad (free text)
   educationalLevel   String?           @map("educational_level")
   address            String?
-  phone              String?
-  landline           String? // الهاتف الثابت (adults)
+   phone              String?
+   landline           String? // الهاتف الثابت (adults)
+   email              String? // For self-service portal + magic-link recovery
   profession         String? // For adults
   // Adult marital + children
   maritalStatus      MaritalStatus?    @map("marital_status")
@@ -263,14 +453,22 @@ model Member {
   attendance         Attendance[]
   userRoles          MemberRole[]
   invitations        Invitation[]
+  passwordResets     PasswordResetToken[]
   quranProgress      QuranProgress[]
   volunteerHours     VolunteerHours[]
+  candidacies        Candidacy[]
+  votes              Vote[]
+  tickets            Ticket[]
   parentLinks        FamilyLink[]         @relation("ParentLinks")
   childLinks         FamilyLink[]         @relation("ChildLinks")
   taskAssignments    TaskAssignment[]
   taskWorklogs       TaskWorklog[]
   sectionPermissions SectionPermission[]  @relation("MemberSectionPerms")
   bureauPermissions  BureauPermission[]   @relation("MemberBureauPerms")
+  mandates           BureauMandate[]
+  volunteerContracts VolunteerContract[]
+  borrowings         BookBorrowing[]
+  messagesOut        MessageOut[]
 
   @@map("members")
 }
@@ -339,12 +537,16 @@ model WeeklyContribution {
   recordedBy     String?  @map("recorded_by")
   notes          String?
   academicYearId String?  @map("academic_year_id")
+  // Quittance (quittance de cotisation) — auto-numbered on first print.
+  quittanceNumber    String? @unique @map("quittance_number")
+  quittanceIssuedAt  DateTime? @map("quittance_issued_at") @db.Date
 
   member       Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recorder     User?         @relation("RecordedBy", fields: [recordedBy], references: [id])
   academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
 
   @@unique([memberId, weekStart])
+  @@index([quittanceNumber])
   @@map("weekly_contributions")
 }
 
@@ -379,9 +581,13 @@ model Donation {
   id             String    @id @default(cuid())
   donorName      String?   @map("donor_name")
   donorPhone     String?   @map("donor_phone")
+  donorCin       String?   @map("donor_cin")
+  donorAddress   String?   @map("donor_address")
+  donorEmail     String?   @map("donor_email")
   amount         Decimal   @db.Decimal(10, 2)
   section        Section   @default(SOCIAL)
-  projectId      String?   @map("project_id")
+  projectId      String?  @map("project_id")
+  campaignId     String?  @map("campaign_id")
   donationDate   DateTime  @default(now()) @map("donation_date") @db.Date
   isAnonymous    Boolean   @default(false) @map("is_anonymous")
   // Pledged donation flow (committed but not yet paid)
@@ -389,14 +595,31 @@ model Donation {
   pledgedAt      DateTime? @map("pledged_at")
   paidAt         DateTime? @map("paid_at")
   notes          String?
-  recordedBy     String?   @map("recorded_by")
-  academicYearId String?   @map("academic_year_id")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  recordedBy     String?  @map("recorded_by")
+  academicYearId String?  @map("academic_year_id")
+  // Zakat-specific classification (Quran 9:60 — 8 asnaf of recipients).
+  // Only meaningful when kind ∈ {ZAKAT_FITRA, ZAKAT_MAL}. Optional for
+  // SADAQA / WAQF (the donor may earmark an asnaf but it's not mandatory).
+  asnaaf         ZakatAsnaaf?
+  // "Waqf" donations are intended to be locked indefinitely. We record the
+  // endowment deed number here when the donor provides one.
+  waqfDeedNumber String?   @map("waqf_deed_number")
+  kind           DonationKind @default(CASH)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  // Receipt (reçu fiscal) — auto-numbered on first generation per
+  // (tenant, year). Art. 6 CGI allows donors to deduct up to 2‰ of CAHT.
+  receiptNumber    String?   @unique @map("receipt_number")
+  receiptIssuedAt DateTime? @map("receipt_issued_at") @db.Date
+  receiptSignedBy  String?   @map("receipt_signed_by")
 
   project      SocialProject? @relation(fields: [projectId], references: [id])
+  campaign     DonationCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   recorder     User?          @relation("RecordedBy", fields: [recordedBy], references: [id])
   academicYear AcademicYear?  @relation(fields: [academicYearId], references: [id])
+  signer       User?          @relation("DonationSigner", fields: [receiptSignedBy], references: [id], onDelete: SetNull)
 
+  @@index([donationDate])
+  @@index([receiptNumber])
   @@map("donations")
 }
 
@@ -436,6 +659,8 @@ model SocialProject {
 
   donations          Donation[]
   inKindDonations    InKindDonation[]
+  grants             Grant[]              @relation("GrantProject")
+  campaigns          DonationCampaign[]
   plans              ProjectPlan[]
   tasks              ProjectTask[]
   expenses           Expense[]            @relation("ProjectExpenses")
@@ -633,6 +858,9 @@ model SocialCase {
   projectLinks    ProjectBeneficiary[]
   schoolFollowups CaseSchoolFollowup[]
   healthFollowups CaseHealthFollowup[]
+  sponsorships    Sponsorship[]
+  distributionEntries DistributionEntry[]
+  beneficiaryReceipts BeneficiaryReceipt[]
 
   @@index([type])
   @@index([fullName])
@@ -890,6 +1118,14 @@ model AssociationInfo {
   registrationFees    Json?    @map("registration_fees")
   // Default UI language for this association's space ("ar" | "fr").
   defaultLocale       String   @default("ar") @map("default_locale")
+  // CNSS employer code (8 digits, zero-padded) — used by Damancom monthly
+  // declaration exports. Optional; the bureau UI prompts for it once.
+  cnssEmployerCode    String?  @map("cnss_employer_code")
+  // ICE (Identifiant Commun de l'Entreprise) — required on most invoices
+  // and on the Damancom declaration form since 2018.
+  ice                 String?
+  // Tax identification (Identifiant Fiscal) for IS / TVA filings.
+  taxId               String?  @map("tax_id")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("association_info")
@@ -1129,4 +1365,946 @@ model VolunteerHours {
 
   @@index([memberId, hoursDate])
   @@map("volunteer_hours")
+}
+
+// ==================== GOVERNANCE & COMPLIANCE ====================
+
+model Meeting {
+  id                String      @id @default(cuid())
+  kind              MeetingKind @default(AGO)
+  title             String
+  heldAt            DateTime    @map("held_at") @db.Date
+  location          String?
+  convocationMethod String?     @map("convocation_method") // واتساب، هاتف، بريد...
+  agenda            String? // جدول الأعمال
+  minutes           String? // نص المحضر (PV)
+  minutesUrl        String?     @map("minutes_url") // نسخة ممسوحة ضوئيا موقعة
+  expectedCount     Int         @default(0) @map("expected_count")
+  presentCount      Int         @default(0) @map("present_count")
+  quorumPct         Int         @default(50) @map("quorum_pct") // حسب القانون الأساسي
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  decisions MeetingDecision[]
+
+  @@index([heldAt])
+  @@map("meetings")
+}
+
+model MeetingDecision {
+  id           String   @id @default(cuid())
+  meetingId    String   @map("meeting_id")
+  title        String
+  body         String?
+  votesFor     Int      @default(0) @map("votes_for")
+  votesAgainst Int      @default(0) @map("votes_against")
+  votesAbstain Int      @default(0) @map("votes_abstain")
+  passed       Boolean  @default(true)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("meeting_decisions")
+}
+
+model Grant {
+  id           String          @id @default(cuid())
+  funderName   String          @map("funder_name")
+  funderKind   GrantFunderKind @default(OTHER) @map("funder_kind")
+  projectName  String          @map("project_name")
+  reference    String? // رقم الاتفاقية
+  amount       Decimal         @db.Decimal(10, 2)
+  status       GrantStatus     @default(APPLIED)
+  signedAt     DateTime?       @map("signed_at") @db.Date
+  startDate    DateTime?       @map("start_date") @db.Date
+  endDate      DateTime?       @map("end_date") @db.Date
+  projectId    String?         @map("project_id")
+  contactName  String?         @map("contact_name")
+  contactPhone String?         @map("contact_phone")
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  project  SocialProject? @relation("GrantProject", fields: [projectId], references: [id], onDelete: SetNull)
+  tranches GrantTranche[]
+
+  @@index([status])
+  @@index([endDate])
+  @@map("grants")
+}
+
+model GrantTranche {
+  id         String    @id @default(cuid())
+  grantId    String    @map("grant_id")
+  label      String    @default("شطر")
+  amount     Decimal   @db.Decimal(10, 2)
+  expectedAt DateTime? @map("expected_at") @db.Date
+  receivedAt DateTime? @map("received_at") @db.Date
+  reportDueAt DateTime? @map("report_due_at") @db.Date
+  reportedAt DateTime? @map("reported_at") @db.Date
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  grant Grant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId])
+  @@map("grant_tranches")
+}
+
+model Asset {
+  id           String         @id @default(cuid())
+  name         String
+  category     String? // أثاث، عتاد معلوماتي، وسائل بيداغوجية، عقار، نقل...
+  quantity     Int            @default(1)
+  value        Decimal?       @db.Decimal(10, 2)
+  serialNumber String?        @map("serial_number")
+  location     String?
+  condition    AssetCondition @default(GOOD)
+  acquiredAt   DateTime?      @map("acquired_at") @db.Date
+  source       String? // شراء، تبرع، منحة
+  notes        String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("assets")
+}
+
+model Sponsorship {
+  id              String            @id @default(cuid())
+  kind            SponsorshipKind   @default(YATIM)
+  beneficiaryName String            @map("beneficiary_name")
+  socialCaseId    String?           @map("social_case_id")
+  sponsorName     String            @map("sponsor_name")
+  sponsorPhone    String?           @map("sponsor_phone")
+  monthlyAmount   Decimal           @map("monthly_amount") @db.Decimal(10, 2)
+  dayOfMonth      Int               @default(5) @map("day_of_month") // يوم التسليم الشهري (1-28)
+  startedAt       DateTime          @map("started_at") @db.Date
+  endedAt         DateTime?         @map("ended_at") @db.Date
+  status          SponsorshipStatus @default(ACTIVE)
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  socialCase SocialCase? @relation(fields: [socialCaseId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("sponsorships")
+}
+
+// Registry of statutory/critical documents with expiry alerts. Moroccan
+// bureaus juggle statutes, official-gazette receipts, bank/CNSS papers and
+// partnership agreements — losing track of these blocks subsidy files.
+model OfficialDocument {
+  id           String          @id @default(cuid())
+  kind         OfficialDocKind @default(OTHER)
+  title        String
+  reference    String?
+  issuedAt     DateTime?       @map("issued_at") @db.Date
+  expiresAt    DateTime?       @map("expires_at") @db.Date // null = دائمة الصلاحية
+  reminderDays Int             @default(30) @map("reminder_days")
+  fileUrl      String?         @map("file_url")
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("official_documents")
+}
+
+// Bureau composition with mandate windows. Art. 5 of the Dahir (as amended by
+// loi 07-09) requires declaring bureau changes to the local authority within
+// ONE MONTH — declaredAt tracks that filing.
+model BureauMandate {
+  id         String    @id @default(cuid())
+  memberId   String?   @map("member_id")
+  memberName String    @map("member_name")
+  position   String // الرئيس، نائب الرئيس، الكاتب العام...
+  positionOrder Int    @default(99) @map("position_order") // sort key for the org chart
+  startedAt  DateTime  @map("started_at") @db.Date
+  endedAt    DateTime? @map("ended_at") @db.Date
+  declaredAt DateTime? @map("declared_at") @db.Date // تاريخ إيداع التصريح
+  isActive   Boolean   @default(true) @map("is_active")
+  notes      String?
+
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([isActive])
+  @@map("bureau_mandates")
+}
+
+// Seasonal distribution campaigns (Ramadan baskets, iftar, adhi...). Entries
+// log delivered units per beneficiary for funder-facing reports.
+model DistributionCampaign {
+  id            String           @id @default(cuid())
+  kind          DistributionKind @default(OTHER)
+  name          String
+  yearLabel     String?          @map("year_label") // e.g., "1447هـ / 2026"
+  unitLabel     String?          @map("unit_label") // سلة، وجبة، ثوب...
+  plannedUnits  Int              @default(0) @map("planned_units")
+  budget        Decimal?         @db.Decimal(10, 2)
+  startDate     DateTime?        @map("start_date") @db.Date
+  endDate       DateTime?        @map("end_date") @db.Date
+  notes         String?
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  entries DistributionEntry[]
+
+  beneficiaryReceipts BeneficiaryReceipt[]
+
+  @@index([kind])
+  @@map("distribution_campaigns")
+}
+
+model DistributionEntry {
+  id              String   @id @default(cuid())
+  campaignId      String   @map("campaign_id")
+  beneficiaryName String   @map("beneficiary_name")
+  socialCaseId    String?  @map("social_case_id")
+  quantity        Int      @default(1)
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  campaign DistributionCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  socialCase SocialCase?          @relation(fields: [socialCaseId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@map("distribution_entries")
+}
+
+// سجل المراسلات — the serial-numbered incoming/outgoing mail register every
+// bureau keeps when dealing with authorities, funders and partners.
+model MailItem {
+  id            String        @id @default(cuid())
+  direction     MailDirection @default(INCOMING)
+  reference     String // e.g., "و/2026/012" or "ص/2026/008"
+  subject       String
+  correspondent String // الجهة المرسلة أو المرسل إليها
+  mailDate      DateTime      @map("mail_date") @db.Date
+  channel       String? // عادي، مُوصى عليه، إلكتروني، يد بيد...
+  status        MailStatus    @default(PENDING)
+  responseDueAt DateTime?     @map("response_due_at") @db.Date
+  respondedAt   DateTime?     @map("responded_at") @db.Date
+  fileUrl       String?       @map("file_url")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Serial numbers are per-direction (و vs ص) per year — must be unique
+  // to prevent concurrent sessions from minting the same number.
+  @@unique([direction, reference], name: "mail_direction_ref_unique")
+  @@index([direction, status])
+  @@index([mailDate])
+  @@map("mail_items")
+}
+
+// Branch / antenna registry for federations, multi-site associations and
+// parents'-association chapters (one per school institution).
+model Branch {
+  id              String    @id @default(cuid())
+  name            String
+  city            String?
+  address         String?
+  phone           String?
+  email           String?
+  responsibleName String?   @map("responsible_name")
+  openedAt        DateTime? @map("opened_at") @db.Date
+  isActive        Boolean   @default(true) @map("is_active")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([isActive])
+  @@map("branches")
+}
+
+// Capacity-building courses (literacy, vocational, administrative training) —
+// heavily funded by INDH/ministry programs; participants tracked per course.
+model TrainingCourse {
+  id           String       @id @default(cuid())
+  title        String
+  field        String? // محو الأمية، تكوين إداري، مهن...
+  trainerName  String?      @map("trainer_name")
+  partner      String? // الشريك / الممول
+  location     String?
+  seatsTotal   Int          @default(0) @map("seats_total")
+  startDate    DateTime?    @map("start_date") @db.Date
+  endDate      DateTime?    @map("end_date") @db.Date
+  status       CourseStatus @default(PLANNED)
+  notes        String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  participants CourseParticipant[]
+
+  @@index([status])
+  @@map("training_courses")
+}
+
+model CourseParticipant {
+  id       String  @id @default(cuid())
+  courseId String  @map("course_id")
+  fullName String  @map("full_name")
+  phone    String?
+  note     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  course TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@map("course_participants")
+}
+
+// Written volunteer contracts mandated by law 06-18 (contractual volunteering,
+// in force since 5 Aug 2021): identity, mission, weekly hours, duration and
+// insurance must all appear on the signed contract.
+model VolunteerContract {
+  id             String         @id @default(cuid())
+  memberId       String?        @map("member_id")
+  volunteerName  String         @map("volunteer_name")
+  cin            String?
+  phone          String?
+  birthDate      DateTime?      @map("birth_date") @db.Date
+  address        String?
+  missionTitle   String         @map("mission_title")
+  missionDetails String?        @map("mission_details")
+  weeklyHours    Decimal?       @map("weekly_hours") @db.Decimal(4, 1)
+  startDate      DateTime       @map("start_date") @db.Date
+  endDate        DateTime?      @map("end_date") @db.Date
+  insuranceRef   String?        @map("insurance_ref")
+  status         ContractStatus @default(DRAFT)
+  signedAt       DateTime?      @map("signed_at") @db.Date
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("volunteer_contracts")
+}
+
+// Employees & monthly payroll — associations that hire staff must track
+// CNSS-numbered contracts, gross/net salaries and monthly payment status.
+model Employee {
+  id             String              @id @default(cuid())
+  fullName       String              @map("full_name")
+  cin            String?
+  cnssNumber     String?             @map("cnss_number")
+  position       String
+  contractType   EmployeeContractType @default(CDI) @map("contract_type")
+  status         EmployeeStatus      @default(ACTIVE)
+  hireDate       DateTime            @map("hire_date") @db.Date
+  endDate        DateTime?           @map("end_date") @db.Date
+  grossSalary    Decimal?            @map("gross_salary") @db.Decimal(10, 2)
+  bankName       String?             @map("bank_name")
+  bankRib        String?             @map("bank_rib")
+  phone          String?
+  email          String?
+  address        String?
+  contractDocUrl String?             @map("contract_doc_url")
+  notes          String?
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  payrolls PayrollRun[]
+
+  @@index([status])
+  @@map("employees")
+}
+
+model PayrollRun {
+  id          String        @id @default(cuid())
+  employeeId  String        @map("employee_id")
+  period      String // YYYY-MM, e.g. "2026-08"
+  grossAmount Decimal       @map("gross_amount") @db.Decimal(10, 2)
+  cnssAmount  Decimal?      @map("cnss_amount") @db.Decimal(10, 2)
+  netAmount   Decimal       @map("net_amount") @db.Decimal(10, 2)
+  paidAt      DateTime?     @map("paid_at") @db.Date
+  status      PayrollStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, period])
+  @@index([period])
+  @@map("payroll_runs")
+}
+
+// Non-financial partnership agreements (Grants already cover funded
+// partnerships); track school/clinic/commune/NGO conventions and CSR
+// partnerships with auto-expiry tracking.
+model Partnership {
+  id           String            @id @default(cuid())
+  partnerName  String            @map("partner_name")
+  kind         PartnershipKind   @default(OTHER)
+  contactName  String?           @map("contact_name")
+  contactPhone String?           @map("contact_phone")
+  contactEmail String?           @map("contact_email")
+  object       String // موضوع الاتفاقية
+  signedAt     DateTime?         @map("signed_at") @db.Date
+  startDate    DateTime?         @map("start_date") @db.Date
+  endDate      DateTime?         @map("end_date") @db.Date
+  status       PartnershipStatus @default(DRAFT)
+  fileUrl      String?           @map("file_url")
+  notes        String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  @@index([status])
+  @@index([endDate])
+  @@map("partnerships")
+}
+
+// Library catalog (quran schools, cultural & literacy associations lend books
+// to members and students). Physical copies tracked separately so multiple
+// copies of the same title can be lent independently.
+model LibraryBook {
+  id             String       @id @default(cuid())
+  title          String
+  author         String?
+  category       BookCategory @default(OTHER)
+  isbn           String?
+  copiesTotal    Int          @default(1) @map("copies_total")
+  shelf          String? // reference / location
+  acquiredAt     DateTime?    @map("acquired_at") @db.Date
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  borrowings BookBorrowing[]
+
+  @@index([category])
+  @@map("library_books")
+}
+
+model BookBorrowing {
+  id           String          @id @default(cuid())
+  bookId       String          @map("book_id")
+  borrowerName String          @map("borrower_name")
+  memberId     String?         @map("member_id")
+  borrowedAt   DateTime        @map("borrowed_at") @db.Date
+  dueAt        DateTime        @map("due_at") @db.Date
+  returnedAt   DateTime?       @map("returned_at") @db.Date
+  status       BorrowingStatus @default(OPEN)
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  book   LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  member Member?     @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([bookId])
+  @@index([status])
+  @@map("book_borrowings")
+}
+
+// ==================== OUTBOUND MESSAGING ====================
+//
+// WhatsApp/SMS/email outbound engine. Templates are reusable, parameterised
+// strings with {varName} placeholders. Every send is logged in messages_out
+// (with provider id + cost) for the bureau dashboard and accounting.
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model MessageTemplate {
+  id          String          @id @default(cuid())
+  key         String          @unique // e.g. "reminder.cotisation", "ag.convoc"
+  name        String
+  channel     MessageChannel  @default(WHATSAPP)
+  body        String
+  variables   String? // JSON array of expected variable names (docs only)
+  isActive    Boolean         @default(true) @map("is_active")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  messages MessageOut[]
+
+  @@map("message_templates")
+}
+
+model MessageOut {
+  id                String          @id @default(cuid())
+  channel           MessageChannel
+  // Recipient
+  recipientPhone    String          @map("recipient_phone")
+  recipientEmail    String?         @map("recipient_email")
+  recipientName     String?         @map("recipient_name")
+  recipientMemberId String?         @map("recipient_member_id")
+  // Content
+  templateKey       String?         @map("template_key")
+  variables         Json?
+  body              String // rendered body sent to the provider
+  // Provider
+  provider          String // "test" | "http" | ...
+  providerMessageId String?         @map("provider_message_id")
+  cost              Decimal?        @db.Decimal(8, 4) // MAD
+  // Lifecycle
+  status            MessageStatus   @default(QUEUED)
+  error             String?
+  sentAt            DateTime?       @map("sent_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  template MessageTemplate? @relation(fields: [templateKey], references: [key], onDelete: SetNull, onUpdate: Cascade)
+  member   Member?          @relation(fields: [recipientMemberId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([recipientMemberId])
+  @@map("messages_out")
+}
+
+// Fundraising campaigns (e.g. "RAMADAN_RATION_2026", "ZAKAT_1447", "AID_2026")
+// with a target amount and progress bar. Donations optionally link to a
+// campaign; the public donation page renders the goal.
+model DonationCampaign {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String?   @unique
+  description  String?
+  targetAmount Decimal?  @map("target_amount") @db.Decimal(12, 2)
+  startDate    DateTime? @map("start_date") @db.Date
+  endDate      DateTime? @map("end_date") @db.Date
+  isPublic     Boolean   @default(false) @map("is_public")
+  isClosed     Boolean   @default(false) @map("is_closed")
+  coverImageUrl String?  @map("cover_image_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  projectId String?       @map("project_id")
+  project   SocialProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  donations Donation[]
+
+  @@index([isPublic, isClosed])
+  @@map("donation_campaigns")
+}
+
+// Beneficiary quittance — proves a social case (yatim / mo3wiz / family)
+// received a specific service or in-kind distribution. Symmetric to the
+// donor receipt: every handover gets a counter-signed paper.
+model BeneficiaryReceipt {
+  id           String    @id @default(cuid())
+  socialCaseId String?   @map("social_case_id")
+  beneficiaryName String  @map("beneficiary_name")
+  recipientCin String?   @map("recipient_cin")
+  // Free-text description of what was delivered
+  description  String
+  // Optional FK to distribution campaign (when handed out via campaign)
+  campaignId   String?   @map("campaign_id")
+  // Estimated value (MAD) — required for tax-fungible in-kind distributions
+  estimatedValue Decimal? @map("estimated_value") @db.Decimal(10, 2)
+  handedAt     DateTime  @map("handed_at") @db.Date
+  // Auto-numbered "B/2026/000001" series, allocated on first generation
+  receiptNumber    String? @unique @map("receipt_number")
+  receiptIssuedAt  DateTime? @map("receipt_issued_at") @db.Date
+  receiptSignedBy  String?   @map("receipt_signed_by")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  socialCase SocialCase? @relation(fields: [socialCaseId], references: [id], onDelete: SetNull)
+  campaign   DistributionCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  signer     User? @relation("BeneficiaryReceiptSigner", fields: [receiptSignedBy], references: [id], onDelete: SetNull)
+
+  @@index([handedAt])
+  @@map("beneficiary_receipts")
+}
+
+// Annual inventory snapshot (registre d'inventaire) — required by PCAF
+// 2018 and art. 32 ter Dahir 1-58-376 for any association that received
+// > 10 000 MAD of public funds. Frozen copy of Asset rows at year-end.
+model InventoryRegister {
+  id          String    @id @default(cuid())
+  yearLabel   String    @map("year_label")  // e.g. "2025" or "1446-1447"
+  snapshotAt  DateTime  @map("snapshot_at") @db.Date
+  totalValue  Decimal   @map("total_value") @db.Decimal(14, 2)
+  notes       String?
+  closedAt    DateTime? @map("closed_at")
+  closedBy    String?   @map("closed_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  closedByUser User? @relation("InventoryCloser", fields: [closedBy], references: [id], onDelete: SetNull)
+
+  @@unique([yearLabel])
+  @@map("inventory_registers")
+}
+
+// Platform-only audit log. Lives in the CONTROL database (the tenants
+// registry), not in tenant DBs. Records:
+//   - platform-admin actions (tenant suspend/activate/provision)
+//   - billing webhook activations
+//   - tenant lifecycle events (provisioned, payment success/failure)
+//   - audit-write failures from any tenant (with entity reference)
+//
+// Operators monitor this table to spot both unauthorized platform changes
+// and gaps in the per-tenant audit trail.
+model PlatformAuditLog {
+  id        String   @id @default(cuid())
+  actor     String?  // platform admin user id, or "system" for webhook-driven events
+  action    String   // e.g., "tenant.suspend", "tenant.activate", "tenant.provision", "billing.success", "audit.failure"
+  entity    String   // e.g., "tenant", "tenant_payment", "audit"
+  entityId  String?  @map("entity_id")
+  meta      Json?    // arbitrary context (old status, new status, IP, etc.)
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("platform_audit_logs")
+}
+
+// Idempotency table for billing webhook events. Provider returns an event_id
+// in the body; we record each processed id. Re-delivery within the dedup
+// window is silently acknowledged as a no-op. Old rows are pruned by cron
+// (90-day TTL is plenty — YouCan Pay retries for at most a few days).
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String   // e.g., "youcanpay"
+  eventId     String   // provider's id, or our sha256 of body when missing
+  eventName   String   // e.g., "transaction.success"
+  tenantId    String?  @map("tenant_id")
+  paymentId   String?  @map("payment_id")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@unique([provider, eventId])
+  @@index([processedAt])
+  @@map("webhook_events")
+}
+
+// Single-use password-reset tokens. The member requests a reset via
+// /forgot-password; we email (or WhatsApp) a magic link that hits
+// /reset-password?token=... and on success the password is changed and
+// the row marked used. Tokens expire in 1 hour.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  memberId  String    @map("member_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+// ==================== PCAF (Plan Comptable des Associations) ====================
+// Moroccan association accounting — aligned with the CGNC chart of accounts.
+// The PCAF is the regulatory framework for keeping livres-journal (chronological
+// journal) and grands livres (ledger by account) as required by art. 32 ter
+// Dahir 1-58-376 and by INDH / EU / AFD bailleur reporting.
+//
+// We model:
+//  1. A flat ChartOfAccount (numbered per PCAF — class 1-9)
+//  2. JournalEntry (immutable line in the livre-journal, double-entry debit+credit)
+//  3. LedgerEntry (aggregated per account, derived from journal entries)
+//
+// JournalEntry is appended via $transaction whenever a money event happens
+// (donation, expense, payroll, distribution, grant tranche). The grand livre
+// is computed on read — no separate denormalized ledger row needed at first.
+
+model ChartOfAccount {
+  id        String   @id @default(cuid())
+  code      String   @unique // e.g. "5141" (banque), "6122" (achats consommés), "7143" (dons)
+  label     String
+  // CGNC class: 1=Capitaux, 2=Immobilisations, 3=Stocks, 4=Tiers, 5=Trésorerie,
+  // 6=Charges, 7=Produits, 8=Engagements, 9=Analytique.
+  class     Int
+  // Account type for reporting (asset / liability / income / expense).
+  type      AccountType
+  // "Active" accounts appear in default postings; "Inactive" are kept for history.
+  isActive  Boolean  @default(true) @map("is_active")
+  notes     String?
+
+  journalEntries JournalEntry[] @relation("JournalEntryAccount")
+  journalLines   JournalLine[]   @relation("JournalLineAccount")
+
+  @@index([class])
+  @@map("chart_of_accounts")
+}
+
+enum AccountType {
+  ASSET // Actif (classe 2, 3, 5)
+  LIABILITY // Passif (classe 1, 4 — tiers créditeurs)
+  INCOME // Produits (classe 7)
+  EXPENSE // Charges (classe 6)
+  ANALYTIC // Analytique (classe 9 — bailleur / projet)
+}
+
+// Immutable double-entry journal line. One business event (donation, expense)
+// creates exactly one JournalEntry with debit+credit sums equal — the heart
+// of the livre-journal.
+model JournalEntry {
+  id           String   @id @default(cuid())
+  // YYYY-MM-DD business date. Distinct from createdAt (server clock).
+  entryDate    DateTime @map("entry_date") @db.Date
+  // Human-readable piece number — same series as receipts (R/YYYY/NNNNNN).
+  pieceNumber  String?  @unique @map("piece_number")
+  // What business event triggered this entry. NULL = manual adjustment.
+  source       JournalSource
+  // Link to the source row (Donation.id, Expense.id, PayrollRun.id, etc.).
+  sourceId     String?  @map("source_id")
+  // Short label, e.g. "Don cash Mohamed Ali — Mars 2026" or "Achat ramadan baskets"
+  label        String
+  // Total amount in MAD (debit + credit sides must each equal this).
+  amount       Decimal  @db.Decimal(14, 2)
+  // Optional reference to the analytic (class 9) account for grant-by-grant
+  // reporting — INDH, EU, AFD all require this.
+  analyticCode String?  @map("analytic_code")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // The two lines of the journal entry (one debit, one credit).
+  // For complex entries (e.g. salary withholding), there can be more.
+  lines JournalLine[]
+  // Convenience: which chart account was hit (denormalized for fast
+  // grand-livre reads). At least one line's accountCode matches this.
+  accountCode String?        @map("account_code")
+  account     ChartOfAccount? @relation("JournalEntryAccount", fields: [accountCode], references: [code])
+
+  @@index([entryDate])
+  @@index([source, sourceId])
+  @@map("journal_entries")
+}
+
+enum JournalSource {
+  DONATION
+  CONTRIBUTION
+  EXPENSE
+  PAYROLL
+  DISTRIBUTION
+  GRANT
+  ADJUSTMENT
+  CLOSING
+}
+
+// A single debit OR credit line within a JournalEntry. Multiple lines per
+// entry are allowed (e.g. payroll: debit 6141 / credit 4443 CNSS + credit
+// 4441 IR + credit 5141 bank). The sum of debits = sum of credits.
+model JournalLine {
+  id          String   @id @default(cuid())
+  entryId     String   @map("entry_id")
+  accountCode String   @map("account_code") // ChartOfAccount.code
+  side        Side
+  amount      Decimal  @db.Decimal(14, 2)
+  label       String?
+
+  entry   JournalEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account ChartOfAccount? @relation("JournalLineAccount", fields: [accountCode], references: [code])
+
+  @@index([entryId])
+  @@index([accountCode])
+  @@map("journal_lines")
+}
+
+enum Side {
+  DEBIT
+  CREDIT
+}
+
+// ==================== BUREAU ELECTION (AGO) ====================
+// End-of-term governance elections per Moroccan association law (Dahir
+// 1-58-376 + Dahir 1-73-293). The bureau is elected at the AGO every 2-3
+// years. We track the cycle, candidacies, online votes (weighted by member
+// type for assemblies), and signed minutes. Distinct from Meeting (which
+// captures ordinary AGO/AGE meetings) because elections have their own
+// legal record-keeping requirements.
+
+enum ElectionStatus {
+  DRAFT
+  CANDIDACY_OPEN
+  CANDIDACY_CLOSED
+  VOTING_OPEN
+  VOTING_CLOSED
+  ARCHIVED
+}
+
+model Election {
+  id            String         @id @default(cuid())
+  // e.g. "AGO 2026 — Renouvellement du bureau"
+  title         String
+  electionDate  DateTime       @map("election_date") @db.Date
+  // Number of seats being filled (typ. 5-9 for the bureau + 2-3 alternates).
+  seats         Int            @default(7)
+  // Weight of an ADULT member's vote vs a CHILD member's (children don't
+  // vote in Morocco; kept at 0 by default).
+  adultWeight   Int            @default(1) @map("adult_weight")
+  childWeight   Int            @default(0) @map("child_weight")
+  status        ElectionStatus @default(DRAFT)
+  // Snapshot of the quorum at close — useful for legal minutes.
+  votesCast     Int            @default(0) @map("votes_cast")
+  eligibleVoters Int           @default(0) @map("eligible_voters")
+  notes         String?
+  createdBy     String         @map("created_by")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  closedAt      DateTime?      @map("closed_at")
+
+  creator  User              @relation("ElectionCreator", fields: [createdBy], references: [id])
+  candidacies Candidacy[]
+  votes      Vote[]
+  minutes    ElectionMinute?
+
+  @@index([electionDate])
+  @@map("elections")
+}
+
+// A candidacy for one of the seats in an Election.
+model Candidacy {
+  id          String    @id @default(cuid())
+  electionId  String    @map("election_id")
+  memberId    String    @map("member_id")
+  // Optional: candidate's stated position in their own words.
+  statement   String?
+  // Order on the ballot. Ties broken by createdAt.
+  ballotOrder Int       @default(0) @map("ballot_order")
+  withdrawnAt DateTime? @map("withdrawn_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  votes    Vote[]
+
+  @@unique([electionId, memberId])
+  @@map("candidacies")
+}
+
+// One ballot entry. Each member may vote at most once per election.
+model Vote {
+  id          String   @id @default(cuid())
+  electionId  String   @map("election_id")
+  voterId     String   @map("voter_id")
+  // Ballot is a JSON array of candidacy ids in the voter's chosen order.
+  // Top-N (where N = seats) are elected. Stored as JSON so we can recompute
+  // if seats change after voting closes.
+  ballot      Json
+  // Weight applied at tally time (1 for adult, 0 for child, configurable).
+  weight      Int      @default(1)
+  castAt      DateTime @default(now()) @map("cast_at")
+
+  election  Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  voter     Member    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  candidacies Candidacy[]
+
+  @@unique([electionId, voterId])
+  @@map("votes")
+}
+
+// The signed minutes of the election — a single record per election,
+// attached after status=ARCHIVED. Acts as the legal proof.
+model ElectionMinute {
+  id            String   @id @default(cuid())
+  electionId    String   @unique @map("election_id")
+  // Body of the minutes: results table, attendance, resolutions adopted.
+  body          String
+  // List of elected candidacies (in order of votes).
+  electedOrder  Json     @map("elected_order")
+  // Bureau members (President, VP, Treasurer, Secretary, ...).
+  bureauRoles  Json     @map("bureau_roles")
+  signedBy      String?  @map("signed_by")
+  signedAt      DateTime? @map("signed_at")
+  publishedAt   DateTime? @map("published_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  signer   User?    @relation("ElectionMinuteSigner", fields: [signedBy], references: [id], onDelete: SetNull)
+
+  @@map("election_minutes")
+}
+
+// ==================== EVENTS & TICKETING ====================
+// Public events the association runs (gala, marche verte, conference, iftar).
+// Tickets are sold via YouCan Pay or tracked as free registrations. Members
+// see event RSVPs in the portal; the public sees a landing page at /e/[slug].
+
+model Event {
+  id          String    @id @default(cuid())
+  // Slug for the public landing page (/e/[slug]).
+  slug        String    @unique
+  title       String
+  description String
+  // ISO 8601 start / end.
+  startsAt    DateTime  @map("starts_at")
+  endsAt      DateTime  @map("ends_at")
+  venue       String?   // human-readable venue name
+  city        String?
+  // Total seat count. Null = unlimited.
+  capacity    Int?
+  // 0 = free, >0 = ticket price in MAD.
+  ticketPrice Decimal   @default(0) @map("ticket_price") @db.Decimal(10, 2)
+  // Member discount in percent (0-100). Default 50 = members get 50% off.
+  memberDiscountPct Decimal? @default(50) @map("member_discount_pct") @db.Decimal(5, 2)
+  // "free", "online" (YouCan Pay), "onsite" (cash at door).
+  paymentMode EventPaymentMode @default(FREE) @map("payment_mode")
+  // YouCan Pay orderId prefix once tokenized; we store the full id so the
+  // webhook can resolve back to this event.
+  youcanOrderId String?  @unique @map("youcan_order_id")
+  // Public visibility: DRAFT (admin only), PUBLISHED (public can see + RSVP),
+  // CLOSED (past event, archived page).
+  visibility  EventVisibility  @default(DRAFT)
+  posterUrl   String?  @map("poster_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String  @map("created_by")
+
+  creator User @relation("EventCreator", fields: [createdBy], references: [id])
+  tickets Ticket[]
+
+  @@index([startsAt])
+  @@index([visibility])
+  @@map("events")
+}
+
+enum EventPaymentMode {
+  FREE
+  ONLINE  // YouCan Pay checkout
+  ONSITE  // Cash at the door
+}
+
+enum EventVisibility {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+// A single ticket / registration. Members get 50% off by default (governance
+// perk — association membership gives you cheaper entry to association events).
+model Ticket {
+  id          String    @id @default(cuid())
+  eventId     String    @map("event_id")
+  attendeeName String    @map("attendee_name")
+  attendeePhone String?  @map("attendee_phone")
+  attendeeEmail String?  @map("attendee_email")
+  memberId    String?   @map("member_id") // null for non-member ticket
+  // Price actually paid (after any member discount).
+  amountPaid  Decimal   @default(0) @map("amount_paid") @db.Decimal(10, 2)
+  // RSVP vs paid ticket.
+  status      TicketStatus @default(PENDING)
+  // QR token for the kiosk check-in (same format as member-card).
+  qrToken     String    @unique @map("qr_token")
+  // YouCan Pay transaction id (filled by webhook).
+  youcanTxId  String?   @map("youcan_tx_id")
+  paidAt      DateTime? @map("paid_at")
+  checkedInAt DateTime? @map("checked_in_at")
+  checkedInBy String?   @map("checked_in_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  checker User?  @relation("TicketChecker", fields: [checkedInBy], references: [id], onDelete: SetNull)
+
+  // Composite index for the capacity check (eventId + status).
+  @@index([eventId, status])
+  @@index([eventId])
+  @@index([status])
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  PENDING
+  PAID
+  CHECKED_IN
+  CANCELLED
+  NO_SHOW
 }

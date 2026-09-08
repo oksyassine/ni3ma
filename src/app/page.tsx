@@ -11,7 +11,7 @@ export default async function LandingPage() {
   if (session) {
     redirect(getDefaultDashboard(session.user.roles as Role[]));
   }
-  const { t, locale } = await getT();
+  const { t } = await getT();
 
   const FEATURES = [
     { title: t("landing.features.members"), desc: t("landing.features.membersDesc") },
@@ -97,7 +97,7 @@ export default async function LandingPage() {
                   <h3 className="text-xl font-bold">{t(`plan.${plan.key}.label`)}</h3>
                   <p className="mt-3">
                     <span className="text-3xl font-extrabold">
-                      {plan.priceMad > 0 ? `${plan.priceMad} ${locale === "fr" ? "MAD" : "درهم"}` : `0 ${locale === "fr" ? "MAD" : "درهم"}`}
+                      {plan.priceMad > 0 ? `${plan.priceMad} ${t("financial.mad")}` : `0 ${t("financial.mad")}`}
                     </span>{" "}
                     <span className="text-sm text-muted-foreground">
                       {plan.priceMad > 0 ? t("landing.pricing.perMonth") : t("landing.pricing.forever")}

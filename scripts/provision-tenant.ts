@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
@@ -46,14 +47,24 @@ async function main() {
   const { bootstrapTenant } = await import("../src/lib/bootstrap");
   const client = new PrismaClient({ datasources: { db: { url: dbUrl } } });
   const existingAdmin = await client.user.findFirst({ select: { username: true } });
+  const password = newPass ?? randomStrongPass();
   await bootstrapTenant(client, {
     associationName: tenant.name,
     city: tenant.city,
     adminName: tenant.contactName ?? "المدير",
     adminUsername: existingAdmin?.username ?? slugToUsername(slugArg),
-    adminPasswordHash: await hash(newPass ?? randomPass(), 12),
+    adminPasswordHash: await hash(password, 12),
   });
   await client.$disconnect();
+
+  if (!newPass) {
+    // Print only when WE generated the password. The operator must capture
+    // it and deliver to the tenant admin out-of-band; there's no other way
+    // to retrieve it.
+    console.warn(`\n*** TEMPORARY ADMIN PASSWORD for "${slugArg}" ***`);
+    console.warn(`    ${password}`);
+    console.warn(`    (deliver this securely, then ask the admin to rotate it)\n`);
+  }
 
   // 4. Mark ACTIVE
   await control.tenant.update({
@@ -67,10 +78,11 @@ function slugToUsername(s: string): string {
   return "admin_" + s.replace(/-/g, "_").slice(0, 20);
 }
 
-function randomPass(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(12)))
-    .map((b) => "abcdefghjkmnpqrstuvwxyz23456789"[b % 32])
-    .join("");
+// 24 base64url chars = 18 bytes = 144 bits of entropy. Distinct character
+// set from the bcrypt alphabet so the printed password is unambiguous in
+// any terminal. Operator copies this once at deploy time.
+function randomStrongPass(): string {
+  return randomBytes(18).toString("base64url");
 }
 
 main()

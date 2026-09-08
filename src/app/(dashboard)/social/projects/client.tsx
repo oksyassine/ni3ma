@@ -33,6 +33,7 @@ import {
 } from "@/lib/project";
 import { Plus, Calendar, MapPin, Users, ChevronDown, Target, ListChecks } from "lucide-react";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 
 type Project = {
   id: string;
@@ -71,7 +72,7 @@ const initial = {
 };
 
 export function ProjectsListClient() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const perms = usePermissions();
   const canWrite = perms.canWriteSection("SOCIAL");
@@ -206,12 +207,12 @@ export function ProjectsListClient() {
                       <div className="flex items-center justify-between text-xs">
                         <span className="flex items-center gap-1 text-muted-foreground"><Target size={11} />{t("social.donationCollection")}</span>
                         <span className="font-medium">
-                          {p.summary.totalCollected.toFixed(0)} / {Number(p.targetAmount).toFixed(0)} {t("social.mad")}
+                          {fmtMoney(p.summary.totalCollected, locale, 0)} / {fmtMoney(Number(p.targetAmount ?? 0), locale, 0)} {t("social.mad")}
                         </span>
                       </div>
                       <Progress value={p.summary.progressPct ?? 0} indicatorClassName="bg-green-600" />
                       {p.summary.inKindEstimated > 0 && (
-                        <p className="text-[10px] text-muted-foreground">{t("social.inKindPart", { amount: p.summary.inKindEstimated.toFixed(0) })} {t("social.mad")}</p>
+                        <p className="text-[10px] text-muted-foreground">{t("social.inKindPart", { amount: fmtMoney(p.summary.inKindEstimated, locale, 0) })} {t("social.mad")}</p>
                       )}
                     </div>
                   )}

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import type { Section } from "@prisma/client";
 import { SECTION_LABELS } from "@/lib/section";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 import { Heart, Plus } from "lucide-react";
 
 type Record = {
@@ -25,7 +26,7 @@ type Record = {
 };
 
 export function MemberVolunteerClient({ memberId, initialRecords }: { memberId: string; initialRecords: Record[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [records, setRecords] = useState(initialRecords);
   const [form, setForm] = useState({
     section: "EDUCATIONAL" as Section,
@@ -79,13 +80,13 @@ export function MemberVolunteerClient({ memberId, initialRecords }: { memberId: 
         <Card>
           <CardContent className="py-4">
             <p className="text-xs text-muted-foreground">{t("memberVol.approvedHours")}</p>
-            <p className="text-2xl font-bold text-green-600">{totalApproved.toFixed(1)}</p>
+            <p className="text-2xl font-bold text-green-600">{fmtMoney(totalApproved, locale, 1)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-4">
             <p className="text-xs text-muted-foreground">{t("misc.pendingReview")}</p>
-            <p className="text-2xl font-bold text-orange-600">{totalPending.toFixed(1)}</p>
+            <p className="text-2xl font-bold text-orange-600">{fmtMoney(totalPending, locale, 1)}</p>
           </CardContent>
         </Card>
       </div>
@@ -131,7 +132,7 @@ export function MemberVolunteerClient({ memberId, initialRecords }: { memberId: 
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm">{r.hoursDate}</span>
                   <Badge variant="outline">{SECTION_LABELS[r.section]}</Badge>
-                  <span className="text-sm font-mono">{r.hours.toFixed(1)} {t("misc.hoursShort")}</span>
+                  <span className="text-sm font-mono">{fmtMoney(r.hours, locale, 1)} {t("misc.hoursShort")}</span>
                   {r.approved ? (
                     <Badge variant="default">{t("misc.approved")}</Badge>
                   ) : (

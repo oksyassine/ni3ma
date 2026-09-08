@@ -14,16 +14,17 @@ import {
   Coins,
   Receipt,
   Gift,
+  Calculator,
   GraduationCap,
   HeartHandshake,
   BookOpen,
   UserRound,
   CalendarDays,
+  Vote,
   ClipboardList,
   CalendarCheck,
   Activity,
   ScrollText,
-  FileSpreadsheet,
   HandHeart,
   Users2,
   Upload,
@@ -34,6 +35,22 @@ import {
   ListChecks,
   CreditCard,
   Building,
+  Gavel,
+  Landmark,
+  UsersRound,
+  PackageOpen,
+  FileOutput,
+  Inbox,
+  Network,
+  FileSignature,
+  Handshake,
+  Heart as HeartIcon,
+  Boxes,
+  Bell,
+  HandHeart as HandHeartIcon,
+  MessageSquare,
+  ShieldCheck,
+  LayoutDashboard as LayoutDashboardIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/rbac";
 import { useT } from "@/components/i18n/provider";
@@ -86,6 +103,7 @@ const navItems: NavItem[] = [
       { title: "nav.overview", href: "/admin", icon: LayoutDashboard },
       { title: "nav.members", href: "/admin/members", icon: Users },
       { title: "nav.membersImport", href: "/admin/members/import", icon: Upload },
+      { title: "nav.memberCard", href: "/admin/members", icon: CreditCard },
       { title: "nav.accessControl", href: "/admin/users", icon: Shield },
       { title: "nav.extendedPermissions", href: "/admin/permissions", icon: Shield },
       { title: "nav.academicYears", href: "/admin/academic-years", icon: CalendarDays },
@@ -98,9 +116,35 @@ const navItems: NavItem[] = [
   {
     title: "nav.bureau",
     href: "/bureau",
-    roles: ["ADMIN", "BUREAU", "FINANCIAL"],
+    roles: ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"],
     children: [
       { title: "nav.overview", href: "/bureau", icon: Building2 },
+      { title: "nav.meetings", href: "/bureau/meetings", icon: Gavel, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.mandates", href: "/bureau/mandates", icon: UsersRound, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.grants", href: "/bureau/grants", icon: Landmark },
+      { title: "nav.assetsInventory", href: "/bureau/assets", icon: Boxes },
+      { title: "nav.sponsorships", href: "/bureau/sponsorships", icon: HeartHandshake, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.distributions", href: "/bureau/distributions", icon: PackageOpen, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.documents", href: "/bureau/documents", icon: ScrollText, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.mail", href: "/bureau/mail", icon: Inbox },
+      { title: "nav.zakat", href: "/bureau/zakat", icon: Calculator, roles: ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"] },
+      { title: "nav.accounting", href: "/bureau/accounting", icon: BookOpen, roles: ["ADMIN", "BUREAU_RW", "FINANCIAL"] },
+      { title: "nav.elections", href: "/bureau/elections", icon: Vote, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.events", href: "/bureau/events", icon: CalendarDays, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.branches", href: "/bureau/branches", icon: Network },
+      { title: "nav.trainings", href: "/bureau/trainings", icon: GraduationCap, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.volunteerContracts", href: "/bureau/volunteer-contracts", icon: FileSignature, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.campaigns", href: "/bureau/campaigns", icon: HeartIcon, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.beneReceipts", href: "/bureau/bene-receipts", icon: HandHeartIcon, roles: ["ADMIN", "BUREAU", "BUREAU_RW", "SOCIAL"] },
+      { title: "nav.invRegister", href: "/bureau/inv-register", icon: Boxes, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.paperwork", href: "/bureau/paperwork", icon: FileOutput, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.employees", href: "/bureau/employees", icon: Users, roles: ["ADMIN", "BUREAU_RW", "FINANCIAL"] },
+      { title: "nav.partnerships", href: "/bureau/partnerships", icon: Handshake },
+      { title: "nav.library", href: "/bureau/library", icon: BookOpen, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.reminders", href: "/bureau/reminders", icon: Bell, roles: ["ADMIN", "BUREAU", "BUREAU_RW", "FINANCIAL"] },
+      { title: "nav.messages", href: "/bureau/messages", icon: MessageSquare, roles: ["ADMIN", "BUREAU", "BUREAU_RW"] },
+      { title: "nav.audit", href: "/bureau/audit", icon: ShieldCheck },
+      { title: "nav.annualReport", href: "/bureau/annual-report", icon: FileOutput },
     ],
   },
   {
@@ -212,10 +256,10 @@ export function AppSidebar() {
       <SidebarHeader className="border-b px-3 py-3">
         <Link href="/" className="flex items-center gap-3 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 shadow-sm bg-white">
-            <Image src="/logo.jpg" alt="شعار الجمعية" width={36} height={36} className="object-cover w-full h-full" />
+            <Image src="/logo.jpg" alt={t("sidebar.logoAlt")} width={36} height={36} className="object-cover w-full h-full" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden min-w-0">
-            <h2 className="font-bold text-sm leading-tight truncate">جمعية النعمة</h2>
+            <h2 className="font-bold text-sm leading-tight truncate">{t("sidebar.assocName")}</h2>
             <p className="text-xs text-muted-foreground">{t("sidebar.tagline")}</p>
           </div>
         </Link>
@@ -254,7 +298,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t p-3">
         <p className="text-xs text-muted-foreground text-center group-data-[collapsible=icon]:hidden">
-          جمعية النعمة · مكناس
+          {t("sidebar.assocLocation")}
         </p>
       </SidebarFooter>
     </Sidebar>

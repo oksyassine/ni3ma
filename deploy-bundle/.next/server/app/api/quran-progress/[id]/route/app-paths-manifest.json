@@ -1,0 +1,3 @@
+{
+  "/api/quran-progress/[id]/route": "app/api/quran-progress/[id]/route.js"
+}

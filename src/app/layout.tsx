@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Cairo } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
@@ -23,16 +24,26 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const ar = locale !== "fr";
+  // Resolve metadataBase from the request Host so OpenGraph/Twitter cards
+  // on a tenant subdomain point at the tenant, not the platform apex.
+  let origin = `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "neimaa.carbtrim.online"}`;
+  try {
+    const h = await headers();
+    const host = h.get("host");
+    if (host) origin = `https://${host}`;
+  } catch {
+    // headers() not available (build step / static generation).
+  }
   return {
-    metadataBase: new URL("https://neimaa.carbtrim.online"),
+    metadataBase: new URL(origin),
     title: ar ? "منصة نعمة — إدارة الجمعيات" : "Plateforme Nima — gestion d'associations",
     description: ar
       ? "نظام إدارة الجمعيات المغربية ودور حفظ القرآن: الأعضاء، الحضور، المالية، المشاريع والحالات الاجتماعية."
       : "Gestion des associations marocaines et écoles coraniques : adhérents, présence, finances, projets et dossiers sociaux.",
     manifest: "/manifest.json",
     icons: {
-      icon: "/icons/icon-192.png",
-      apple: "/icons/apple-touch-icon.png",
+      icon: [{ url: "/icons/icon-192.png", sizes: "192x192" }],
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
     },
   };
 }

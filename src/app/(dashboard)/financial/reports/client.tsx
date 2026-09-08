@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 
 type Year = { id: string; label: string; isCurrent: boolean };
 
@@ -33,24 +34,47 @@ const CATEGORY_KEYS: Record<string, string> = {
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 export function ReportsClient({ years }: { years: Year[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const initial = years.find((y) => y.isCurrent)?.id ?? years[0]?.id ?? "";
   const [yearId, setYearId] = useState(initial);
   const [data, setData] = useState<Summary | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setData(null); // eslint-disable-line react-hooks/set-state-in-effect
     const params = new URLSearchParams();
     if (yearId) params.set("academicYearId", yearId);
-    fetch(`/api/financial/summary?${params}`).then((r) => r.json()).then(setData);
+    fetch(`/api/financial/summary?${params}`, { signal: controller.signal })
+      .then((r) => r.json())
+      .then((d) => { if (!controller.signal.aborted) setData(d); })
+      .catch(() => { /* aborted — ignore */ });
+    return () => controller.abort();
   }, [yearId]);
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
     const params = new URLSearchParams();
     if (yearId) params.set("academicYearId", yearId);
-    window.location.href = `/api/financial/export?${params}`;
+    try {
+      const res = await fetch(`/api/financial/export?${params}`);
+      if (!res.ok) {
+        alert(t("financial.exportFailed"));
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ni3ma-financial-${yearId || "all"}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert(t("financial.exportFailed"));
+    }
   };
 
-  if (!data) return <p className="text-center py-8 text-muted-foreground">{t("common.loading")}</p>;
+  if (!data || !data.totals) return <p className="text-center py-8 text-muted-foreground">{t("common.loading")}</p>;
 
   return (
     <div className="space-y-6">
@@ -88,21 +112,21 @@ export function ReportsClient({ years }: { years: Year[] }) {
       <div className="grid gap-3 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.contributionsShort")}</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{data.totals.contributions.toFixed(2)} {t("financial.mad")}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-green-600">{fmtMoney(data.totals.contributions, locale)} {t("financial.mad")}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.donationsShort")}</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-blue-600">{data.totals.donations.toFixed(2)} {t("financial.mad")}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-blue-600">{fmtMoney(data.totals.donations, locale)} {t("financial.mad")}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.expensesShort")}</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-red-600">{data.totals.expenses.toFixed(2)} {t("financial.mad")}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-red-600">{fmtMoney(data.totals.expenses, locale)} {t("financial.mad")}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">{t("financial.balance")}</CardTitle></CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${data.totals.balance >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {data.totals.balance.toFixed(2)} {t("financial.mad")}
+              {fmtMoney(data.totals.balance, locale)} {t("financial.mad")}
             </div>
           </CardContent>
         </Card>
@@ -176,7 +200,7 @@ export function ReportsClient({ years }: { years: Year[] }) {
                     <span className="text-muted-foreground w-6">#{i + 1}</span>
                     <span className="font-medium">{d.name}</span>
                   </span>
-                  <span className="font-mono">{d.total.toFixed(2)} {t("financial.mad")}</span>
+                  <span className="font-mono">{fmtMoney(d.total, locale)} {t("financial.mad")}</span>
                 </div>
               ))}
             </div>

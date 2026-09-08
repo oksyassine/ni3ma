@@ -432,6 +432,7 @@ export const social = {
     "social.addressValue": "العنوان: {address}, {city}",
     "social.assocPageLink": "📘 صفحة الجمعية",
     "social.photosTitle": "صور",
+    "social.donateInstructions": "للمساهمة، تواصلوا مع الجمعية.",
   },
   fr: {
     "social.title": "Section social",
@@ -865,5 +866,6 @@ export const social = {
     "social.addressValue": "Adresse : {address}, {city}",
     "social.assocPageLink": "📘 Page de l'association",
     "social.photosTitle": "Photos",
+    "social.donateInstructions": "Pour contribuer, contactez l'association.",
   },
 } as const;

@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import { getT } from "@/lib/i18n/server";
+import { fmtMoney } from "@/lib/i18n/format";
 
 export default async function PublicProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug: rawSlug } = await params;
-  const { t } = await getT();
+  const { t, locale } = await getT();
   // Defensive: handle both URL-encoded (e.g. %D8%B9...) and decoded (عيد) forms
   let slug = rawSlug;
   try {
@@ -26,8 +27,58 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
       inKindDonations: { select: { estimatedValue: true } },
     },
   });
-  if (!project) return notFound();
+  // DonationCampaign shares the slug space: if there's a public campaign
+  // with the same slug, surface it on top of the project list (rare case
+  // where both exist for the same slug, project wins as primary content).
+  const campaign = await prisma.donationCampaign.findFirst({
+    where: { slug, isPublic: true, isClosed: false },
+    include: { donations: { where: { isPaid: true }, select: { amount: true } } },
+  });
+  if (!project && !campaign) return notFound();
 
+  const association = await prisma.associationInfo.findUnique({ where: { id: 1 } });
+
+  // If only a campaign matched, render a campaign-only page.
+  if (!project && campaign) {
+    const cRaised = campaign.donations.reduce((s, d) => s + Number(d.amount), 0);
+    const cTarget = campaign.targetAmount ? Number(campaign.targetAmount) : 0;
+    const cPct = cTarget === 0 ? 0 : Math.min(100, (cRaised / cTarget) * 100);
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background">
+        <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
+          <header className="text-center space-y-2 pt-4">
+            <div className="flex items-center justify-center gap-2">
+              <Image src="/logo.jpg" alt="logo" width={48} height={48} className="rounded-lg" />
+              <h2 className="text-lg font-bold">{association?.name ?? t("social.defaultAssocName")}</h2>
+            </div>
+          </header>
+          <Card>
+            <CardContent className="p-6 space-y-3">
+              <Badge variant="outline">{t("gov.campaigns.title")}</Badge>
+              <h1 className="text-3xl font-extrabold">{campaign.name}</h1>
+              {campaign.description && <p className="text-muted-foreground">{campaign.description}</p>}
+              {cTarget > 0 && (
+                <>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>{cRaised.toLocaleString()} MAD</span>
+                    <span>{cTarget.toLocaleString()} MAD</span>
+                  </div>
+                  <Progress value={cPct} className="h-2" />
+                </>
+              )}
+              <p className="pt-3 text-sm text-muted-foreground">
+                {t("social.donateInstructions")}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+  if (!project) return notFound();
+  // Fall through: project content is rendered below.
+
+  // Project-scoped aggregations (TS narrows project to non-null here).
   const cashCollected = project.donations.filter((d) => d.isPaid).reduce((s, d) => s + Number(d.amount), 0);
   const cashPledged = project.donations.filter((d) => !d.isPaid).reduce((s, d) => s + Number(d.amount), 0);
   const inKindEstimated = project.inKindDonations.reduce((s, d) => s + Number(d.estimatedValue ?? 0), 0);
@@ -35,7 +86,11 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
   const target = project.targetAmount ? Number(project.targetAmount) : 0;
   const pct = target === 0 ? 0 : Math.min(100, (totalCollected / target) * 100);
 
-  const association = await prisma.associationInfo.findUnique({ where: { id: 1 } });
+  // If a campaign also matches the same slug, show a banner above the project.
+  const campaignForBanner = campaign;
+  const cRaised = campaignForBanner?.donations.reduce((s, d) => s + Number(d.amount), 0) ?? 0;
+  const cTarget = campaignForBanner?.targetAmount ? Number(campaignForBanner.targetAmount) : 0;
+  const cPct = cTarget === 0 ? 0 : Math.min(100, (cRaised / cTarget) * 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background">
@@ -49,6 +104,30 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
           <Badge variant="outline" className="text-xs">{project.kind === "NACHAT" ? t("social.kindActivity") : t("social.kindProject")}</Badge>
         </header>
 
+        {project.coverPhotoUrl && (
+          <div className="rounded-xl overflow-hidden">
+            <img src={project.coverPhotoUrl} alt={project.name} className="w-full h-64 object-cover" />
+          </div>
+        )}
+
+        {campaignForBanner && (
+          <Card className="border-emerald-300 bg-emerald-50/40">
+            <CardContent className="p-5 space-y-2">
+              <Badge className="bg-emerald-600">{t("gov.campaigns.title")}</Badge>
+              <h2 className="text-xl font-bold">{campaignForBanner.name}</h2>
+              {campaignForBanner.description && <p className="text-sm text-muted-foreground">{campaignForBanner.description}</p>}
+              {cTarget > 0 && (
+                <>
+                  <div className="flex justify-between text-xs font-medium">
+                    <span>{cRaised.toLocaleString()} MAD</span>
+                    <span>{cTarget.toLocaleString()} MAD</span>
+                  </div>
+                  <Progress value={cPct} className="h-2" />
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
         {project.coverPhotoUrl && (
           <div className="rounded-xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -66,14 +145,14 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
               <div className="space-y-2 pt-3 border-t">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold">{t("social.donationCollection")}</h3>
-                  <span className="text-2xl font-bold text-emerald-600">{totalCollected.toFixed(0)} {t("social.mad")}</span>
+                  <span className="text-2xl font-bold text-emerald-600">{fmtMoney(totalCollected, locale, 0)} {t("social.mad")}</span>
                 </div>
                 <Progress value={pct} indicatorClassName="bg-emerald-600" className="h-3" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{t("social.pctOfGoal", { pct: pct.toFixed(0) })}</span>
-                  <span>{t("social.goalLabel")}: {target.toFixed(0)} {t("social.mad")}</span>
+                  <span>{t("social.pctOfGoal", { pct: fmtMoney(pct, locale, 0) })}</span>
+                  <span>{t("social.goalLabel")}: {fmtMoney(target, locale, 0)} {t("social.mad")}</span>
                 </div>
-                {cashPledged > 0 && <p className="text-xs text-amber-700">{t("social.pledgedDonations", { amount: `${cashPledged.toFixed(0)} ${t("social.mad")}` })}</p>}
+                {cashPledged > 0 && <p className="text-xs text-amber-700">{t("social.pledgedDonations", { amount: `${fmtMoney(cashPledged, locale, 0)} ${t("social.mad")}` })}</p>}
               </div>
             )}
 

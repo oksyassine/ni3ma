@@ -48,6 +48,7 @@ import {
    TASK_STATUS_ORDER,
  } from "@/lib/project";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 
 type Member = { id: string; fullName: string; registrationNumber: number };
 
@@ -183,7 +184,7 @@ type Project = {
 };
 
 export function ProjectDetailClient({ projectId, adults }: { projectId: string; adults: Member[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const perms = usePermissions();
   const [p, setP] = useState<Project | null>(null);
@@ -398,21 +399,21 @@ export function ProjectDetailClient({ projectId, adults }: { projectId: string; 
         <Card>
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.donationCollection")}</p>
-            <p className="text-xl font-bold text-green-600">{totalCollected.toFixed(0)} {t("social.mad")}</p>
-            {targetNum > 0 && <p className="text-[10px] text-muted-foreground">{t("social.ofTarget", { amount: targetNum.toFixed(0), pct: progressPct.toFixed(0) })}</p>}
+            <p className="text-xl font-bold text-green-600">{fmtMoney(totalCollected, locale, 0)} {t("social.mad")}</p>
+            {targetNum > 0 && <p className="text-[10px] text-muted-foreground">{t("social.ofTarget", { amount: fmtMoney(targetNum, locale, 0), pct: fmtMoney(progressPct, locale, 0) })}</p>}
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.tabTasks")}</p>
             <p className="text-xl font-bold">{tasksDone}/{tasksTotal}</p>
-            <p className="text-[10px] text-muted-foreground">{t("social.tasksDonePct", { pct: taskProgressPct.toFixed(0) })}</p>
+            <p className="text-[10px] text-muted-foreground">{t("social.tasksDonePct", { pct: fmtMoney(taskProgressPct, locale, 0) })}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.loggedHours")}</p>
-            <p className="text-xl font-bold">{totalLoggedHours.toFixed(1)}</p>
+            <p className="text-xl font-bold">{fmtMoney(totalLoggedHours, locale, 1)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -448,7 +449,7 @@ export function ProjectDetailClient({ projectId, adults }: { projectId: string; 
               <Field label={t("social.expectedField")} value={p.expectedBeneficiaries?.toString() ?? null} />
               <Field label={t("social.startDateLabel")} value={p.startDate?.slice(0, 10) ?? null} />
               <Field label={t("social.endDateLabel")} value={p.endDate?.slice(0, 10) ?? null} />
-              <Field label={t("social.budgetField")} value={p.targetAmount ? `${Number(p.targetAmount).toFixed(0)} ${t("social.mad")}` : null} />
+              <Field label={t("social.budgetField")} value={p.targetAmount ? `${fmtMoney(Number(p.targetAmount), locale, 0)} ${t("social.mad")}` : null} />
               <Field label={t("social.creatorField")} value={p.creator?.fullName ?? null} />
             </CardContent>
           </Card>
@@ -467,6 +468,7 @@ export function ProjectDetailClient({ projectId, adults }: { projectId: string; 
             unit={t("social.taskUnit")}
             decimals={0}
             color="bg-blue-600"
+            locale={locale}
           />
         </TabsContent>
 
@@ -634,12 +636,14 @@ function ProgressCard({
   decimals = 1,
   color,
   extraNote,
+  locale,
 }: {
   label: string;
   current: number;
   target: number;
   unit: string;
   decimals?: number;
+  locale: string;
   color: string;
   extraNote?: string | null;
 }) {
@@ -650,12 +654,12 @@ function ProgressCard({
         <div className="flex items-center justify-between">
           <p className="font-medium">{label}</p>
           <p className="text-sm">
-            <span className="font-bold">{current.toFixed(decimals)}</span>
-            {target > 0 && <span className="text-muted-foreground"> / {target.toFixed(decimals)} {unit}</span>}
+            <span className="font-bold">{fmtMoney(current, locale, decimals)}</span>
+            {target > 0 && <span className="text-muted-foreground"> / {fmtMoney(target, locale, decimals)} {unit}</span>}
           </p>
         </div>
         <Progress value={pct} indicatorClassName={color} className="h-3" />
-        {target > 0 && <p className="text-xs text-muted-foreground text-left">{pct.toFixed(0)}%</p>}
+        {target > 0 && <p className="text-xs text-muted-foreground text-left">{fmtMoney(pct, locale, 0)}%</p>}
         {extraNote && <p className="text-xs text-muted-foreground">{extraNote}</p>}
       </CardContent>
     </Card>
@@ -675,7 +679,7 @@ function MultiTierProgressCard({
   projectTarget: number;
   plans: Plan[];
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const planThresholds = plans
     .map((p) => ({ id: p.id, name: p.name, isActive: p.isActive, target: p.estimatedCost ? Number(p.estimatedCost) : 0 }))
     .filter((p) => p.target > 0)
@@ -690,7 +694,7 @@ function MultiTierProgressCard({
         <div className="flex items-center justify-between">
           <p className="font-medium">{t("social.donationCollection")}</p>
           <p className="text-sm">
-            <span className="font-bold text-green-600">{collected.toFixed(0)}</span>
+            <span className="font-bold text-green-600">{fmtMoney(collected, locale, 0)}</span>
             <span className="text-muted-foreground"> {t("social.mad")}</span>
           </p>
         </div>
@@ -711,15 +715,15 @@ function MultiTierProgressCard({
                   right: `${pct}%`,
                   borderColor: p.isActive ? "rgb(220, 38, 38)" : "rgb(100, 116, 139)",
                 }}
-                title={`${p.name}: ${p.target.toFixed(0)} ${t("social.mad")}${reached ? " ✓" : ""}`}
+                title={`${p.name}: ${fmtMoney(p.target, locale, 0)} ${t("social.mad")}${reached ? " ✓" : ""}`}
               />
             );
           })}
         </div>
 
         <div className="flex flex-wrap gap-2 text-[11px]">
-          {cashCollected > 0 && <Badge variant="outline" className="font-normal">{t("social.cashLabel")}: {cashCollected.toFixed(0)} {t("social.mad")}</Badge>}
-          {inKindEstimated > 0 && <Badge variant="outline" className="font-normal">{t("social.inKindLabel")}: {inKindEstimated.toFixed(0)} {t("social.mad")}</Badge>}
+          {cashCollected > 0 && <Badge variant="outline" className="font-normal">{t("social.cashLabel")}: {fmtMoney(cashCollected, locale, 0)} {t("social.mad")}</Badge>}
+          {inKindEstimated > 0 && <Badge variant="outline" className="font-normal">{t("social.inKindLabel")}: {fmtMoney(inKindEstimated, locale, 0)} {t("social.mad")}</Badge>}
           {planThresholds.map((p) => {
             const reached = collected >= p.target;
             return (
@@ -728,13 +732,13 @@ function MultiTierProgressCard({
                 variant={reached ? "default" : "outline"}
                 className={`text-[10px] ${p.isActive ? "ring-1 ring-red-500" : ""}`}
               >
-                {p.isActive && "● "}{p.name}: {p.target.toFixed(0)} {reached ? "✓" : ""}
+                {p.isActive && "● "}{p.name}: {fmtMoney(p.target, locale, 0)} {reached ? "✓" : ""}
               </Badge>
             );
           })}
           {projectTarget > 0 && (
             <Badge variant="outline" className="text-[10px] font-normal">
-              {t("social.projectGoal")}: {projectTarget.toFixed(0)}
+              {t("social.projectGoal")}: {fmtMoney(projectTarget, locale, 0)}
             </Badge>
           )}
         </div>
@@ -840,7 +844,7 @@ function TasksTab({
   reload: () => void;
   canWrite: boolean;
 }) {
-  const { t: tr } = useT();
+  const { t: tr, locale } = useT();
   const [open, setOpen] = useState(false);
   const [openTask, setOpenTask] = useState<Task | null>(null);
   const [planFilter, setPlanFilter] = useState<string>("ALL"); // ALL | ACTIVE | <planId>
@@ -1009,7 +1013,7 @@ function TasksTab({
                       {(t.estimatedHours || logged > 0) && (
                         <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <Clock size={10} />
-                          {logged.toFixed(1)}{t.estimatedHours ? `/${Number(t.estimatedHours).toFixed(1)}` : ""} {tr("social.hour")}
+                          {fmtMoney(logged, locale, 1)}{t.estimatedHours ? `/${fmtMoney(Number(t.estimatedHours), locale, 1)}` : ""} {tr("social.hour")}
                         </div>
                       )}
                       {(t.plannedExpense || t.actualExpense) && (() => {
@@ -1018,7 +1022,7 @@ function TasksTab({
                         const overBudget = planned > 0 && actual > planned;
                         return (
                           <div className={`text-[10px] flex items-center gap-1 ${overBudget ? "text-red-600" : "text-muted-foreground"}`}>
-                            💰 {actual ? `${actual.toFixed(0)}` : "—"}{planned ? ` / ${planned.toFixed(0)}` : ""} {tr("social.mad")}
+                            💰 {actual ? `${fmtMoney(actual, locale, 0)}` : "—"}{planned ? ` / ${fmtMoney(planned, locale, 0)}` : ""} {tr("social.mad")}
                           </div>
                         );
                       })()}
@@ -1090,7 +1094,7 @@ function TaskDetailDialog({
   onStatusChange: (id: string, s: TaskStatus) => void;
   canWrite: boolean;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [worklog, setWorklog] = useState({ memberId: "", hours: "", workedDate: new Date().toISOString().slice(0, 10), description: "" });
   const [assignMember, setAssignMember] = useState("");
   const [editing, setEditing] = useState(false);
@@ -1231,7 +1235,7 @@ function TaskDetailDialog({
             <div className="flex items-center justify-between">
               <Label className="text-sm font-bold flex items-center gap-1">{t("social.budgetTitle")}</Label>
               {task.plannedExpense && (
-                <span className="text-xs text-muted-foreground">{t("social.plannedLabel")} <span className="font-mono font-bold">{Number(task.plannedExpense).toFixed(2)} {t("social.mad")}</span></span>
+                <span className="text-xs text-muted-foreground">{t("social.plannedLabel")} <span className="font-mono font-bold">{fmtMoney(Number(task.plannedExpense), locale)} {t("social.mad")}</span></span>
               )}
             </div>
             {canWrite ? (
@@ -1249,7 +1253,7 @@ function TaskDetailDialog({
               </div>
             ) : (
               task.actualExpense && (
-                <p className="text-xs text-muted-foreground">{t("social.actualAmountLabel")} <span className="font-mono font-bold">{Number(task.actualExpense).toFixed(2)} {t("social.mad")}</span></p>
+                <p className="text-xs text-muted-foreground">{t("social.actualAmountLabel")} <span className="font-mono font-bold">{fmtMoney(Number(task.actualExpense), locale)} {t("social.mad")}</span></p>
               )
             )}
             {task.plannedExpense && task.actualExpense && (() => {
@@ -1260,8 +1264,8 @@ function TaskDetailDialog({
               return (
                 <p className={`text-xs ${overBudget ? "text-red-600" : "text-green-600"}`}>
                   {overBudget ? t("social.overBudgetBy") : t("social.savedAmount")}
-                  <span className="font-mono font-bold">{Math.abs(diff).toFixed(2)} {t("social.mad")}</span>
-                  {planned > 0 && ` (${((diff / planned) * 100).toFixed(0)}%)`}
+                  <span className="font-mono font-bold">{fmtMoney(Math.abs(diff), locale)} {t("social.mad")}</span>
+                  {planned > 0 && ` (${fmtMoney((diff / planned) * 100, locale, 0)}%)`}
                 </p>
               );
             })()}
@@ -1356,7 +1360,7 @@ function TaskDetailDialog({
           <div>
             <Label className="text-sm font-bold flex items-center gap-2">
               <Clock size={14} />{t("social.workHoursLabel")}
-              <Badge variant="outline">{totalLogged.toFixed(1)}{task.estimatedHours ? `/${Number(task.estimatedHours).toFixed(1)}` : ""} {t("social.hour")}</Badge>
+              <Badge variant="outline">{fmtMoney(totalLogged, locale, 1)}{task.estimatedHours ? `/${fmtMoney(Number(task.estimatedHours), locale, 1)}` : ""} {t("social.hour")}</Badge>
             </Label>
             {canWrite && (
               <form onSubmit={logWork} className="grid grid-cols-2 gap-2 mt-2">
@@ -1405,7 +1409,7 @@ function DonationsTab({
   reload: () => void;
   canWrite: boolean;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"CASH" | "IN_KIND">("CASH");
   const [cashForm, setCashForm] = useState({ donorName: "", donorPhone: "", amount: "", notes: "", isAnonymous: false });
@@ -1459,7 +1463,7 @@ function DonationsTab({
     <>
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
-          {t("social.cashLabel")}: <strong>{cashTotal.toFixed(0)} {t("social.mad")}</strong> · {t("social.inKindLabel")}: <strong>{inKindTotal.toFixed(0)} {t("social.mad")}</strong>
+          {t("social.cashLabel")}: <strong>{fmtMoney(cashTotal, locale, 0)} {t("social.mad")}</strong> · {t("social.inKindLabel")}: <strong>{fmtMoney(inKindTotal, locale, 0)} {t("social.mad")}</strong>
         </div>
         {canWrite && <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button size="sm"><Plus size={14} />{t("social.newDonationBtn")}</Button>} />
@@ -1558,7 +1562,7 @@ function DonationsTab({
                   <p>{d.isAnonymous ? `🤐 ${t("social.anonymousShort")}` : (d.donorName ?? "—")}</p>
                   <p className="text-xs text-muted-foreground">{d.donationDate.slice(0, 10)}</p>
                 </div>
-                <span className="font-mono font-bold">{Number(d.amount).toFixed(2)} {t("social.mad")}</span>
+                <span className="font-mono font-bold">{fmtMoney(Number(d.amount), locale)} {t("social.mad")}</span>
               </div>
             ))}
           </CardContent>
@@ -1576,7 +1580,7 @@ function DonationsTab({
                   </p>
                 </div>
                 {d.estimatedValue && (
-                  <span className="font-mono text-xs">≈ {Number(d.estimatedValue).toFixed(0)} {t("social.mad")}</span>
+                  <span className="font-mono text-xs">≈ {fmtMoney(Number(d.estimatedValue), locale, 0)} {t("social.mad")}</span>
                 )}
                 {canWrite && (
                   <>
@@ -1739,7 +1743,7 @@ function PlanEditButton({ plan, reload }: { plan: Plan; reload: () => void }) {
 }
 
 function WorklogRow({ taskId, worklog, onChange, canWrite }: { taskId: string; worklog: Worklog; onChange: () => void; canWrite: boolean }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ hours: worklog.hours, workedDate: worklog.workedDate.slice(0, 10), description: worklog.description ?? "" });
 
@@ -1773,7 +1777,7 @@ function WorklogRow({ taskId, worklog, onChange, canWrite }: { taskId: string; w
     <div className="text-xs flex items-center justify-between border-b py-1 gap-1">
       <span className="flex-1">{worklog.member.fullName}</span>
       <span className="text-muted-foreground">{worklog.workedDate.slice(0, 10)}</span>
-      <span className="font-mono">{Number(worklog.hours).toFixed(1)} {t("social.hour")}</span>
+      <span className="font-mono">{fmtMoney(Number(worklog.hours), locale, 1)} {t("social.hour")}</span>
       {canWrite && (
         <>
           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditing(true)} title={t("common.edit")}><Pencil size={11} /></Button>
@@ -1851,7 +1855,7 @@ function PlanCard({
   reload: () => void;
   canWrite: boolean;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const target = plan.estimatedCost ? Number(plan.estimatedCost) : 0;
   const reached = target > 0 && totalCollected >= target;
   const readinessPct = target === 0 ? 0 : Math.min(100, (totalCollected / target) * 100);
@@ -1883,10 +1887,10 @@ function PlanCard({
           <div>
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-muted-foreground">{t("social.planReadiness")}</span>
-              <span className="font-medium">{totalCollected.toFixed(0)} / {target.toFixed(0)} {t("social.mad")}</span>
+              <span className="font-medium">{fmtMoney(totalCollected, locale, 0)} / {fmtMoney(target, locale, 0)} {t("social.mad")}</span>
             </div>
             <Progress value={readinessPct} indicatorClassName={reached ? "bg-green-600" : "bg-blue-600"} />
-            <p className="text-[10px] text-muted-foreground mt-1">{readinessPct.toFixed(0)}%</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{fmtMoney(readinessPct, locale, 0)}%</p>
           </div>
         )}
 
@@ -1895,8 +1899,8 @@ function PlanCard({
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-muted-foreground">{t("social.spentLabel")}</span>
               <span className="font-medium">
-                {totalSpent.toFixed(0)} / {target.toFixed(0)} {t("social.mad")}
-                <span className="text-muted-foreground"> {t("social.remainingLabel", { amount: (target - totalSpent).toFixed(0) })}</span>
+                {fmtMoney(totalSpent, locale, 0)} / {fmtMoney(target, locale, 0)} {t("social.mad")}
+                <span className="text-muted-foreground"> {t("social.remainingLabel", { amount: fmtMoney(target - totalSpent, locale, 0) })}</span>
               </span>
             </div>
             <Progress value={target > 0 ? Math.min(100, (totalSpent / target) * 100) : 0} indicatorClassName="bg-orange-500" />
@@ -1916,7 +1920,7 @@ function PlanCard({
 }
 
 function PlanLineItemsEditor({ plan, reload, totalCost, canWrite }: { plan: Plan; reload: () => void; totalCost: number; canWrite: boolean }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", amount: "" });
   const [saving, setSaving] = useState(false);
@@ -1962,7 +1966,7 @@ function PlanLineItemsEditor({ plan, reload, totalCost, canWrite }: { plan: Plan
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between text-xs font-semibold py-1"
       >
-        <span>{t("social.budgetItemsToggle", { count: plan.lineItems.length })}{totalCost > 0 ? ` · ${totalCost.toFixed(0)} ${t("social.mad")}` : ""}</span>
+        <span>{t("social.budgetItemsToggle", { count: plan.lineItems.length })}{totalCost > 0 ? ` · ${fmtMoney(totalCost, locale, 0)} ${t("social.mad")}` : ""}</span>
         <span>{open ? "▴" : "▾"}</span>
       </button>
       {open && (
@@ -1978,7 +1982,7 @@ function PlanLineItemsEditor({ plan, reload, totalCost, canWrite }: { plan: Plan
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium">{li.name}</span>
                   <div className="flex items-center gap-1">
-                    <span className="font-mono">{spent.toFixed(0)} / {target.toFixed(0)} {t("social.mad")}</span>
+                    <span className="font-mono">{fmtMoney(spent, locale, 0)} / {fmtMoney(target, locale, 0)} {t("social.mad")}</span>
                     {canWrite && (
                       <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => delItem(li.id)}>
                         <Trash2 size={11} />
@@ -2061,7 +2065,7 @@ function PhotosTab({ projectId, photos, reload, canWrite }: { projectId: string;
 }
 
 function BeneficiariesTab({ projectId, beneficiaries, reload, canWrite }: { projectId: string; beneficiaries: Beneficiary[]; reload: () => void; canWrite: boolean }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"PICK" | "ADHOC">("PICK");
   const [search, setSearch] = useState("");
@@ -2207,7 +2211,7 @@ function BeneficiariesTab({ projectId, beneficiaries, reload, canWrite }: { proj
                   {b.gender === "MALE" && <span className="text-xs">♂</span>}
                   {b.gender === "FEMALE" && <span className="text-xs">♀</span>}
                   {b.phone && <span className="text-muted-foreground" dir="ltr">{b.phone}</span>}
-                  {b.amount && <Badge variant="outline" className="text-[10px]">{Number(b.amount).toFixed(0)} {t("social.mad")}</Badge>}
+                  {b.amount && <Badge variant="outline" className="text-[10px]">{fmtMoney(Number(b.amount), locale, 0)} {t("social.mad")}</Badge>}
                 </div>
                 {b.itemsReceived && <p className="text-xs text-muted-foreground mt-1">{b.itemsReceived}</p>}
                 {b.notes && <p className="text-xs text-muted-foreground mt-1">{b.notes}</p>}
@@ -2414,7 +2418,7 @@ function ExpensesTab({
   reload: () => void;
   canWrite: boolean;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   // Aggregate per task
   const totalPlanned = tasks.reduce((s, t) => s + (t.plannedExpense ? Number(t.plannedExpense) : 0), 0);
   const totalActualOnTasks = tasks.reduce((s, t) => s + (t.actualExpense ? Number(t.actualExpense) : 0), 0);
@@ -2429,14 +2433,14 @@ function ExpensesTab({
         <Card>
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.expensesTotalPlanned")}</p>
-            <p className="text-2xl font-bold">{totalPlanned.toFixed(0)} {t("social.mad")}</p>
+            <p className="text-2xl font-bold">{fmtMoney(totalPlanned, locale, 0)} {t("social.mad")}</p>
             <p className="text-[10px] text-muted-foreground">{t("social.perTaskTechCards")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.expensesTotalActual")}</p>
-            <p className={`text-2xl font-bold ${variance > 0 ? "text-red-600" : "text-green-600"}`}>{totalActualOnTasks.toFixed(0)} {t("social.mad")}</p>
+            <p className={`text-2xl font-bold ${variance > 0 ? "text-red-600" : "text-green-600"}`}>{fmtMoney(totalActualOnTasks, locale, 0)} {t("social.mad")}</p>
             <p className="text-[10px] text-muted-foreground">{t("social.sumOfActuals")}</p>
           </CardContent>
         </Card>
@@ -2444,11 +2448,11 @@ function ExpensesTab({
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.varianceLabel")}</p>
             <p className={`text-2xl font-bold ${variance > 0 ? "text-red-600" : variance < 0 ? "text-green-600" : ""}`}>
-              {variance > 0 ? "+" : ""}{variance.toFixed(0)} {t("social.mad")}
+              {variance > 0 ? "+" : ""}{fmtMoney(variance, locale, 0)} {t("social.mad")}
             </p>
             <p className="text-[10px] text-muted-foreground">
               {variance > 0 ? t("social.varianceOver") : variance < 0 ? t("social.varianceUnder") : t("social.varianceMatch")}
-              {totalPlanned > 0 && ` (${((variance / totalPlanned) * 100).toFixed(0)}%)`}
+              {totalPlanned > 0 && ` (${fmtMoney((variance / totalPlanned) * 100, locale, 0)}%)`}
             </p>
           </CardContent>
         </Card>
@@ -2456,7 +2460,7 @@ function ExpensesTab({
 
       {expenses.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {t("social.officialExpensesNote", { count: expenses.length, amount: `${totalProjectExpenses.toFixed(0)} ${t("social.mad")}` })}
+          {t("social.officialExpensesNote", { count: expenses.length, amount: `${fmtMoney(totalProjectExpenses, locale, 0)} ${t("social.mad")}` })}
         </p>
       )}
 
@@ -2490,10 +2494,10 @@ function ExpensesTab({
                     <tr key={t.id} className="border-b">
                       <td className="p-2 font-medium">{t.title}</td>
                       <td className="p-2"><Badge variant="outline" className="text-[10px]">{TASK_STATUS_LABELS[t.status]}</Badge></td>
-                      <td className="p-2 font-mono">{planned > 0 ? planned.toFixed(2) : "—"}</td>
-                      <td className="p-2 font-mono">{actual > 0 ? actual.toFixed(2) : "—"}</td>
+                      <td className="p-2 font-mono">{planned > 0 ? fmtMoney(planned, locale) : "—"}</td>
+                      <td className="p-2 font-mono">{actual > 0 ? fmtMoney(actual, locale) : "—"}</td>
                       <td className={`p-2 font-mono ${overBudget ? "text-red-600" : diff < 0 ? "text-green-600" : ""}`}>
-                        {actual > 0 && planned > 0 ? `${diff >= 0 ? "+" : ""}${diff.toFixed(2)}` : "—"}
+                        {actual > 0 && planned > 0 ? `${diff >= 0 ? "+" : ""}${fmtMoney(diff, locale)}` : "—"}
                       </td>
                       <td className="p-2 text-xs text-muted-foreground">
                         {t.assignees.map((a) => a.member.fullName).join("، ") || "—"}
@@ -2508,10 +2512,10 @@ function ExpensesTab({
                 <tr className="border-t-2 font-bold">
                   <td className="p-2">{t("social.grandTotalRow")}</td>
                   <td className="p-2"></td>
-                  <td className="p-2 font-mono">{totalPlanned.toFixed(2)}</td>
-                  <td className="p-2 font-mono">{totalActualOnTasks.toFixed(2)}</td>
+                  <td className="p-2 font-mono">{fmtMoney(totalPlanned, locale)}</td>
+                  <td className="p-2 font-mono">{fmtMoney(totalActualOnTasks, locale)}</td>
                   <td className={`p-2 font-mono ${variance > 0 ? "text-red-600" : "text-green-600"}`}>
-                    {variance >= 0 ? "+" : ""}{variance.toFixed(2)}
+                    {variance >= 0 ? "+" : ""}{fmtMoney(variance, locale)}
                   </td>
                   <td></td>
                 </tr>
@@ -2540,7 +2544,7 @@ function ExpensesTab({
                       {plan && <Badge variant="secondary" className="text-[10px]">{plan.name}</Badge>}
                     </div>
                   </div>
-                  <span className="font-mono font-bold">{Number(e.amount).toFixed(2)} {t("social.mad")}</span>
+                  <span className="font-mono font-bold">{fmtMoney(Number(e.amount), locale)} {t("social.mad")}</span>
                 </div>
               );
             })}

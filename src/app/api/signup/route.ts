@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { checkMemberCap } from "@/lib/plan-enforce";
+import { Prisma } from "@prisma/client";
+import { recordAudit } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
+import { createCappedMember, CapReachedError } from "@/lib/plan-enforce";
 
 // Self-signup endpoint — public (no auth). Creates a Member with isActive=false
 // pending admin approval. Allowlist + parsing mirrors /api/members POST so
@@ -29,10 +31,16 @@ const VALID_HEALTH = ["HEALTHY", "SICK"];
 const VALID_MARITAL = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"];
 const VALID_GENDER = ["MALE", "FEMALE"];
 
+function ipFor(req: NextRequest): string {
+  return (
+    req.headers.get("cf-connecting-ip")
+    ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    ?? "unknown"
+  );
+}
+
 export async function POST(req: NextRequest) {
-  // Rate limit: 5 signups per IP per hour. The form is fast to submit, so
-  // anyone genuinely registering 5 people should pause or have admin do it.
-  const ip = clientIp(req);
+  const ip = ipFor(req);
   const rl = rateLimit(`signup:${ip}`, 5, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
@@ -42,15 +50,6 @@ export async function POST(req: NextRequest) {
   }
   const body = await req.json();
   const memberType = body.memberType;
-
-  // Plan limit: public signups also count against the tenant's member cap.
-  const cap = await checkMemberCap(1);
-  if (!cap.ok) {
-    return NextResponse.json(
-      { error: "عذرا، الجمعية بلغت الحد الأقصى للتسجيلات في خطتها الحالية. تواصلوا مع إدارة الجمعية." },
-      { status: 402 }
-    );
-  }
 
   if (!body.fullName?.trim()) {
     return NextResponse.json({ error: "الاسم الكامل مطلوب" }, { status: 400 });
@@ -81,7 +80,13 @@ export async function POST(req: NextRequest) {
       data[f] = body[f];
     }
   }
-  if (data.dateOfBirth) data.dateOfBirth = new Date(String(data.dateOfBirth));
+  if (data.dateOfBirth) {
+    const d = new Date(String(data.dateOfBirth));
+    if (Number.isNaN(d.getTime())) {
+      return NextResponse.json({ error: "تاريخ الازدياد غير صالح" }, { status: 400 });
+    }
+    data.dateOfBirth = d;
+  }
   for (const f of INT_FIELDS) {
     if (data[f] !== undefined) data[f] = parseInt(String(data[f]));
   }
@@ -90,11 +95,36 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const member = await prisma.member.create({
-      data: data as Parameters<typeof prisma.member.create>[0]["data"],
+    // createCappedMember atomically checks the plan cap and inserts the row
+    // in one serializable transaction, preventing the TOCTOU race where N
+    // parallel signups all pass `count() < cap` and exhaust the slot.
+    const member = await createCappedMember(
+      data as Parameters<typeof prisma.member.create>[0]["data"],
+    );
+    await recordAudit({
+      userId: null,
+      action: "CREATE",
+      entity: "member",
+      entityId: member.id,
+      after: {
+        fullName: member.fullName,
+        memberType: member.memberType,
+        registrationType: data.registrationType,
+        via: "public_signup",
+      },
+      req,
     });
     return NextResponse.json({ id: member.id }, { status: 201 });
   } catch (err) {
+    if (err instanceof CapReachedError) {
+      return NextResponse.json(
+        { error: "عذرا، الجمعية بلغت الحد الأقصى للتسجيلات في خطتها الحالية. تواصلوا مع إدارة الجمعية." },
+        { status: 402 },
+      );
+    }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "بيانات مكررة (تحققوا من ب.و.ت)" }, { status: 409 });
+    }
     console.error("signup failed", err);
     return NextResponse.json({ error: "حدث خطأ أثناء حفظ الطلب" }, { status: 500 });
   }

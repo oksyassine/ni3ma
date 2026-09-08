@@ -1,0 +1,978 @@
+{
+  "node": {
+    "000fbcdd78b0860ac3cccc547a8de703f795d88b60": {
+      "workers": {
+        "app/(auth)/invite/[token]/page": {
+          "moduleId": 323509,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(auth)/login/page": {
+          "moduleId": 500975,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(auth)/signup/page": {
+          "moduleId": 528558,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/academic-years/page": {
+          "moduleId": 786654,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/association/page": {
+          "moduleId": 74493,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/audit/page": {
+          "moduleId": 945673,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/family-links/page": {
+          "moduleId": 709597,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/[id]/edit/page": {
+          "moduleId": 383742,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/[id]/page": {
+          "moduleId": 806483,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/badges/page": {
+          "moduleId": 141927,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/import/page": {
+          "moduleId": 491292,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/new/page": {
+          "moduleId": 649189,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/page": {
+          "moduleId": 99002,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/page": {
+          "moduleId": 595,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/permissions/page": {
+          "moduleId": 787557,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/users/page": {
+          "moduleId": 581097,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/annual-report/page": {
+          "moduleId": 365235,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/assets/page": {
+          "moduleId": 916816,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/branches/page": {
+          "moduleId": 295849,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/distributions/page": {
+          "moduleId": 557039,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/documents/page": {
+          "moduleId": 343251,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/employees/page": {
+          "moduleId": 306014,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/grants/page": {
+          "moduleId": 410984,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/library/page": {
+          "moduleId": 486464,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/mail/page": {
+          "moduleId": 975505,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/mandates/page": {
+          "moduleId": 192929,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/meetings/page": {
+          "moduleId": 196363,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/page": {
+          "moduleId": 965002,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/attendance-sheet/page": {
+          "moduleId": 472285,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/certificate/page": {
+          "moduleId": 3195,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/convocation/page": {
+          "moduleId": 98973,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/page": {
+          "moduleId": 152932,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/partnerships/page": {
+          "moduleId": 992729,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/sponsorships/page": {
+          "moduleId": 503148,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/trainings/page": {
+          "moduleId": 489381,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/volunteer-contracts/[id]/print/page": {
+          "moduleId": 336994,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/volunteer-contracts/page": {
+          "moduleId": 845283,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/checkin/page": {
+          "moduleId": 885934,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/educational/attendance/page": {
+          "moduleId": 821983,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/educational/page": {
+          "moduleId": 772448,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/educational/programs/page": {
+          "moduleId": 118111,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/annual-report/page": {
+          "moduleId": 117067,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/contributions/page": {
+          "moduleId": 159692,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/donations/[id]/receipt/page": {
+          "moduleId": 913736,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/donations/page": {
+          "moduleId": 794431,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/expenses/page": {
+          "moduleId": 197675,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/page": {
+          "moduleId": 678679,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/reports/page": {
+          "moduleId": 667048,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/media/page": {
+          "moduleId": 501147,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/media/tasks/page": {
+          "moduleId": 666440,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/family/page": {
+          "moduleId": 930396,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/page": {
+          "moduleId": 464502,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/profile/page": {
+          "moduleId": 505046,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/volunteer/page": {
+          "moduleId": 993345,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/qada/page": {
+          "moduleId": 880605,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/qada/programs/page": {
+          "moduleId": 674967,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/attendance/page": {
+          "moduleId": 412768,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/page": {
+          "moduleId": 239926,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/programs/page": {
+          "moduleId": 896311,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/progress/page": {
+          "moduleId": 872776,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/analytics/page": {
+          "moduleId": 27691,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/attendance/page": {
+          "moduleId": 851227,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/cases/[id]/page": {
+          "moduleId": 713545,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/cases/page": {
+          "moduleId": 712512,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/page": {
+          "moduleId": 270979,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/programs/page": {
+          "moduleId": 490636,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/projects/[id]/page": {
+          "moduleId": 615345,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/projects/[id]/report/page": {
+          "moduleId": 683621,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/projects/page": {
+          "moduleId": 925140,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/volunteer/page": {
+          "moduleId": 133283,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/_not-found/page": {
+          "moduleId": 875700,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/billing/page": {
+          "moduleId": 656103,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/checkin/[token]/page": {
+          "moduleId": 541104,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/offline/page": {
+          "moduleId": 394466,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/p/[slug]/page": {
+          "moduleId": 749238,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/page": {
+          "moduleId": 188117,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/platform/page": {
+          "moduleId": 397591,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/start/page": {
+          "moduleId": 29987,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/suspended/page": {
+          "moduleId": 817556,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/unauthorized/page": {
+          "moduleId": 525062,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/lib/i18n/server.ts"
+        }
+      },
+      "filename": "src/lib/i18n/server.ts",
+      "exportedName": "getLocale"
+    },
+    "00b832857767a09d6db69b205be8b78737b401ce4d": {
+      "workers": {
+        "app/(auth)/invite/[token]/page": {
+          "moduleId": 323509,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(auth)/login/page": {
+          "moduleId": 500975,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(auth)/signup/page": {
+          "moduleId": 528558,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/academic-years/page": {
+          "moduleId": 786654,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/association/page": {
+          "moduleId": 74493,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/audit/page": {
+          "moduleId": 945673,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/family-links/page": {
+          "moduleId": 709597,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/[id]/edit/page": {
+          "moduleId": 383742,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/[id]/page": {
+          "moduleId": 806483,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/badges/page": {
+          "moduleId": 141927,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/import/page": {
+          "moduleId": 491292,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/new/page": {
+          "moduleId": 649189,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/members/page": {
+          "moduleId": 99002,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/page": {
+          "moduleId": 595,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/permissions/page": {
+          "moduleId": 787557,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/admin/users/page": {
+          "moduleId": 581097,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/annual-report/page": {
+          "moduleId": 365235,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/assets/page": {
+          "moduleId": 916816,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/branches/page": {
+          "moduleId": 295849,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/distributions/page": {
+          "moduleId": 557039,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/documents/page": {
+          "moduleId": 343251,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/employees/page": {
+          "moduleId": 306014,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/grants/page": {
+          "moduleId": 410984,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/library/page": {
+          "moduleId": 486464,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/mail/page": {
+          "moduleId": 975505,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/mandates/page": {
+          "moduleId": 192929,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/meetings/page": {
+          "moduleId": 196363,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/page": {
+          "moduleId": 965002,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/attendance-sheet/page": {
+          "moduleId": 472285,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/certificate/page": {
+          "moduleId": 3195,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/convocation/page": {
+          "moduleId": 98973,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/paperwork/page": {
+          "moduleId": 152932,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/partnerships/page": {
+          "moduleId": 992729,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/sponsorships/page": {
+          "moduleId": 503148,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/trainings/page": {
+          "moduleId": 489381,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/volunteer-contracts/[id]/print/page": {
+          "moduleId": 336994,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/bureau/volunteer-contracts/page": {
+          "moduleId": 845283,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/checkin/page": {
+          "moduleId": 885934,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/educational/attendance/page": {
+          "moduleId": 821983,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/educational/page": {
+          "moduleId": 772448,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/educational/programs/page": {
+          "moduleId": 118111,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/annual-report/page": {
+          "moduleId": 117067,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/contributions/page": {
+          "moduleId": 159692,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/donations/[id]/receipt/page": {
+          "moduleId": 913736,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/donations/page": {
+          "moduleId": 794431,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/expenses/page": {
+          "moduleId": 197675,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/page": {
+          "moduleId": 678679,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/financial/reports/page": {
+          "moduleId": 667048,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/media/page": {
+          "moduleId": 501147,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/media/tasks/page": {
+          "moduleId": 666440,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/family/page": {
+          "moduleId": 930396,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/page": {
+          "moduleId": 464502,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/profile/page": {
+          "moduleId": 505046,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/member/volunteer/page": {
+          "moduleId": 993345,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/qada/page": {
+          "moduleId": 880605,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/qada/programs/page": {
+          "moduleId": 674967,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/attendance/page": {
+          "moduleId": 412768,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/page": {
+          "moduleId": 239926,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/programs/page": {
+          "moduleId": 896311,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/quran/progress/page": {
+          "moduleId": 872776,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/analytics/page": {
+          "moduleId": 27691,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/attendance/page": {
+          "moduleId": 851227,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/cases/[id]/page": {
+          "moduleId": 713545,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/cases/page": {
+          "moduleId": 712512,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/page": {
+          "moduleId": 270979,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/programs/page": {
+          "moduleId": 490636,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/projects/[id]/page": {
+          "moduleId": 615345,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/projects/[id]/report/page": {
+          "moduleId": 683621,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/social/projects/page": {
+          "moduleId": 925140,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/(dashboard)/volunteer/page": {
+          "moduleId": 133283,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/_not-found/page": {
+          "moduleId": 875700,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/billing/page": {
+          "moduleId": 656103,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/checkin/[token]/page": {
+          "moduleId": 541104,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/offline/page": {
+          "moduleId": 394466,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/p/[slug]/page": {
+          "moduleId": 749238,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/page": {
+          "moduleId": 188117,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/platform/page": {
+          "moduleId": 397591,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/start/page": {
+          "moduleId": 29987,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/suspended/page": {
+          "moduleId": 817556,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        },
+        "app/unauthorized/page": {
+          "moduleId": 525062,
+          "async": false,
+          "exportedName": "getT",
+          "filename": "src/lib/i18n/server.ts"
+        }
+      },
+      "filename": "src/lib/i18n/server.ts",
+      "exportedName": "getT"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "DyPJIJ5jWSrnd/Y4l79R1uRuxi8svwkBC+aVtgQeofI="
+}

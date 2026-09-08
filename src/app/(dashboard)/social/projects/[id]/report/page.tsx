@@ -3,12 +3,13 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PROJECT_KIND_LABELS } from "@/lib/project";
 import { getT } from "@/lib/i18n/server";
+import { fmtMoney } from "@/lib/i18n/format";
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) redirect("/login");
   const { id } = await params;
-  const { t } = await getT();
+  const { t, locale } = await getT();
 
   const p = await prisma.socialProject.findUnique({
     where: { id },
@@ -71,7 +72,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </div>
           <div className="border rounded p-3 text-center">
             <p className="text-xs text-gray-600">{t("social.donationCollection")}</p>
-            <p className="text-2xl font-bold text-green-700">{(cashTotal + inKindTotal).toFixed(0)} {t("social.mad")}</p>
+            <p className="text-2xl font-bold text-green-700">{fmtMoney(cashTotal + inKindTotal, locale, 0)} {t("social.mad")}</p>
           </div>
           <div className="border rounded p-3 text-center">
             <p className="text-xs text-gray-600">{t("social.tabTasks")}</p>
@@ -79,7 +80,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </div>
           <div className="border rounded p-3 text-center">
             <p className="text-xs text-gray-600">{t("social.volunteerHoursStat")}</p>
-            <p className="text-2xl font-bold">{totalHours.toFixed(1)}</p>
+            <p className="text-2xl font-bold">{fmtMoney(totalHours, locale, 1)}</p>
           </div>
         </div>
 
@@ -116,7 +117,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <h3 className="text-lg font-bold border-b pb-1 mb-2">{t("social.inKindBreakdownTitle")}</h3>
             <ul className="text-sm list-disc ms-5">
               {p.inKindDonations.map((d, i) => (
-                <li key={i}>{d.itemName} — {Number(d.quantity).toString()} {d.unit ?? ""}{d.estimatedValue ? ` (≈ ${Number(d.estimatedValue).toFixed(0)} ${t("social.mad")})` : ""}</li>
+                <li key={i}>{d.itemName} — {Number(d.quantity).toString()} {d.unit ?? ""}{d.estimatedValue ? ` (≈ ${fmtMoney(Number(d.estimatedValue), locale, 0)} ${t("social.mad")})` : ""}</li>
               ))}
             </ul>
           </div>

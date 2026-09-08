@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { getT } from "@/lib/i18n/server";
+import { fmtMoney } from "@/lib/i18n/format";
 import { Target, BarChart3, ClipboardList, CalendarCheck, ArrowLeft } from "lucide-react";
 
 async function getSocialStats() {
@@ -37,7 +38,7 @@ async function getSocialStats() {
 }
 
 export default async function SocialDashboard() {
-  const { t } = await getT();
+  const { t, locale } = await getT();
   const { members, projects, totalDonations, programs } = await getSocialStats();
   const activeProjects = projects.filter((p) => p.status === "ACTIVE");
   const statusKey: Record<string, string> = {
@@ -68,7 +69,7 @@ export default async function SocialDashboard() {
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t("social.donations")}</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{totalDonations.toFixed(2)} {t("social.mad")}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-green-600">{fmtMoney(totalDonations, locale)} {t("social.mad")}</div></CardContent>
         </Card>
       </div>
 
@@ -146,8 +147,8 @@ export default async function SocialDashboard() {
                       {p.targetAmount && (
                         <div className="text-sm">
                           <span className="text-muted-foreground">{t("social.collected")}: </span>
-                          <span className="font-medium">{p.collected.toFixed(2)}</span>
-                          <span className="text-muted-foreground"> / {Number(p.targetAmount).toFixed(2)} {t("social.mad")}</span>
+                          <span className="font-medium">{fmtMoney(p.collected, locale)}</span>
+                          <span className="text-muted-foreground"> / {fmtMoney(Number(p.targetAmount ?? 0), locale)} {t("social.mad")}</span>
                           <Progress
                             value={Math.min(100, (p.collected / Number(p.targetAmount)) * 100)}
                             indicatorClassName="bg-green-600"

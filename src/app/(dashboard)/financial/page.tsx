@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getT } from "@/lib/i18n/server";
+import { fmtMoney } from "@/lib/i18n/format";
 import Link from "next/link";
 
 async function getFinancialStats() {
@@ -23,13 +24,13 @@ async function getFinancialStats() {
 export default async function FinancialDashboard() {
   const stats = await getFinancialStats();
   const balance = stats.contributions + stats.donations - stats.expenses;
-  const { t } = await getT();
+  const { t, locale } = await getT();
 
   const cards = [
-    { title: t("financial.totalContributions"), value: `${stats.contributions.toFixed(2)} ${t("financial.mad")}`, href: "/financial/contributions", color: "text-green-600" },
-    { title: t("financial.totalExpenses"), value: `${stats.expenses.toFixed(2)} ${t("financial.mad")}`, href: "/financial/expenses", color: "text-red-600" },
-    { title: t("financial.totalDonations"), value: `${stats.donations.toFixed(2)} ${t("financial.mad")}`, href: "/financial/donations", color: "text-blue-600" },
-    { title: t("financial.balance"), value: `${balance.toFixed(2)} ${t("financial.mad")}`, href: "#", color: balance >= 0 ? "text-green-600" : "text-red-600" },
+    { title: t("financial.totalContributions"), value: `${fmtMoney(stats.contributions, locale)} ${t("financial.mad")}`, href: "/financial/contributions", color: "text-green-600" },
+    { title: t("financial.totalExpenses"), value: `${fmtMoney(stats.expenses, locale)} ${t("financial.mad")}`, href: "/financial/expenses", color: "text-red-600" },
+    { title: t("financial.totalDonations"), value: `${fmtMoney(stats.donations, locale)} ${t("financial.mad")}`, href: "/financial/donations", color: "text-blue-600" },
+    { title: t("financial.balance"), value: `${fmtMoney(balance, locale)} ${t("financial.mad")}`, href: "#", color: balance >= 0 ? "text-green-600" : "text-red-600" },
   ];
 
   return (

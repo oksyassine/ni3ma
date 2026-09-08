@@ -1,0 +1,5 @@
+ni3ma deploy bundle
+Built: 20260826-170638
+Next.js build: 2026-08-26T17:07:09Z
+Migration tables: 20
+Tenant template tables: 61

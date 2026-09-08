@@ -1,9 +1,7 @@
 {
-  "name": "منصة نعمة — إدارة الجمعيات",
-  "short_name": "نعمة",
-  "description": "نظام إدارة الجمعيات: الأعضاء، الحضور، المالية، المشاريع",
-  "lang": "ar",
-  "dir": "rtl",
+  "name": "Ni3ma — Association Management",
+  "short_name": "Ni3ma",
+  "description": "منصة إدارة الجمعيات — Ni3ma, association management platform",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

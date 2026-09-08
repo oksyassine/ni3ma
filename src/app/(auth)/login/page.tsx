@@ -96,6 +96,15 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <p className="text-center text-sm mt-2">
+          <Link
+            href="/forgot-password"
+            className="text-xs underline text-muted-foreground hover:opacity-80"
+          >
+            {t("auth.forgotPassword.title")}
+          </Link>
+        </p>
+
         <p className="text-center text-sm mt-6" style={{ color: "oklch(0.65 0.04 140)" }}>
           {t("auth.login.newHere")}{" "}
           <Link

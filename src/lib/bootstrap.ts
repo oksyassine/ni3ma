@@ -7,6 +7,10 @@ export type BootstrapOptions = {
   adminUsername: string;
   /** Pre-hashed password (bcrypt). Required. */
   adminPasswordHash: string;
+  /** When the platform owner bootstraps a tenant for a new customer, the
+   *  admin is created INACTIVE so the platform owner has to enable it
+   *  after delivering the temporary password out-of-band. */
+  adminIsActive?: boolean;
   facebookUrl?: string | null;
 };
 
@@ -22,6 +26,7 @@ export async function bootstrapTenant(db: PrismaClient, opts: BootstrapOptions):
       username: opts.adminUsername,
       passwordHash: opts.adminPasswordHash,
       fullName: opts.adminName,
+      isActive: opts.adminIsActive ?? true,
       roles: { create: { role: "ADMIN" } },
     },
   });

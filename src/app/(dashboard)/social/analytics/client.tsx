@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { PROJECT_KIND_LABELS, PROJECT_STATUS_LABELS } from "@/lib/project";
 import type { ProjectKind, ProjectStatus } from "@prisma/client";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 import { Trophy, Target } from "lucide-react";
 
 type Project = {
@@ -36,7 +37,7 @@ export function AnalyticsClient({
   leaderboard: { name: string; hours: number }[];
 }) {
   const total = projects.length;
-  const { t } = useT();
+  const { t, locale } = useT();
   const active = projects.filter((p) => p.status === "ACTIVE").length;
   const completed = projects.filter((p) => p.status === "COMPLETED").length;
   const cancelled = projects.filter((p) => p.status === "CANCELLED").length;
@@ -87,8 +88,8 @@ export function AnalyticsClient({
         <Card>
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.donationCollection")}</p>
-            <p className="text-2xl font-bold text-green-600">{totalCollected.toFixed(0)} {t("social.mad")}</p>
-            {totalTarget > 0 && <p className="text-[10px] text-muted-foreground">{t("social.fromTarget", { target: totalTarget.toFixed(0) })}</p>}
+            <p className="text-2xl font-bold text-green-600">{fmtMoney(totalCollected, locale, 0)} {t("social.mad")}</p>
+            {totalTarget > 0 && <p className="text-[10px] text-muted-foreground">{t("social.fromTarget", { target: fmtMoney(totalTarget, locale, 0) })}</p>}
           </CardContent>
         </Card>
         <Card>
@@ -102,7 +103,7 @@ export function AnalyticsClient({
           <CardContent className="py-3">
             <p className="text-xs text-muted-foreground">{t("social.beneficiaries")}</p>
             <p className="text-2xl font-bold">{totalBeneficiaries}</p>
-            <p className="text-[10px] text-muted-foreground">{t("social.volunteerHoursCount", { hours: totalHours.toFixed(0) })}</p>
+            <p className="text-[10px] text-muted-foreground">{t("social.volunteerHoursCount", { hours: fmtMoney(totalHours, locale, 0) })}</p>
           </CardContent>
         </Card>
       </div>
@@ -172,7 +173,7 @@ export function AnalyticsClient({
                     <span className="text-muted-foreground w-6">#{i + 1}</span>
                     <span className="font-medium">{m.name}</span>
                   </span>
-                  <span className="font-mono">{m.hours.toFixed(1)} {t("social.hour")}</span>
+                  <span className="font-mono">{fmtMoney(m.hours, locale, 1)} {t("social.hour")}</span>
                 </div>
               ))}
             </div>
@@ -187,7 +188,7 @@ export function AnalyticsClient({
             <div className="text-center py-6">
               <p className="text-5xl">{avgScore > 0 ? "⭐".repeat(Math.round(avgScore)) : "—"}</p>
               <p className="text-sm text-muted-foreground mt-2">
-                {avgScore > 0 ? `${avgScore.toFixed(1)} / 5` : t("social.notRatedYet")}
+                {avgScore > 0 ? `${fmtMoney(avgScore, locale, 1)} / 5` : t("social.notRatedYet")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {t("social.basedOnProjects", { count: projects.filter((p) => p.score).length })}
@@ -218,9 +219,9 @@ export function AnalyticsClient({
                   <td className="p-2 font-medium">{p.name}</td>
                   <td className="p-2"><Badge variant="outline">{PROJECT_KIND_LABELS[p.kind]}</Badge></td>
                   <td className="p-2"><Badge>{PROJECT_STATUS_LABELS[p.status]}</Badge></td>
-                  <td className="p-2 font-mono">{p.collected.toFixed(0)}{p.targetAmount > 0 ? ` / ${p.targetAmount.toFixed(0)}` : ""}</td>
+                  <td className="p-2 font-mono">{fmtMoney(p.collected, locale, 0)}{p.targetAmount > 0 ? ` / ${fmtMoney(p.targetAmount, locale, 0)}` : ""}</td>
                   <td className="p-2">{p.tasksDone}/{p.tasksTotal}</td>
-                  <td className="p-2 font-mono">{p.hours.toFixed(1)}</td>
+                  <td className="p-2 font-mono">{fmtMoney(p.hours, locale, 1)}</td>
                   <td className="p-2">{p.score ? "⭐".repeat(p.score) : "—"}</td>
                 </tr>
               ))}

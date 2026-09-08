@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Plus, Upload } from "lucide-react";
 import { useT } from "@/components/i18n/provider";
+import { fmtMoney } from "@/lib/i18n/format";
 
 type Case = {
   id: string;
@@ -34,7 +35,7 @@ const ageOf = (dob: string | null) =>
   dob ? Math.floor((Date.now() - new Date(dob).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : null;
 
 export default function SocialCasesPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [cases, setCases] = useState<Case[]>([]);
   const [search, setSearch] = useState("");
   const [type, setType] = useState<"" | "YATIM" | "MOZWIZ" | "GENERAL">("");
@@ -126,7 +127,7 @@ export default function SocialCasesPage() {
                   <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-3">
                     {c.phone && <span dir="ltr">{c.phone}</span>}
                     {c.familySize != null && <span>{t("social.familyLabel")}: {c.familySize}</span>}
-                    {c.monthlyIncome && <span>{t("social.incomeLabel")}: {Number(c.monthlyIncome).toFixed(0)} {t("social.mad")}</span>}
+                    {c.monthlyIncome && <span>{t("social.incomeLabel")}: {fmtMoney(Number(c.monthlyIncome), locale, 0)} {t("social.mad")}</span>}
                     {c._count.projectLinks > 0 && <span>{t("social.projectsLabel")}: {c._count.projectLinks}</span>}
                   </div>
                 </div>

@@ -32,6 +32,7 @@ import {
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/components/i18n/provider";
+import { fmtDate, fmtMoney } from "@/lib/i18n/format";
 
 const SECTION_KEYS: Record<string, string> = {
   EDUCATIONAL: "financial.cat.educational",
@@ -43,6 +44,9 @@ type DonationItem = {
   id: string;
   donorName: string | null;
   donorPhone: string | null;
+  donorCin: string | null;
+  donorAddress: string | null;
+  donorEmail: string | null;
   amount: string;
   section: string;
   isAnonymous: boolean;
@@ -51,14 +55,19 @@ type DonationItem = {
   paidAt: string | null;
   donationDate: string;
   notes: string | null;
+  receiptNumber: string | null;
   project: { name: string } | null;
+  campaign: { id: string; name: string } | null;
   recorder: { fullName: string } | null;
 };
+
+type CampaignOption = { id: string; name: string };
 
 export default function DonationsPage() {
   const { t, locale } = useT();
   const sectionLabel = (value: string) => t(SECTION_KEYS[value] ?? "financial.cat.other");
   const [donations, setDonations] = useState<DonationItem[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -66,8 +75,12 @@ export default function DonationsPage() {
   const [form, setForm] = useState({
     donorName: "",
     donorPhone: "",
+    donorCin: "",
+    donorAddress: "",
+    donorEmail: "",
     amount: "",
     section: "SOCIAL",
+    campaignId: "",
     isAnonymous: false,
     isPledge: false,
     notes: "",
@@ -75,8 +88,9 @@ export default function DonationsPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setForm({ donorName: "", donorPhone: "", amount: "", section: "SOCIAL", isAnonymous: false, isPledge: false, notes: "" });
+    setForm({ donorName: "", donorPhone: "", donorCin: "", donorAddress: "", donorEmail: "", amount: "", section: "SOCIAL", campaignId: "", isAnonymous: false, isPledge: false, notes: "" });
   };
+
 
   const markPaid = async (id: string) => {
     if (!confirm(t("financial.confirmReceive"))) return;
@@ -96,8 +110,12 @@ export default function DonationsPage() {
     setForm({
       donorName: d.donorName ?? "",
       donorPhone: d.donorPhone ?? "",
+      donorCin: d.donorCin ?? "",
+      donorAddress: d.donorAddress ?? "",
+      donorEmail: d.donorEmail ?? "",
       amount: d.amount,
       section: d.section,
+      campaignId: d.campaign?.id ?? "",
       isAnonymous: d.isAnonymous,
       isPledge: !d.isPaid,
       notes: d.notes ?? "",
@@ -123,9 +141,17 @@ export default function DonationsPage() {
     setDonations(data);
     setLoading(false);
   };
+  const fetchCampaigns = async () => {
+    const res = await fetch("/api/donation-campaigns");
+    if (res.ok) {
+      const data = await res.json();
+      setCampaigns((data.campaigns ?? []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
+    }
+  };
 
   useEffect(() => {
     fetchDonations();
+    fetchCampaigns();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,22 +193,31 @@ export default function DonationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">{t("financial.donationsTitle")}</h1>
           <p className="text-muted-foreground">
-            {t("financial.totalWithAmount", { total: total.toFixed(2) })}
+            {t("financial.totalWithAmount", { total: fmtMoney(total, locale) })}
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
-          <DialogTrigger>
-            <Button>{t("financial.addDonation")}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingId ? t("financial.editDonation") : t("financial.newDonation")}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/export/donations"
+            download
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border bg-card px-3 text-sm hover:bg-muted"
+            title={t("gov.export.csv")}
+          >
+            📥 CSV
+          </a>
+          <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
+            <DialogTrigger>
+              <Button>{t("financial.addDonation")}</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>{editingId ? t("financial.editDonation") : t("financial.newDonation")}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="anonymous"
@@ -205,16 +240,63 @@ export default function DonationsPage() {
                       onChange={(e) => setForm({ ...form, donorName: e.target.value })}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Label>{t("financial.donorPhone")}</Label>
+                      <Input
+                        value={form.donorPhone}
+                        onChange={(e) => setForm({ ...form, donorPhone: e.target.value })}
+                        dir="ltr"
+                        className="text-right"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">{t("gov.receipt.donationCIN")}</Label>
+                      <Input
+                        value={form.donorCin}
+                        onChange={(e) => setForm({ ...form, donorCin: e.target.value })}
+                        dir="ltr"
+                        className="text-right"
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
-                    <Label>{t("financial.donorPhone")}</Label>
+                    <Label className="text-xs">{t("gov.receipt.donationAddress")}</Label>
                     <Input
-                      value={form.donorPhone}
-                      onChange={(e) => setForm({ ...form, donorPhone: e.target.value })}
+                      value={form.donorAddress}
+                      onChange={(e) => setForm({ ...form, donorAddress: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">✉️ Email</Label>
+                    <Input
+                      type="email"
                       dir="ltr"
                       className="text-right"
+                      value={form.donorEmail}
+                      onChange={(e) => setForm({ ...form, donorEmail: e.target.value })}
                     />
                   </div>
                 </>
+              )}
+
+              {campaigns.length > 0 && (
+                <div className="space-y-2">
+                  <Label>{t("gov.campaigns.title")}</Label>
+                  <Select value={form.campaignId} onValueChange={(v) => setForm({ ...form, campaignId: v ?? "" })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">—</SelectItem>
+                      {campaigns.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
 
               <div className="space-y-2">
@@ -274,7 +356,8 @@ export default function DonationsPage() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+        </div>
 
       <div className="border rounded-lg overflow-x-auto">
         <Table>
@@ -304,15 +387,20 @@ export default function DonationsPage() {
             ) : (
               donations.map((donation) => (
                 <TableRow key={donation.id}>
-                  <TableCell>{new Date(donation.donationDate).toLocaleDateString(locale === "fr" ? "fr-MA" : "ar-MA")}</TableCell>
+                  <TableCell className="text-xs" dir="ltr">{fmtDate(donation.donationDate, locale)}</TableCell>
                   <TableCell>
                     {donation.isAnonymous ? (
                       <span className="text-muted-foreground italic">{t("financial.anonymousShort")}</span>
                     ) : (
-                      donation.donorName
+                      <div>
+                        <div className="font-medium">{donation.donorName}</div>
+                        {donation.receiptNumber && (
+                          <div className="text-[10px] text-muted-foreground" dir="ltr">{donation.receiptNumber}</div>
+                        )}
+                      </div>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{parseFloat(donation.amount).toFixed(2)} {t("financial.mad")}</TableCell>
+                  <TableCell className="font-medium">{fmtMoney(parseFloat(donation.amount), locale)} {t("financial.mad")}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{sectionLabel(donation.section)}</Badge>
                   </TableCell>
