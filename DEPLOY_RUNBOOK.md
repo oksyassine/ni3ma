@@ -29,19 +29,30 @@ npm run build         # next build
 ./scripts/deploy-local.sh
 ```
 
-Output: `deploy-bundle/` (production-only node_modules + `.next` + prisma
-schema/migration + scripts) and `ni3ma-deploy-YYYYMMDD-HHMM.tar.gz` for
+Output: `deploy-bundle/` (`app.js` + production-only node_modules + `.next` +
+prisma schema/migration + scripts) and `ni3ma-deploy-YYYYMMDD-HHMM.tar.gz` for
 convenient single-file transfer.
 
 ## 3. Local → server (rsync)
 
 ```bash
-# Dry run first
-rsync -avn --delete deploy-bundle/ user@your-server.com:~/ni3ma/
-
-# Then real
-rsync -avz --delete deploy-bundle/ user@your-server.com:~/ni3ma/
+./scripts/deploy-rsync.sh user@your-server.com:~/ni3ma/
 ```
+
+It runs the dry run, asks for confirmation, then syncs for real — always with
+the exclude list. Set `DEPLOY_YES=1` to skip the prompt.
+
+**Do not run a bare `rsync --delete` by hand.** The bundle is a mirror of the
+app root, so `--delete` removes every server-only file that is not in it. Two
+of those take the site down:
+
+| File | Why it matters |
+| --- | --- |
+| `.htaccess` | Holds the CloudLinux/Passenger stanza. Without it Apache never hands the request to the Node app and serves `~/ni3ma` as a static directory instead — there is no `index.html`, so visitors get a bare directory index. |
+| `.env` | The real secrets. The bundle only carries `.env.example`. |
+
+`scripts/deploy-rsync.sh` also excludes `tmp/`, `backups/`, `logs/`,
+`restart.txt`, `public/uploads/` and `.well-known/`.
 
 ## 4. Server — finalize
 
@@ -58,13 +69,18 @@ cd ~/ni3ma
 ```
 
 The remote script:
-1. Snapshots `.next` and `.env` to `backups/`.
-2. Applies `prisma/migrate-governance.sql` to the platform DB (additive DDL).
-3. Iterates every ACTIVE tenant from the `tenants` registry and applies the
-   same migration.
-4. Regenerates the Prisma client.
-5. Touches `restart.txt` to trigger a Passenger restart.
-6. Smoke-checks the homepage.
+1. **Boot preflight** — aborts unless `app.js`, `.next/BUILD_ID`,
+   `node_modules/next` and `.env` are all present, and warns when `.htaccess`
+   is absent. This is the guard against a half-synced tree that leaves Apache
+   serving a directory index.
+2. Snapshots `.next` and `.env` to `backups/`.
+3. Applies `prisma/migrate-governance.sql` to the platform DB (additive DDL).
+4. Iterates every ACTIVE tenant from the `tenants` registry and applies the
+   same migration (via `@prisma/client`; a tenant failure is reported but does
+   not abort the restart).
+5. Regenerates the Prisma client.
+6. Touches `tmp/restart.txt` to trigger a Passenger restart.
+7. Smoke-checks the homepage and fails if it gets a directory index back.
 
 ## 5. Verify
 
@@ -74,9 +90,74 @@ tail -f ~/logs/passenger.log     # or wherever Passenger logs
 curl -I https://your-domain.com
 ```
 
+Set `SMOKE_URL` (or `AUTH_URL`) in `.env` to the public site URL and
+`deploy-remote.sh` does this check itself at the end of every deploy — it
+fails the deploy if the server answers with a directory index instead of the
+app.
+
 Browse `/bureau/employees`, `/bureau/library`, `/bureau/partnerships`,
 `/bureau/paperwork/certificate?member=<id>` to confirm the new features
 load. The sidebar should now show **16 bureau entries** (up from 9).
+
+## Troubleshooting
+
+### The site shows a directory index / "Index of /" instead of the app
+
+Apache is serving the application directory as static files. That only happens
+when Passenger is not handling the request, so the fix is always to get
+Passenger booting again — adding an `index.html` would only paper over it.
+
+Check, in this order, on the server:
+
+```bash
+cd ~/ni3ma
+ls -la app.js .htaccess .env node_modules/next/package.json .next/BUILD_ID
+```
+
+| Missing | Fix |
+| --- | --- |
+| `app.js` | Rebuild the bundle (`scripts/deploy-local.sh` now includes it and refuses to ship without it) and re-sync. |
+| `node_modules/` | Same — the bundle carries a production-pruned `node_modules`. |
+| `.env` | Restore from `backups/.env.<timestamp>`, or copy `.env.example` and refill. |
+| `.htaccess` | Regenerate it: cPanel › **Setup Node.js App** › your app › **Save**/**Restart**. |
+
+Then restart and re-check:
+
+```bash
+mkdir -p tmp && touch tmp/restart.txt
+tail -50 ~/logs/passenger.log
+curl -sI https://your-domain.com/ | head -1
+```
+
+In cPanel › Setup Node.js App the three fields must be:
+
+- **Application root:** `ni3ma` (the directory you rsync into)
+- **Application URL:** the domain/subdomain being served
+- **Application startup file:** `app.js`
+
+For reference, the stanza cPanel writes into `~/ni3ma/.htaccess` looks like
+this — the `PassengerNodejs` path is account-specific, so let cPanel generate
+it rather than pasting it by hand:
+
+```apache
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/<cpanel-user>/ni3ma"
+PassengerBaseURI "/"
+PassengerNodejs "/home/<cpanel-user>/nodevenv/ni3ma/20/bin/node"
+PassengerAppType node
+PassengerStartupFile app.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+```
+
+### A deploy ran but the site still serves the old build
+
+Passenger watches `tmp/restart.txt`, not `restart.txt` in the app root. Use:
+
+```bash
+mkdir -p tmp && touch tmp/restart.txt
+```
+
+`deploy-remote.sh` does this for you.
 
 ## Migration policy (important)
 

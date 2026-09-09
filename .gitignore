@@ -44,3 +44,8 @@ next-env.d.ts
 ni3ma-deploy-*.tar.gz
 deploy-bundle/node_modules/@next/swc-*/next-swc.*.node
 deploy-bundle/
+
+# server-side deploy artifacts (created by scripts/deploy-remote.sh)
+/restart.txt
+/tmp/
+/backups/

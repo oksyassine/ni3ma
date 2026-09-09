@@ -27,6 +27,9 @@
 
 1. Wildcard A/CNAME record: `*.ROOT_DOMAIN` → server IP.
 2. Webserver (Apache/Nginx) must forward the `Host` header to Passenger.
+   On o2switch this is the CloudLinux stanza in `~/ni3ma/.htaccess`, generated
+   by cPanel > Setup Node.js App (startup file `app.js`). Never let a deploy
+   delete it.
 3. Set in `.env`:
    - `ROOT_DOMAIN`, `NEXT_PUBLIC_ROOT_DOMAIN`
    - `TENANT_DB_URL_TEMPLATE` (e.g. `postgresql://user:pass@localhost:5432/ni3ma_t_{slug}`)
@@ -64,6 +67,14 @@ Dumps platform + every ACTIVE tenant DB to `$BACKUP_DIR`, gzipped, 14-day retent
 - Per-tenant data export/delete = dump/restore of one isolated DB (trivial here).
 
 ## Known quirks
+
+- **A directory index instead of the site.** If the domain answers with an
+  "Index of /" listing, Apache is serving the app directory statically because
+  Passenger did not take the request — normally a missing `app.js`,
+  `node_modules/`, or `.htaccess` in the app root after a `rsync --delete`.
+  Deploy with `scripts/deploy-rsync.sh` (it excludes the server-only files)
+  and see the Troubleshooting section of `DEPLOY_RUNBOOK.md`. Adding an
+  `index.html` is not the fix — it would mask a dead Node app.
 
 - **`scripts/patch-base-ui.js`** (runs automatically via postinstall) fixes an
   upstream bug in `@base-ui/utils/detectBrowser.js` that crashes SSR/prerender
