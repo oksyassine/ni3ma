@@ -65,43 +65,43 @@ export default async function EventDetailPage({
               target="_blank"
               className="rounded-md border px-3 py-1 text-xs hover:bg-muted"
             >
-              🌐 {t("events.publicLink")}
+              🌐 {t("gov.events.publicLink")}
             </Link>
           )}
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Stat label={t("events.startsAt")} value={fmtDate(event.startsAt, locale)} />
-        <Stat label={t("events.venue")} value={`${event.venue ?? "—"}${event.city ? ", " + event.city : ""}`} />
-        <Stat label={t("events.price")} value={Number(event.ticketPrice) > 0 ? `${fmtMoney(Number(event.ticketPrice), locale)}` : t("events.free")} />
-        <Stat label={t("events.capacity")} value={event.capacity === null ? "∞" : `${event._count.tickets} / ${event.capacity}`} />
+        <Stat label={t("gov.events.startsAt")} value={fmtDate(event.startsAt, locale)} />
+        <Stat label={t("gov.events.venue")} value={`${event.venue ?? "—"}${event.city ? ", " + event.city : ""}`} />
+        <Stat label={t("gov.events.price")} value={Number(event.ticketPrice) > 0 ? `${fmtMoney(Number(event.ticketPrice), locale)}` : t("gov.events.free")} />
+        <Stat label={t("gov.events.capacity")} value={event.capacity === null ? "∞" : `${event._count.tickets} / ${event.capacity}`} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Stat label={t("events.ticketsPending")} value={String(countBy.PENDING ?? 0)} />
-        <Stat label={t("events.ticketsPaid")} value={String(countBy.PAID ?? 0)} />
-        <Stat label={t("events.ticketsCheckedIn")} value={String(countBy.CHECKED_IN ?? 0)} />
-        <Stat label={t("events.revenue")} value={fmtMoney(totalRevenue, locale)} />
+        <Stat label={t("gov.events.ticketsPending")} value={String(countBy.PENDING ?? 0)} />
+        <Stat label={t("gov.events.ticketsPaid")} value={String(countBy.PAID ?? 0)} />
+        <Stat label={t("gov.events.ticketsCheckedIn")} value={String(countBy.CHECKED_IN ?? 0)} />
+        <Stat label={t("gov.events.revenue")} value={fmtMoney(totalRevenue, locale)} />
       </div>
 
       <div className="rounded-xl border bg-card overflow-hidden">
-        <h2 className="font-bold p-3 border-b">{t("events.tickets")}</h2>
+        <h2 className="font-bold p-3 border-b">{t("gov.events.tickets")}</h2>
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-xs">
             <tr>
               <th className="p-2 text-start">#</th>
-              <th className="p-2 text-start">{t("events.attendee")}</th>
-              <th className="p-2 text-start">{t("events.memberId")}</th>
-              <th className="p-2 text-start">{t("events.amountPaid")}</th>
-              <th className="p-2 text-start">{t("events.statusLabel")}</th>
+              <th className="p-2 text-start">{t("gov.events.attendee")}</th>
+              <th className="p-2 text-start">{t("gov.events.memberId")}</th>
+              <th className="p-2 text-start">{t("gov.events.amountPaid")}</th>
+              <th className="p-2 text-start">{t("gov.events.statusLabel")}</th>
             </tr>
           </thead>
           <tbody>
             {event.tickets.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                  {t("events.noTickets")}
+                  {t("gov.events.noTickets")}
                 </td>
               </tr>
             )}

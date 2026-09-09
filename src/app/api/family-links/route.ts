@@ -7,6 +7,13 @@ import { isAdmin, isBureauRW } from "@/lib/permissions";
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Same gate as POST below. Its only consumer is /admin/family-links, which the
+  // proxy restricts to ADMIN/BUREAU_RW. With no filter this returns the entire
+  // family graph — names, registration numbers and children's photos — so leaving
+  // it open to any signed-in member exposed minors' data.
+  if (!isAdmin(session.user.roles) && !(await isBureauRW(session))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const { searchParams } = new URL(req.url);
   const parentId = searchParams.get("parentId");
   const childId = searchParams.get("childId");

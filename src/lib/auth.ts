@@ -112,20 +112,41 @@ declare module "@auth/core/jwt" {
 // Re-fetch base roles from the source-of-truth tables, then synthesize.
 // Used by the periodic token refresh so newly-granted permissions take effect
 // without forcing a logout.
-async function freshRolesFor(token: { id: string; subjectKind?: "user" | "member" }): Promise<SynthOut | null> {
-  if (token.subjectKind === "user") {
-    const u = await prisma.user.findUnique({ where: { id: token.id }, select: { isActive: true, roles: { select: { role: true } } } });
-    if (!u || !u.isActive) return null;
-    const baseRoles = u.roles.map((r) => r.role) as Role[];
-    return synthesizeRoles({ userId: token.id, baseRoles });
+//
+// The three outcomes are deliberately distinct, because the `jwt` callback has
+// to handle them in opposite ways:
+//   "ok"      → adopt the fresh roles.
+//   "revoked" → subject deleted or deactivated; kill the session. Without this,
+//               deactivating an account left its existing JWT working at full
+//               privilege until the token expired, which made deactivation
+//               useless as a revocation control.
+//   "unknown" → we could not tell (DB blip, or a legacy token carrying no
+//               subjectKind). Keep the token rather than signing every user
+//               out over a transient error.
+type FreshRoles =
+  | { status: "ok"; value: SynthOut }
+  | { status: "revoked" }
+  | { status: "unknown" };
+
+async function freshRolesFor(token: { id: string; subjectKind?: "user" | "member" }): Promise<FreshRoles> {
+  try {
+    if (token.subjectKind === "user") {
+      const u = await prisma.user.findUnique({ where: { id: token.id }, select: { isActive: true, roles: { select: { role: true } } } });
+      if (!u || !u.isActive) return { status: "revoked" };
+      const baseRoles = u.roles.map((r) => r.role) as Role[];
+      return { status: "ok", value: await synthesizeRoles({ userId: token.id, baseRoles }) };
+    }
+    if (token.subjectKind === "member") {
+      const m = await prisma.member.findUnique({ where: { id: token.id }, select: { isActive: true, userIsActive: true, userRoles: { select: { role: true } } } });
+      if (!m || !m.isActive || !m.userIsActive) return { status: "revoked" };
+      const baseRoles = m.userRoles.map((r) => r.role) as Role[];
+      return { status: "ok", value: await synthesizeRoles({ memberId: token.id, baseRoles }) };
+    }
+  } catch {
+    // Source-of-truth unreachable — don't sign everyone out over a blip.
+    return { status: "unknown" };
   }
-  if (token.subjectKind === "member") {
-    const m = await prisma.member.findUnique({ where: { id: token.id }, select: { isActive: true, userIsActive: true, userRoles: { select: { role: true } } } });
-    if (!m || !m.isActive || !m.userIsActive) return null;
-    const baseRoles = m.userRoles.map((r) => r.role) as Role[];
-    return synthesizeRoles({ memberId: token.id, baseRoles });
-  }
-  return null;
+  return { status: "unknown" };
 }
 
 // 10 seconds — short enough that revoking ADMIN/BUREAU_RW takes effect
@@ -189,8 +210,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        // `isActive` (membership) and `userIsActive` (login enabled) are both
+        // required, matching freshRolesFor(). Checking only userIsActive here
+        // would let a deactivated member sign in and then be signed straight
+        // back out by the next token refresh.
         if (
           member &&
+          member.isActive &&
           member.userIsActive &&
           member.passwordHash &&
           member.username
@@ -237,10 +263,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const now = Date.now();
       if (!token.rolesCheckedAt || now - token.rolesCheckedAt > ROLE_REFRESH_INTERVAL_MS) {
         const fresh = await freshRolesFor(token);
-        if (fresh) {
-          token.roles = fresh.roles;
-          token.sectionLevels = fresh.sectionLevels;
-          token.bureauLevel = fresh.bureauLevel;
+        // Returning null tells Auth.js to drop the session cookie, which is how
+        // a deactivated or deleted account actually loses access.
+        if (fresh.status === "revoked") return null;
+        if (fresh.status === "ok") {
+          token.roles = fresh.value.roles;
+          token.sectionLevels = fresh.value.sectionLevels;
+          token.bureauLevel = fresh.value.bureauLevel;
         }
         token.rolesCheckedAt = now;
       }

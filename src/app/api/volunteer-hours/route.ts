@@ -45,7 +45,10 @@ export async function GET(req: NextRequest) {
     ? {}
     : { memberId: session.user.id };
 
-  if (memberId) where.memberId = memberId;
+  // Only approvers may filter by an arbitrary member. For everyone else the
+  // self-scope above stands: honouring ?memberId= unconditionally overwrote it,
+  // letting any member read another member's volunteer record.
+  if (memberId && approver) where.memberId = memberId;
   if (section) where.section = section;
   if (academicYearId) where.academicYearId = academicYearId;
   if (approved === "true") where.approved = true;

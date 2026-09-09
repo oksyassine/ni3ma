@@ -71,7 +71,7 @@ export default async function ElectionDetailPage({
         <div>
           <h1 className="text-2xl font-bold">{election.title}</h1>
           <p className="text-muted-foreground">
-            {fmtDate(election.electionDate, locale)} · {t("elections.seats")}: {election.seats}
+            {fmtDate(election.electionDate, locale)} · {t("gov.elections.seats")}: {election.seats}
           </p>
         </div>
         <Badge className={statusColor(election.status)}>
@@ -90,10 +90,10 @@ export default async function ElectionDetailPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className="rounded-xl border bg-card p-4 space-y-3">
-          <h2 className="font-bold">{t("elections.candidacies")} ({election.candidacies.length})</h2>
+          <h2 className="font-bold">{t("gov.elections.candidacies")} ({election.candidacies.length})</h2>
           <ul className="space-y-2 text-sm">
             {election.candidacies.length === 0 && (
-              <li className="text-muted-foreground text-xs">{t("elections.noCandidacies")}</li>
+              <li className="text-muted-foreground text-xs">{t("gov.elections.noCandidacies")}</li>
             )}
             {election.candidacies.map((c) => (
               <li key={c.id} className="border rounded p-2">
@@ -109,9 +109,9 @@ export default async function ElectionDetailPage({
         </section>
 
         <section className="rounded-xl border bg-card p-4 space-y-3">
-          <h2 className="font-bold">{t("elections.tally")}</h2>
+          <h2 className="font-bold">{t("gov.elections.tally")}</h2>
           {election.votes.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("elections.noVotesYet")}</p>
+            <p className="text-xs text-muted-foreground">{t("gov.elections.noVotesYet")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground">
@@ -137,10 +137,10 @@ export default async function ElectionDetailPage({
 
       {election.minutes && (
         <section className="rounded-xl border bg-card p-4 space-y-2">
-          <h2 className="font-bold">{t("elections.minutes")}</h2>
+          <h2 className="font-bold">{t("gov.elections.minutes")}</h2>
           <p className="text-xs text-muted-foreground">
-            {t("elections.signedAt")}: {fmtDate(election.minutes.signedAt ?? election.minutes.createdAt, locale)} ·{" "}
-            {t("elections.publishedAt")}: {fmtDate(election.minutes.publishedAt, locale)}
+            {t("gov.elections.signedAt")}: {fmtDate(election.minutes.signedAt ?? election.minutes.createdAt, locale)} ·{" "}
+            {t("gov.elections.publishedAt")}: {fmtDate(election.minutes.publishedAt, locale)}
           </p>
           <pre className="bg-muted/40 p-3 rounded text-xs whitespace-pre-wrap font-mono">
             {election.minutes.body}

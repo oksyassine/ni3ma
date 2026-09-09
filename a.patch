@@ -1,0 +1,1183 @@
+From efd582a97752e6200f2da590fe9ce45ca5aadad1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 06:53:03 +0000
+Subject: [PATCH] =?UTF-8?q?fix:=20correctness=20and=20authorization=20defe?=
+ =?UTF-8?q?cts=20from=20the=20Aug=E2=80=93Sep=20feature=20rounds?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Review of the nine commits from 2026-08-23 (multi-tenant SaaS foundation)
+through 2026-09-08 (governance round 4). Fixes below are grouped by root cause.
+
+Tenant Prisma facade returned plain promises (src/lib/prisma.ts)
+
+The facade's model delegates returned eagerly-started native Promises. Prisma's
+batch `$transaction([...])` rejects anything whose Symbol.toStringTag is not
+"PrismaPromise", so all eight batch call sites threw at runtime — and because
+the operations had already started, the earlier statements landed with no
+rollback. Reproduced against a real Postgres: setCurrentAcademicYear() threw and
+left the association with no current academic year at all.
+
+Affected: bulk attendance save, password reset, invitation acceptance,
+set/delete academic year, project-plan activation, task-plan linking.
+
+Delegates are now lazy and PrismaPromise-compatible, matching the contract a
+real PrismaClient delegate has. Verified end-to-end: batch transactions run,
+roll back atomically on failure, un-awaited calls do no work, and the callback
+form and Promise.all still behave.
+
+withClient() was also inert — getClientForRequest() never consulted the
+AsyncLocalStorage store it wrote to, so a forced client was silently ignored.
+Client resolution now reads that store first.
+
+Deactivation did not revoke access (src/lib/auth.ts)
+
+freshRolesFor() returned null both for "subject is gone/deactivated" and for
+"could not determine", and the jwt callback ignored null entirely. A deactivated
+account kept its roles until the JWT expired, which defeated the 10-second
+refresh the code was built around. The three outcomes are now distinct:
+revoked ends the session, unknown keeps the token so a DB blip doesn't sign
+everyone out. Login now also requires member.isActive, matching the refresh
+check — previously they disagreed.
+
+Missing authorization checks
+
+- POST /api/programs/import had no role check at all, so any signed-in member
+  could import into, and upsert over, any section's annual program. Now
+  requires hasSectionRW on the target section, like POST /api/programs.
+- GET /api/meetings and GET /api/grants exposed board minutes, decisions and
+  funder amounts/contacts to any signed-in member. Now gated on
+  canViewGovernance, matching every sibling governance route.
+- GET /api/family-links returned the whole family graph — names, registration
+  numbers and children's photos — to any signed-in member. Now matches its own
+  POST guard and its only (admin-gated) consumer.
+- GET /api/volunteer-hours self-scoped non-approvers, then let ?memberId=
+  overwrite that scope, so any member could read another's record.
+- POST /api/notes let any signed-in member attach notes to any member's file.
+
+Suspended tenants read the wrong database (src/lib/tenants.ts)
+
+Routing resolved ACTIVE tenants only, but the proxy deliberately lets a
+suspended tenant reach /billing to renew. That page fell back to the primary
+platform database, so the renewal screen reported someone else's member count.
+SUSPENDED is now routable; PENDING_PROVISIONING and PROVISION_FAILED stay
+unroutable since they have no database yet. Access control for suspended
+tenants remains the proxy's job.
+
+i18n keys rendering raw to users
+
+74 keys reached t() with no dictionary entry, so screens in the newest features
+displayed literal strings like "elections.seats". 68 were call sites missing the
+gov. namespace prefix the dictionary already used; 6 were genuinely absent and
+are added in both AR and FR. AR/FR parity is now exact (2404/2404) with zero
+unresolved keys.
+
+Verification: tsc --noEmit clean, eslint 0 errors (50 pre-existing warnings
+unchanged), next build succeeds, and the transaction behaviour is covered by an
+end-to-end run against a real Postgres instance.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HWeQ8L6X7Erc8gy5k9jUuK
+---
+ .../(dashboard)/bureau/accounting/page.tsx    |   4 +-
+ .../bureau/elections/[id]/actions.tsx         |  48 +++----
+ .../bureau/elections/[id]/page.tsx            |  16 +--
+ src/app/(dashboard)/bureau/elections/page.tsx |  20 +--
+ .../(dashboard)/bureau/events/[id]/page.tsx   |  30 ++---
+ .../(dashboard)/bureau/events/new/form.tsx    |  24 ++--
+ .../(dashboard)/bureau/events/new/page.tsx    |   2 +-
+ src/app/(dashboard)/bureau/events/page.tsx    |  12 +-
+ src/app/api/family-links/route.ts             |   7 +
+ src/app/api/grants/route.ts                   |   8 +-
+ src/app/api/meetings/route.ts                 |   9 +-
+ src/app/api/notes/route.ts                    |   8 ++
+ src/app/api/programs/import/route.ts          |   8 ++
+ src/app/api/volunteer-hours/route.ts          |   5 +-
+ src/app/e/[slug]/page.tsx                     |  14 +-
+ src/app/e/[slug]/register-form.tsx            |  16 +--
+ src/lib/auth.ts                               |  63 ++++++---
+ src/lib/i18n/dict/common.ts                   |   6 +
+ src/lib/i18n/dict/governance.ts               |   6 +
+ src/lib/prisma.ts                             | 123 +++++++++++++-----
+ src/lib/tenants.ts                            |  28 ++--
+ 21 files changed, 301 insertions(+), 156 deletions(-)
+
+diff --git a/src/app/(dashboard)/bureau/accounting/page.tsx b/src/app/(dashboard)/bureau/accounting/page.tsx
+index 55a40674..fd7172f1 100644
+--- a/src/app/(dashboard)/bureau/accounting/page.tsx
++++ b/src/app/(dashboard)/bureau/accounting/page.tsx
+@@ -95,8 +95,8 @@ export default async function AccountingPage({
+   return (
+     <div className="space-y-6">
+       <div>
+-        <h1 className="text-2xl font-bold">{t("accounting.title")}</h1>
+-        <p className="text-muted-foreground">{t("accounting.subtitle")}</p>
++        <h1 className="text-2xl font-bold">{t("gov.accounting.title")}</h1>
++        <p className="text-muted-foreground">{t("gov.accounting.subtitle")}</p>
+       </div>
+       <AccountingClient
+         year={year}
+diff --git a/src/app/(dashboard)/bureau/elections/[id]/actions.tsx b/src/app/(dashboard)/bureau/elections/[id]/actions.tsx
+index 8ffb485f..e6386320 100644
+--- a/src/app/(dashboard)/bureau/elections/[id]/actions.tsx
++++ b/src/app/(dashboard)/bureau/elections/[id]/actions.tsx
+@@ -52,26 +52,26 @@ export function ElectionActions({
+ 
+   return (
+     <div className="rounded-xl border bg-card p-4 space-y-3">
+-      <h2 className="text-sm font-bold">{t("elections.actions")}</h2>
++      <h2 className="text-sm font-bold">{t("gov.elections.actions")}</h2>
+ 
+       {status === "DRAFT" && (
+         <form
+           className="flex flex-wrap items-end gap-2"
+-          onSubmit={(e) => { e.preventDefault(); post("/api/elections", { title, electionDate: date, seats: Number(seats) }, t("elections.create")); setTitle(""); }}
++          onSubmit={(e) => { e.preventDefault(); post("/api/elections", { title, electionDate: date, seats: Number(seats) }, t("gov.elections.create")); setTitle(""); }}
+         >
+           <div className="space-y-1">
+-            <label className="text-xs">{t("elections.colTitle")}</label>
++            <label className="text-xs">{t("gov.elections.colTitle")}</label>
+             <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
+           </div>
+           <div className="space-y-1">
+-            <label className="text-xs">{t("elections.colDate")}</label>
++            <label className="text-xs">{t("gov.elections.colDate")}</label>
+             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+           </div>
+           <div className="space-y-1">
+-            <label className="text-xs">{t("elections.seats")}</label>
++            <label className="text-xs">{t("gov.elections.seats")}</label>
+             <Input type="number" min="1" max="15" value={seats} onChange={(e) => setSeats(e.target.value)} className="w-20" />
+           </div>
+-          <Button type="submit" disabled={busy}>{t("elections.create")}</Button>
++          <Button type="submit" disabled={busy}>{t("gov.elections.create")}</Button>
+         </form>
+       )}
+ 
+@@ -80,9 +80,9 @@ export function ElectionActions({
+           size="sm"
+           variant="outline"
+           disabled={busy || !title}
+-          onClick={() => post(`/api/elections/${electionId}`, { action: "openCandidacy" }, t("elections.openCandidacy"))}
++          onClick={() => post(`/api/elections/${electionId}`, { action: "openCandidacy" }, t("gov.elections.openCandidacy"))}
+         >
+-          🟡 {t("elections.openCandidacy")}
++          🟡 {t("gov.elections.openCandidacy")}
+         </Button>
+       )}
+ 
+@@ -91,15 +91,15 @@ export function ElectionActions({
+           className="flex flex-wrap items-end gap-2"
+           onSubmit={(e) => {
+             e.preventDefault();
+-            post(`/api/elections/${electionId}`, { action: "addCandidacy", memberIds: candidateIds.split(",").map((s) => s.trim()).filter(Boolean) }, t("elections.addCandidacy"));
++            post(`/api/elections/${electionId}`, { action: "addCandidacy", memberIds: candidateIds.split(",").map((s) => s.trim()).filter(Boolean) }, t("gov.elections.addCandidacy"));
+             setCandidateIds("");
+           }}
+         >
+           <div className="space-y-1">
+-            <label className="text-xs">{t("elections.addCandidacy")} (member ids, comma-sep)</label>
++            <label className="text-xs">{t("gov.elections.addCandidacy")} (member ids, comma-sep)</label>
+             <Input value={candidateIds} onChange={(e) => setCandidateIds(e.target.value)} placeholder="cuid,cuid" />
+           </div>
+-          <Button type="submit" size="sm" disabled={busy}>+ {t("elections.addCandidacy")}</Button>
++          <Button type="submit" size="sm" disabled={busy}>+ {t("gov.elections.addCandidacy")}</Button>
+         </form>
+       )}
+ 
+@@ -108,9 +108,9 @@ export function ElectionActions({
+           size="sm"
+           variant="outline"
+           disabled={busy}
+-          onClick={() => post(`/api/elections/${electionId}`, { action: "closeCandidacy" }, t("elections.closeCandidacy"))}
++          onClick={() => post(`/api/elections/${electionId}`, { action: "closeCandidacy" }, t("gov.elections.closeCandidacy"))}
+         >
+-          ⏹ {t("elections.closeCandidacy")}
++          ⏹ {t("gov.elections.closeCandidacy")}
+         </Button>
+       )}
+ 
+@@ -119,9 +119,9 @@ export function ElectionActions({
+           size="sm"
+           variant="outline"
+           disabled={busy}
+-          onClick={() => post(`/api/elections/${electionId}`, { action: "openVoting", eligibleVoters }, t("elections.openVoting"))}
++          onClick={() => post(`/api/elections/${electionId}`, { action: "openVoting", eligibleVoters }, t("gov.elections.openVoting"))}
+         >
+-          🟢 {t("elections.openVoting")}
++          🟢 {t("gov.elections.openVoting")}
+         </Button>
+       )}
+ 
+@@ -130,15 +130,15 @@ export function ElectionActions({
+           className="flex flex-wrap items-end gap-2"
+           onSubmit={(e) => {
+             e.preventDefault();
+-            post(`/api/elections/${electionId}`, { action: "castVote", ballot: ballot.split(",").map((s) => s.trim()).filter(Boolean) }, t("elections.castVote"));
++            post(`/api/elections/${electionId}`, { action: "castVote", ballot: ballot.split(",").map((s) => s.trim()).filter(Boolean) }, t("gov.elections.castVote"));
+             setBallot("");
+           }}
+         >
+           <div className="space-y-1">
+-            <label className="text-xs">{t("elections.castVote")} (candidacy ids, ranked)</label>
++            <label className="text-xs">{t("gov.elections.castVote")} (candidacy ids, ranked)</label>
+             <Input value={ballot} onChange={(e) => setBallot(e.target.value)} placeholder="cuid,cuid" />
+           </div>
+-          <Button type="submit" size="sm" disabled={busy}>🗳 {t("elections.castVote")}</Button>
++          <Button type="submit" size="sm" disabled={busy}>🗳 {t("gov.elections.castVote")}</Button>
+         </form>
+       )}
+ 
+@@ -147,9 +147,9 @@ export function ElectionActions({
+           size="sm"
+           variant="outline"
+           disabled={busy}
+-          onClick={() => post(`/api/elections/${electionId}`, { action: "closeVoting" }, t("elections.closeVoting"))}
++          onClick={() => post(`/api/elections/${electionId}`, { action: "closeVoting" }, t("gov.elections.closeVoting"))}
+         >
+-          ⏹ {t("elections.closeVoting")}
++          ⏹ {t("gov.elections.closeVoting")}
+         </Button>
+       )}
+ 
+@@ -158,9 +158,9 @@ export function ElectionActions({
+           size="sm"
+           variant="outline"
+           disabled={busy}
+-          onClick={() => post(`/api/elections/${electionId}`, { action: "signMinutes" }, t("elections.signMinutes"))}
++          onClick={() => post(`/api/elections/${electionId}`, { action: "signMinutes" }, t("gov.elections.signMinutes"))}
+         >
+-          📜 {t("elections.signMinutes")}
++          📜 {t("gov.elections.signMinutes")}
+         </Button>
+       )}
+ 
+@@ -169,9 +169,9 @@ export function ElectionActions({
+           size="sm"
+           variant="outline"
+           disabled={busy}
+-          onClick={() => post(`/api/elections/${electionId}`, { action: "publish" }, t("elections.publish"))}
++          onClick={() => post(`/api/elections/${electionId}`, { action: "publish" }, t("gov.elections.publish"))}
+         >
+-          📢 {t("elections.publish")}
++          📢 {t("gov.elections.publish")}
+         </Button>
+       )}
+     </div>
+diff --git a/src/app/(dashboard)/bureau/elections/[id]/page.tsx b/src/app/(dashboard)/bureau/elections/[id]/page.tsx
+index 7f4f554c..c9b41a36 100644
+--- a/src/app/(dashboard)/bureau/elections/[id]/page.tsx
++++ b/src/app/(dashboard)/bureau/elections/[id]/page.tsx
+@@ -71,7 +71,7 @@ export default async function ElectionDetailPage({
+         <div>
+           <h1 className="text-2xl font-bold">{election.title}</h1>
+           <p className="text-muted-foreground">
+-            {fmtDate(election.electionDate, locale)} · {t("elections.seats")}: {election.seats}
++            {fmtDate(election.electionDate, locale)} · {t("gov.elections.seats")}: {election.seats}
+           </p>
+         </div>
+         <Badge className={statusColor(election.status)}>
+@@ -90,10 +90,10 @@ export default async function ElectionDetailPage({
+ 
+       <div className="grid gap-6 md:grid-cols-2">
+         <section className="rounded-xl border bg-card p-4 space-y-3">
+-          <h2 className="font-bold">{t("elections.candidacies")} ({election.candidacies.length})</h2>
++          <h2 className="font-bold">{t("gov.elections.candidacies")} ({election.candidacies.length})</h2>
+           <ul className="space-y-2 text-sm">
+             {election.candidacies.length === 0 && (
+-              <li className="text-muted-foreground text-xs">{t("elections.noCandidacies")}</li>
++              <li className="text-muted-foreground text-xs">{t("gov.elections.noCandidacies")}</li>
+             )}
+             {election.candidacies.map((c) => (
+               <li key={c.id} className="border rounded p-2">
+@@ -109,9 +109,9 @@ export default async function ElectionDetailPage({
+         </section>
+ 
+         <section className="rounded-xl border bg-card p-4 space-y-3">
+-          <h2 className="font-bold">{t("elections.tally")}</h2>
++          <h2 className="font-bold">{t("gov.elections.tally")}</h2>
+           {election.votes.length === 0 ? (
+-            <p className="text-xs text-muted-foreground">{t("elections.noVotesYet")}</p>
++            <p className="text-xs text-muted-foreground">{t("gov.elections.noVotesYet")}</p>
+           ) : (
+             <table className="w-full text-sm">
+               <thead className="text-xs text-muted-foreground">
+@@ -137,10 +137,10 @@ export default async function ElectionDetailPage({
+ 
+       {election.minutes && (
+         <section className="rounded-xl border bg-card p-4 space-y-2">
+-          <h2 className="font-bold">{t("elections.minutes")}</h2>
++          <h2 className="font-bold">{t("gov.elections.minutes")}</h2>
+           <p className="text-xs text-muted-foreground">
+-            {t("elections.signedAt")}: {fmtDate(election.minutes.signedAt ?? election.minutes.createdAt, locale)} ·{" "}
+-            {t("elections.publishedAt")}: {fmtDate(election.minutes.publishedAt, locale)}
++            {t("gov.elections.signedAt")}: {fmtDate(election.minutes.signedAt ?? election.minutes.createdAt, locale)} ·{" "}
++            {t("gov.elections.publishedAt")}: {fmtDate(election.minutes.publishedAt, locale)}
+           </p>
+           <pre className="bg-muted/40 p-3 rounded text-xs whitespace-pre-wrap font-mono">
+             {election.minutes.body}
+diff --git a/src/app/(dashboard)/bureau/elections/page.tsx b/src/app/(dashboard)/bureau/elections/page.tsx
+index 83252cf5..99d62ff7 100644
+--- a/src/app/(dashboard)/bureau/elections/page.tsx
++++ b/src/app/(dashboard)/bureau/elections/page.tsx
+@@ -29,12 +29,12 @@ export default async function ElectionsPage() {
+     <div className="space-y-6">
+       <div className="flex items-center justify-between gap-3 flex-wrap">
+         <div>
+-          <h1 className="text-2xl font-bold">{t("elections.title")}</h1>
+-          <p className="text-muted-foreground">{t("elections.subtitle")}</p>
++          <h1 className="text-2xl font-bold">{t("gov.elections.title")}</h1>
++          <p className="text-muted-foreground">{t("gov.elections.subtitle")}</p>
+         </div>
+         {canWrite && (
+           <form action="/api/elections" method="post">
+-            <Button type="submit">+ {t("elections.create")}</Button>
++            <Button type="submit">+ {t("gov.elections.create")}</Button>
+           </form>
+         )}
+       </div>
+@@ -43,12 +43,12 @@ export default async function ElectionsPage() {
+         <table className="w-full text-sm">
+           <thead className="bg-muted/60 text-xs">
+             <tr>
+-              <th className="p-3 text-start">{t("elections.colTitle")}</th>
+-              <th className="p-3 text-start">{t("elections.colDate")}</th>
+-              <th className="p-3 text-start">{t("elections.colSeats")}</th>
+-              <th className="p-3 text-start">{t("elections.colCandidacies")}</th>
+-              <th className="p-3 text-start">{t("elections.colVotes")}</th>
+-              <th className="p-3 text-start">{t("elections.colStatus")}</th>
++              <th className="p-3 text-start">{t("gov.elections.colTitle")}</th>
++              <th className="p-3 text-start">{t("gov.elections.colDate")}</th>
++              <th className="p-3 text-start">{t("gov.elections.colSeats")}</th>
++              <th className="p-3 text-start">{t("gov.elections.colCandidacies")}</th>
++              <th className="p-3 text-start">{t("gov.elections.colVotes")}</th>
++              <th className="p-3 text-start">{t("gov.elections.colStatus")}</th>
+               <th></th>
+             </tr>
+           </thead>
+@@ -56,7 +56,7 @@ export default async function ElectionsPage() {
+             {elections.length === 0 && (
+               <tr>
+                 <td colSpan={7} className="p-6 text-center text-muted-foreground">
+-                  {t("elections.empty")}
++                  {t("gov.elections.empty")}
+                 </td>
+               </tr>
+             )}
+diff --git a/src/app/(dashboard)/bureau/events/[id]/page.tsx b/src/app/(dashboard)/bureau/events/[id]/page.tsx
+index 8cf318c0..8fb5f85f 100644
+--- a/src/app/(dashboard)/bureau/events/[id]/page.tsx
++++ b/src/app/(dashboard)/bureau/events/[id]/page.tsx
+@@ -65,43 +65,43 @@ export default async function EventDetailPage({
+               target="_blank"
+               className="rounded-md border px-3 py-1 text-xs hover:bg-muted"
+             >
+-              🌐 {t("events.publicLink")}
++              🌐 {t("gov.events.publicLink")}
+             </Link>
+           )}
+         </div>
+       </div>
+ 
+       <div className="grid gap-4 md:grid-cols-4">
+-        <Stat label={t("events.startsAt")} value={fmtDate(event.startsAt, locale)} />
+-        <Stat label={t("events.venue")} value={`${event.venue ?? "—"}${event.city ? ", " + event.city : ""}`} />
+-        <Stat label={t("events.price")} value={Number(event.ticketPrice) > 0 ? `${fmtMoney(Number(event.ticketPrice), locale)}` : t("events.free")} />
+-        <Stat label={t("events.capacity")} value={event.capacity === null ? "∞" : `${event._count.tickets} / ${event.capacity}`} />
++        <Stat label={t("gov.events.startsAt")} value={fmtDate(event.startsAt, locale)} />
++        <Stat label={t("gov.events.venue")} value={`${event.venue ?? "—"}${event.city ? ", " + event.city : ""}`} />
++        <Stat label={t("gov.events.price")} value={Number(event.ticketPrice) > 0 ? `${fmtMoney(Number(event.ticketPrice), locale)}` : t("gov.events.free")} />
++        <Stat label={t("gov.events.capacity")} value={event.capacity === null ? "∞" : `${event._count.tickets} / ${event.capacity}`} />
+       </div>
+ 
+       <div className="grid gap-4 md:grid-cols-4">
+-        <Stat label={t("events.ticketsPending")} value={String(countBy.PENDING ?? 0)} />
+-        <Stat label={t("events.ticketsPaid")} value={String(countBy.PAID ?? 0)} />
+-        <Stat label={t("events.ticketsCheckedIn")} value={String(countBy.CHECKED_IN ?? 0)} />
+-        <Stat label={t("events.revenue")} value={fmtMoney(totalRevenue, locale)} />
++        <Stat label={t("gov.events.ticketsPending")} value={String(countBy.PENDING ?? 0)} />
++        <Stat label={t("gov.events.ticketsPaid")} value={String(countBy.PAID ?? 0)} />
++        <Stat label={t("gov.events.ticketsCheckedIn")} value={String(countBy.CHECKED_IN ?? 0)} />
++        <Stat label={t("gov.events.revenue")} value={fmtMoney(totalRevenue, locale)} />
+       </div>
+ 
+       <div className="rounded-xl border bg-card overflow-hidden">
+-        <h2 className="font-bold p-3 border-b">{t("events.tickets")}</h2>
++        <h2 className="font-bold p-3 border-b">{t("gov.events.tickets")}</h2>
+         <table className="w-full text-sm">
+           <thead className="bg-muted/60 text-xs">
+             <tr>
+               <th className="p-2 text-start">#</th>
+-              <th className="p-2 text-start">{t("events.attendee")}</th>
+-              <th className="p-2 text-start">{t("events.memberId")}</th>
+-              <th className="p-2 text-start">{t("events.amountPaid")}</th>
+-              <th className="p-2 text-start">{t("events.statusLabel")}</th>
++              <th className="p-2 text-start">{t("gov.events.attendee")}</th>
++              <th className="p-2 text-start">{t("gov.events.memberId")}</th>
++              <th className="p-2 text-start">{t("gov.events.amountPaid")}</th>
++              <th className="p-2 text-start">{t("gov.events.statusLabel")}</th>
+             </tr>
+           </thead>
+           <tbody>
+             {event.tickets.length === 0 && (
+               <tr>
+                 <td colSpan={5} className="p-6 text-center text-muted-foreground">
+-                  {t("events.noTickets")}
++                  {t("gov.events.noTickets")}
+                 </td>
+               </tr>
+             )}
+diff --git a/src/app/(dashboard)/bureau/events/new/form.tsx b/src/app/(dashboard)/bureau/events/new/form.tsx
+index 26c67f61..897255cb 100644
+--- a/src/app/(dashboard)/bureau/events/new/form.tsx
++++ b/src/app/(dashboard)/bureau/events/new/form.tsx
+@@ -62,7 +62,7 @@ export function CreateEventForm() {
+       <CardContent className="pt-6 space-y-4">
+         <form onSubmit={submit} className="space-y-3">
+           <div className="space-y-1.5">
+-            <Label htmlFor="title">{t("events.title")}</Label>
++            <Label htmlFor="title">{t("gov.events.title")}</Label>
+             <Input id="title" required value={title} onChange={(e) => {
+               setTitle(e.target.value);
+               if (!slug) setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60));
+@@ -73,36 +73,36 @@ export function CreateEventForm() {
+             <Input id="slug" required value={slug} onChange={(e) => setSlug(e.target.value)} dir="ltr" />
+           </div>
+           <div className="space-y-1.5">
+-            <Label htmlFor="description">{t("events.description")}</Label>
++            <Label htmlFor="description">{t("gov.events.description")}</Label>
+             <Textarea id="description" required rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+           </div>
+           <div className="grid grid-cols-2 gap-3">
+             <div className="space-y-1.5">
+-              <Label htmlFor="startsAt">{t("events.startsAt")}</Label>
++              <Label htmlFor="startsAt">{t("gov.events.startsAt")}</Label>
+               <Input id="startsAt" type="datetime-local" required value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+             </div>
+             <div className="space-y-1.5">
+-              <Label htmlFor="endsAt">{t("events.endsAt")}</Label>
++              <Label htmlFor="endsAt">{t("gov.events.endsAt")}</Label>
+               <Input id="endsAt" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+             </div>
+           </div>
+           <div className="grid grid-cols-2 gap-3">
+             <div className="space-y-1.5">
+-              <Label htmlFor="venue">{t("events.venue")}</Label>
++              <Label htmlFor="venue">{t("gov.events.venue")}</Label>
+               <Input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} />
+             </div>
+             <div className="space-y-1.5">
+-              <Label htmlFor="city">{t("events.city")}</Label>
++              <Label htmlFor="city">{t("gov.events.city")}</Label>
+               <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+             </div>
+           </div>
+           <div className="grid grid-cols-3 gap-3">
+             <div className="space-y-1.5">
+-              <Label htmlFor="capacity">{t("events.capacity")}</Label>
++              <Label htmlFor="capacity">{t("gov.events.capacity")}</Label>
+               <Input id="capacity" type="number" min="0" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+             </div>
+             <div className="space-y-1.5">
+-              <Label htmlFor="ticketPrice">{t("events.price")} (MAD)</Label>
++              <Label htmlFor="ticketPrice">{t("gov.events.price")} (MAD)</Label>
+               <Input id="ticketPrice" type="number" min="0" step="0.01" value={ticketPrice} onChange={(e) => setTicketPrice(e.target.value)} />
+             </div>
+             <div className="space-y-1.5">
+@@ -111,16 +111,16 @@ export function CreateEventForm() {
+             </div>
+           </div>
+           <div className="space-y-1.5">
+-            <Label htmlFor="paymentMode">{t("events.paymentMode")}</Label>
++            <Label htmlFor="paymentMode">{t("gov.events.paymentMode")}</Label>
+             <select
+               id="paymentMode"
+               value={paymentMode}
+               onChange={(e) => setPaymentMode(e.target.value as "FREE" | "ONLINE" | "ONSITE")}
+               className="h-9 px-3 rounded-md border bg-background"
+             >
+-              <option value="FREE">{t("events.paymentModeFree")}</option>
+-              <option value="ONLINE">{t("events.paymentModeOnline")}</option>
+-              <option value="ONSITE">{t("events.paymentModeOnsite")}</option>
++              <option value="FREE">{t("gov.events.paymentModeFree")}</option>
++              <option value="ONLINE">{t("gov.events.paymentModeOnline")}</option>
++              <option value="ONSITE">{t("gov.events.paymentModeOnsite")}</option>
+             </select>
+           </div>
+           <Button type="submit" disabled={busy} className="w-full">
+diff --git a/src/app/(dashboard)/bureau/events/new/page.tsx b/src/app/(dashboard)/bureau/events/new/page.tsx
+index 780ef5b7..ae7030c6 100644
+--- a/src/app/(dashboard)/bureau/events/new/page.tsx
++++ b/src/app/(dashboard)/bureau/events/new/page.tsx
+@@ -13,7 +13,7 @@ export default async function NewEventPage() {
+   return (
+     <div className="space-y-6 max-w-2xl">
+       <div>
+-        <h1 className="text-2xl font-bold">{t("events.create")}</h1>
++        <h1 className="text-2xl font-bold">{t("gov.events.create")}</h1>
+       </div>
+       <CreateEventForm />
+     </div>
+diff --git a/src/app/(dashboard)/bureau/events/page.tsx b/src/app/(dashboard)/bureau/events/page.tsx
+index e6582198..0f1c94ad 100644
+--- a/src/app/(dashboard)/bureau/events/page.tsx
++++ b/src/app/(dashboard)/bureau/events/page.tsx
+@@ -32,15 +32,15 @@ export default async function EventsPage() {
+     <div className="space-y-6">
+       <div className="flex items-center justify-between gap-3 flex-wrap">
+         <div>
+-          <h1 className="text-2xl font-bold">{t("events.title")}</h1>
+-          <p className="text-muted-foreground">{t("events.subtitle")}</p>
++          <h1 className="text-2xl font-bold">{t("gov.events.title")}</h1>
++          <p className="text-muted-foreground">{t("gov.events.subtitle")}</p>
+         </div>
+         {canWrite && (
+           <Link
+             href="/bureau/events/new"
+             className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+           >
+-            + {t("events.create")}
++            + {t("gov.events.create")}
+           </Link>
+         )}
+       </div>
+@@ -48,7 +48,7 @@ export default async function EventsPage() {
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+         {events.length === 0 && (
+           <p className="col-span-full text-center text-muted-foreground py-12">
+-            {t("events.empty")}
++            {t("gov.events.empty")}
+           </p>
+         )}
+         {events.map((e) => {
+@@ -71,8 +71,8 @@ export default async function EventsPage() {
+               <div className="space-y-1 text-xs">
+                 <div>📅 {fmtDate(e.startsAt, locale)}</div>
+                 {e.venue && <div>📍 {e.venue}{e.city ? `, ${e.city}` : ""}</div>}
+-                <div>💰 {e.ticketPrice && Number(e.ticketPrice) > 0 ? `${fmtMoney(Number(e.ticketPrice), locale)} ${t("events.perTicket")}` : t("events.free")}</div>
+-                <div>🎟 {e.tickets.length} {t("events.ticketsSold")}
++                <div>💰 {e.ticketPrice && Number(e.ticketPrice) > 0 ? `${fmtMoney(Number(e.ticketPrice), locale)} ${t("gov.events.perTicket")}` : t("gov.events.free")}</div>
++                <div>🎟 {e.tickets.length} {t("gov.events.ticketsSold")}
+                   {remaining !== null && ` / ${e.capacity}`}
+                 </div>
+               </div>
+diff --git a/src/app/api/family-links/route.ts b/src/app/api/family-links/route.ts
+index 5fad3a9b..4403c484 100644
+--- a/src/app/api/family-links/route.ts
++++ b/src/app/api/family-links/route.ts
+@@ -7,6 +7,13 @@ import { isAdmin, isBureauRW } from "@/lib/permissions";
+ export async function GET(req: NextRequest) {
+   const session = await auth();
+   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
++  // Same gate as POST below. Its only consumer is /admin/family-links, which the
++  // proxy restricts to ADMIN/BUREAU_RW. With no filter this returns the entire
++  // family graph — names, registration numbers and children's photos — so leaving
++  // it open to any signed-in member exposed minors' data.
++  if (!isAdmin(session.user.roles) && !(await isBureauRW(session))) {
++    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
++  }
+   const { searchParams } = new URL(req.url);
+   const parentId = searchParams.get("parentId");
+   const childId = searchParams.get("childId");
+diff --git a/src/app/api/grants/route.ts b/src/app/api/grants/route.ts
+index 5c7845c5..f994cf38 100644
+--- a/src/app/api/grants/route.ts
++++ b/src/app/api/grants/route.ts
+@@ -3,7 +3,7 @@ import { z } from "zod";
+ import { auth } from "@/lib/auth";
+ import { prisma } from "@/lib/prisma";
+ import { recordAudit } from "@/lib/audit";
+-import { canManageGovernance } from "@/lib/rbac";
++import { canManageGovernance, canViewGovernance } from "@/lib/rbac";
+ 
+ const dateStr = z
+   .string()
+@@ -47,6 +47,12 @@ const createSchema = z.object({
+ export async function GET() {
+   const session = await auth();
+   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
++  // Grants carry funder names, amounts and contact details — bureau business
++  // (see canViewGovernance): maktab manages, treasurer reads. /api/grants has no
++  // proxy prefix gate, so this handler is the only check.
++  if (!canViewGovernance(session.user.roles)) {
++    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
++  }
+ 
+   const grants = await prisma.grant.findMany({
+     orderBy: { createdAt: "desc" },
+diff --git a/src/app/api/meetings/route.ts b/src/app/api/meetings/route.ts
+index 8dcd4828..fbeb8fe1 100644
+--- a/src/app/api/meetings/route.ts
++++ b/src/app/api/meetings/route.ts
+@@ -3,7 +3,7 @@ import { z } from "zod";
+ import { auth } from "@/lib/auth";
+ import { prisma } from "@/lib/prisma";
+ import { recordAudit } from "@/lib/audit";
+-import { canManageGovernance } from "@/lib/rbac";
++import { canManageGovernance, canViewGovernance } from "@/lib/rbac";
+ import { revalidateBureau } from "@/lib/revalidate";
+ 
+ const dateStr = z
+@@ -28,6 +28,13 @@ const createSchema = z.object({
+ export async function GET() {
+   const session = await auth();
+   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
++  // Minutes/PV, agendas and decisions are bureau business (see canViewGovernance):
++  // maktab manages, treasurer reads. Without this any signed-in member could read
++  // every meeting's minutes, and /api/meetings has no proxy prefix gate either, so
++  // this handler is the only check.
++  if (!canViewGovernance(session.user.roles)) {
++    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
++  }
+ 
+   const meetings = await prisma.meeting.findMany({
+     orderBy: { heldAt: "desc" },
+diff --git a/src/app/api/notes/route.ts b/src/app/api/notes/route.ts
+index 21c63b0e..455b6219 100644
+--- a/src/app/api/notes/route.ts
++++ b/src/app/api/notes/route.ts
+@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
+ import { prisma } from "@/lib/prisma";
+ import { auth } from "@/lib/auth";
+ import { recordAudit } from "@/lib/audit";
++import { isAdmin as isAdminRole, isBureauRW } from "@/lib/permissions";
+ import type { Role } from "@/lib/rbac";
+ 
+ export async function GET(req: NextRequest) {
+@@ -36,6 +37,13 @@ export async function POST(req: NextRequest) {
+   const session = await auth();
+   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+ 
++  // Notes are staff annotations on a member's file. The only UI that writes
++  // them is /admin/members/[id], which the proxy restricts to ADMIN/BUREAU_RW;
++  // without a check here any signed-in member could attach notes to anyone.
++  if (!isAdminRole(session.user.roles) && !(await isBureauRW(session))) {
++    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
++  }
++
+   const { memberId, content, isPrivate, visibleTo } = await req.json();
+   if (!memberId || !content) {
+     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+diff --git a/src/app/api/programs/import/route.ts b/src/app/api/programs/import/route.ts
+index 5f013bc0..e3e4fbad 100644
+--- a/src/app/api/programs/import/route.ts
++++ b/src/app/api/programs/import/route.ts
+@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
+ import { auth } from "@/lib/auth";
+ import { recordAudit } from "@/lib/audit";
+ import { getCurrentAcademicYear } from "@/lib/academic-year";
++import { hasSectionRW } from "@/lib/permissions";
+ import type { Section } from "@prisma/client";
+ 
+ type ProgramRow = {
+@@ -36,6 +37,13 @@ export async function POST(req: NextRequest) {
+     return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
+   }
+ 
++  // Same gate as POST /api/programs — this writes the very same
++  // annualProgram/programActivity rows (and upserts over an existing program
++  // for the section+year), so it needs RW on the section being imported into.
++  if (!(await hasSectionRW(session, section))) {
++    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
++  }
++
+   const ay = await getCurrentAcademicYear();
+   const year = ay ? new Date(ay.startDate).getFullYear() : new Date().getFullYear();
+ 
+diff --git a/src/app/api/volunteer-hours/route.ts b/src/app/api/volunteer-hours/route.ts
+index ffb11a15..e5d746f8 100644
+--- a/src/app/api/volunteer-hours/route.ts
++++ b/src/app/api/volunteer-hours/route.ts
+@@ -45,7 +45,10 @@ export async function GET(req: NextRequest) {
+     ? {}
+     : { memberId: session.user.id };
+ 
+-  if (memberId) where.memberId = memberId;
++  // Only approvers may filter by an arbitrary member. For everyone else the
++  // self-scope above stands: honouring ?memberId= unconditionally overwrote it,
++  // letting any member read another member's volunteer record.
++  if (memberId && approver) where.memberId = memberId;
+   if (section) where.section = section;
+   if (academicYearId) where.academicYearId = academicYearId;
+   if (approved === "true") where.approved = true;
+diff --git a/src/app/e/[slug]/page.tsx b/src/app/e/[slug]/page.tsx
+index 197b251e..5e29df91 100644
+--- a/src/app/e/[slug]/page.tsx
++++ b/src/app/e/[slug]/page.tsx
+@@ -30,32 +30,32 @@ export default async function PublicEventPage({
+ 
+         <dl className="grid grid-cols-2 gap-4 my-8">
+           <div className="rounded-lg border bg-card p-4">
+-            <dt className="text-xs text-muted-foreground">{t("events.startsAt")}</dt>
++            <dt className="text-xs text-muted-foreground">{t("gov.events.startsAt")}</dt>
+             <dd className="font-bold">{fmtDate(event.startsAt, locale)}</dd>
+           </div>
+           {event.endsAt && (
+             <div className="rounded-lg border bg-card p-4">
+-              <dt className="text-xs text-muted-foreground">{t("events.endsAt")}</dt>
++              <dt className="text-xs text-muted-foreground">{t("gov.events.endsAt")}</dt>
+               <dd className="font-bold">{fmtDate(event.endsAt, locale)}</dd>
+             </div>
+           )}
+           {(event.venue || event.city) && (
+             <div className="rounded-lg border bg-card p-4 col-span-2">
+-              <dt className="text-xs text-muted-foreground">{t("events.venue")}</dt>
++              <dt className="text-xs text-muted-foreground">{t("gov.events.venue")}</dt>
+               <dd className="font-bold">{event.venue}{event.city ? `, ${event.city}` : ""}</dd>
+             </div>
+           )}
+           <div className="rounded-lg border bg-card p-4">
+-            <dt className="text-xs text-muted-foreground">{t("events.price")}</dt>
++            <dt className="text-xs text-muted-foreground">{t("gov.events.price")}</dt>
+             <dd className="font-bold">
+               {Number(event.ticketPrice) > 0
+-                ? `${fmtMoney(Number(event.ticketPrice), locale)} ${t("events.perTicket")}`
+-                : t("events.free")}
++                ? `${fmtMoney(Number(event.ticketPrice), locale)} ${t("gov.events.perTicket")}`
++                : t("gov.events.free")}
+             </dd>
+           </div>
+           {remaining !== null && (
+             <div className="rounded-lg border bg-card p-4">
+-              <dt className="text-xs text-muted-foreground">{t("events.remaining")}</dt>
++              <dt className="text-xs text-muted-foreground">{t("gov.events.remaining")}</dt>
+               <dd className="font-bold">{remaining} / {event.capacity}</dd>
+             </div>
+           )}
+diff --git a/src/app/e/[slug]/register-form.tsx b/src/app/e/[slug]/register-form.tsx
+index 33cff8f9..8cc832d3 100644
+--- a/src/app/e/[slug]/register-form.tsx
++++ b/src/app/e/[slug]/register-form.tsx
+@@ -33,14 +33,14 @@ export function EventRegisterForm({
+       });
+       const data = await res.json();
+       if (!res.ok) {
+-        toast.error(data.error ?? t("events.registerFailed"));
++        toast.error(data.error ?? t("gov.events.registerFailed"));
+         return;
+       }
+       if (data.payUrl) {
+         // Online payment: redirect to YouCan.
+         window.location.href = data.payUrl;
+       } else {
+-        toast.success(t("events.registerSuccess"));
++        toast.success(t("gov.events.registerSuccess"));
+         router.refresh();
+       }
+     } finally {
+@@ -50,26 +50,26 @@ export function EventRegisterForm({
+ 
+   return (
+     <form onSubmit={submit} className="rounded-xl border bg-card p-6 space-y-4">
+-      <h2 className="font-bold">{t("events.registerTitle")}</h2>
++      <h2 className="font-bold">{t("gov.events.registerTitle")}</h2>
+       {priceMad > 0 && (
+         <p className="text-sm text-amber-700">
+-          💳 {t("events.paymentOnlineNotice")}
++          💳 {t("gov.events.paymentOnlineNotice")}
+         </p>
+       )}
+       <div className="space-y-1.5">
+-        <Label htmlFor="name">{t("events.attendeeName")}</Label>
++        <Label htmlFor="name">{t("gov.events.attendeeName")}</Label>
+         <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+       </div>
+       <div className="space-y-1.5">
+-        <Label htmlFor="phone">{t("events.attendeePhone")}</Label>
++        <Label htmlFor="phone">{t("gov.events.attendeePhone")}</Label>
+         <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+       </div>
+       <div className="space-y-1.5">
+-        <Label htmlFor="email">{t("events.attendeeEmail")} ({t("common.optional")})</Label>
++        <Label htmlFor="email">{t("gov.events.attendeeEmail")} ({t("common.optional")})</Label>
+         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+       </div>
+       <Button type="submit" disabled={busy} className="w-full">
+-        🎟 {t("events.registerSubmit")}{priceMad > 0 ? ` — ${t("events.payOnline")}` : ""}
++        🎟 {t("gov.events.registerSubmit")}{priceMad > 0 ? ` — ${t("gov.events.payOnline")}` : ""}
+       </Button>
+     </form>
+   );
+diff --git a/src/lib/auth.ts b/src/lib/auth.ts
+index d671db2b..885615a4 100644
+--- a/src/lib/auth.ts
++++ b/src/lib/auth.ts
+@@ -112,20 +112,41 @@ declare module "@auth/core/jwt" {
+ // Re-fetch base roles from the source-of-truth tables, then synthesize.
+ // Used by the periodic token refresh so newly-granted permissions take effect
+ // without forcing a logout.
+-async function freshRolesFor(token: { id: string; subjectKind?: "user" | "member" }): Promise<SynthOut | null> {
+-  if (token.subjectKind === "user") {
+-    const u = await prisma.user.findUnique({ where: { id: token.id }, select: { isActive: true, roles: { select: { role: true } } } });
+-    if (!u || !u.isActive) return null;
+-    const baseRoles = u.roles.map((r) => r.role) as Role[];
+-    return synthesizeRoles({ userId: token.id, baseRoles });
+-  }
+-  if (token.subjectKind === "member") {
+-    const m = await prisma.member.findUnique({ where: { id: token.id }, select: { isActive: true, userIsActive: true, userRoles: { select: { role: true } } } });
+-    if (!m || !m.isActive || !m.userIsActive) return null;
+-    const baseRoles = m.userRoles.map((r) => r.role) as Role[];
+-    return synthesizeRoles({ memberId: token.id, baseRoles });
++//
++// The three outcomes are deliberately distinct, because the `jwt` callback has
++// to handle them in opposite ways:
++//   "ok"      → adopt the fresh roles.
++//   "revoked" → subject deleted or deactivated; kill the session. Without this,
++//               deactivating an account left its existing JWT working at full
++//               privilege until the token expired, which made deactivation
++//               useless as a revocation control.
++//   "unknown" → we could not tell (DB blip, or a legacy token carrying no
++//               subjectKind). Keep the token rather than signing every user
++//               out over a transient error.
++type FreshRoles =
++  | { status: "ok"; value: SynthOut }
++  | { status: "revoked" }
++  | { status: "unknown" };
++
++async function freshRolesFor(token: { id: string; subjectKind?: "user" | "member" }): Promise<FreshRoles> {
++  try {
++    if (token.subjectKind === "user") {
++      const u = await prisma.user.findUnique({ where: { id: token.id }, select: { isActive: true, roles: { select: { role: true } } } });
++      if (!u || !u.isActive) return { status: "revoked" };
++      const baseRoles = u.roles.map((r) => r.role) as Role[];
++      return { status: "ok", value: await synthesizeRoles({ userId: token.id, baseRoles }) };
++    }
++    if (token.subjectKind === "member") {
++      const m = await prisma.member.findUnique({ where: { id: token.id }, select: { isActive: true, userIsActive: true, userRoles: { select: { role: true } } } });
++      if (!m || !m.isActive || !m.userIsActive) return { status: "revoked" };
++      const baseRoles = m.userRoles.map((r) => r.role) as Role[];
++      return { status: "ok", value: await synthesizeRoles({ memberId: token.id, baseRoles }) };
++    }
++  } catch {
++    // Source-of-truth unreachable — don't sign everyone out over a blip.
++    return { status: "unknown" };
+   }
+-  return null;
++  return { status: "unknown" };
+ }
+ 
+ // 10 seconds — short enough that revoking ADMIN/BUREAU_RW takes effect
+@@ -189,8 +210,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
+           return null;
+         }
+ 
++        // `isActive` (membership) and `userIsActive` (login enabled) are both
++        // required, matching freshRolesFor(). Checking only userIsActive here
++        // would let a deactivated member sign in and then be signed straight
++        // back out by the next token refresh.
+         if (
+           member &&
++          member.isActive &&
+           member.userIsActive &&
+           member.passwordHash &&
+           member.username
+@@ -237,10 +263,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
+       const now = Date.now();
+       if (!token.rolesCheckedAt || now - token.rolesCheckedAt > ROLE_REFRESH_INTERVAL_MS) {
+         const fresh = await freshRolesFor(token);
+-        if (fresh) {
+-          token.roles = fresh.roles;
+-          token.sectionLevels = fresh.sectionLevels;
+-          token.bureauLevel = fresh.bureauLevel;
++        // Returning null tells Auth.js to drop the session cookie, which is how
++        // a deactivated or deleted account actually loses access.
++        if (fresh.status === "revoked") return null;
++        if (fresh.status === "ok") {
++          token.roles = fresh.value.roles;
++          token.sectionLevels = fresh.value.sectionLevels;
++          token.bureauLevel = fresh.value.bureauLevel;
+         }
+         token.rolesCheckedAt = now;
+       }
+diff --git a/src/lib/i18n/dict/common.ts b/src/lib/i18n/dict/common.ts
+index 5736f300..ed973a2d 100644
+--- a/src/lib/i18n/dict/common.ts
++++ b/src/lib/i18n/dict/common.ts
+@@ -11,6 +11,9 @@ export const common = {
+     "common.edit": "تعديل",
+     "common.add": "إضافة",
+     "common.close": "إغلاق",
++    "common.create": "إنشاء",
++    "common.open": "فتح",
++    "common.failed": "فشلت العملية، أعد المحاولة",
+     "common.confirm": "تأكيد",
+     "common.confirmDelete": "هل أنت متأكد من الحذف؟",
+     "common.search": "بحث",
+@@ -79,6 +82,9 @@ export const common = {
+     "common.edit": "Modifier",
+     "common.add": "Ajouter",
+     "common.close": "Fermer",
++    "common.create": "Créer",
++    "common.open": "Ouvrir",
++    "common.failed": "L'opération a échoué, réessayez",
+     "common.confirm": "Confirmer",
+     "common.confirmDelete": "Confirmer la suppression ?",
+     "common.search": "Rechercher",
+diff --git a/src/lib/i18n/dict/governance.ts b/src/lib/i18n/dict/governance.ts
+index 76625044..fb098939 100644
+--- a/src/lib/i18n/dict/governance.ts
++++ b/src/lib/i18n/dict/governance.ts
+@@ -426,6 +426,9 @@ export const governance = {
+     "gov.payroll.employerSignature": "توقيع المشغِّل",
+     "gov.payroll.employeeSignature": "توقيع المنخرط",
+     "gov.payroll.employerName": "المشغِّل",
++    "gov.payroll.employee": "المنخرط",
++    "gov.payroll.position": "المنصب",
++    "gov.payroll.grossSalary": "الأجر الإجمالي",
+     "gov.payroll.cnssNumber": "رقم CNSS",
+     "gov.payroll.cin": "رقم ب.و.ت",
+ 
+@@ -1168,6 +1171,9 @@ export const governance = {
+     "gov.payroll.employerSignature": "Signature employeur",
+     "gov.payroll.employeeSignature": "Signature salarié",
+     "gov.payroll.employerName": "L'employeur",
++    "gov.payroll.employee": "Salarié",
++    "gov.payroll.position": "Poste",
++    "gov.payroll.grossSalary": "Salaire brut",
+     "gov.payroll.cnssNumber": "N° CNSS",
+     "gov.payroll.cin": "N° CIN",
+ 
+diff --git a/src/lib/prisma.ts b/src/lib/prisma.ts
+index 52966250..f3c8a9e3 100644
+--- a/src/lib/prisma.ts
++++ b/src/lib/prisma.ts
+@@ -7,27 +7,84 @@ import { getClientForRequest } from "./tenants";
+ // Every module in the app imports `prisma` and uses it exactly like a
+ // PrismaClient (`prisma.member.findMany(...)`, `prisma.$transaction(...)`,
+ // `prisma.$queryRaw\`...\``). This proxy keeps that API identical but defers
+-// resolution of the underlying client until the first awaited call, at which
+-// point the current request's Host header is known (see lib/tenants.ts) and
+-// the matching tenant database client is used.
++// resolution of the underlying client until the call is actually awaited, at
++// which point the current request's Host header is known (see lib/tenants.ts)
++// and the matching tenant database client is used.
+ //
+ // Notes:
+-// - The resolved client is memoized per request via AsyncLocalStorage so
+-//   the Host header is read at most once per request and the same client
+-//   is reused across every awaited call, including the nested callbacks
+-//   inside `$transaction(async (tx) => ...)`.
+-// - `$transaction(async (tx) => ...)` passes the REAL transaction client
+-//   into the callback, so nested `tx.` usage stays correct and atomic.
+-// - Outside request scope (scripts, build, cron) AsyncLocalStorage returns
+-//   undefined and we fall back to the primary DB via getClientForRequest.
+-// - If a route explicitly changes the resolved client (e.g. the platform
+-//   admin tenant PATCH), `withClient(client, fn)` runs the callback with
+-//   a forced client.
++// - Model calls return a LAZY, PrismaPromise-compatible thenable. Laziness
++//   matters for two reasons: a real PrismaClient delegate does no work until
++//   it is awaited, and `$transaction([...])` needs to enlist the operations
++//   in its batch rather than receive already-running queries. See
++//   `lazyPrismaPromise` below.
++// - `withClient(client, fn)` forces a specific client for everything `fn`
++//   does, via AsyncLocalStorage. `resolveClient()` consults that store first,
++//   so the override reaches every `prisma.*` call inside the callback.
++// - `$transaction(async (tx) => ...)` passes the REAL transaction client into
++//   the callback, so nested `tx.` usage stays correct and atomic. The callback
++//   also runs inside the AsyncLocalStorage scope so any nested `prisma.*` call
++//   resolves to the same tenant client without re-reading the Host header.
++// - Outside request scope (scripts, build, cron) `headers()` is unavailable
++//   and getClientForRequest() falls back to the primary DB.
+ 
+ type AnyFn = (...args: never[]) => unknown;
+ 
+ const tenantClientStore = new AsyncLocalStorage<PrismaClient>();
+ 
++/**
++ * The client this call should run against: a client forced by `withClient()`
++ * (or by the enclosing `$transaction` callback) wins over the Host lookup.
++ * `getStore()` is read synchronously so callers that need the forced client
++ * before their first `await` still observe it.
++ */
++function resolveClient(): PrismaClient | Promise<PrismaClient> {
++  return tenantClientStore.getStore() ?? getClientForRequest();
++}
++
++/**
++ * A lazy stand-in for a Prisma delegate call.
++ *
++ * Prisma's own delegates return a `PrismaPromise`: a thenable that starts no
++ * work until it is consumed, and that carries a `requestTransaction` hook plus
++ * a `Symbol.toStringTag` of `"PrismaPromise"`. The batch form of
++ * `$transaction([...])` checks that tag on every element and throws
++ * "All elements of the array need to be Prisma Client promises" otherwise, so
++ * a facade that hands back a plain `Promise` breaks every batch transaction in
++ * the app — and, because a plain promise starts eagerly, leaves the earlier
++ * statements already applied with no rollback.
++ *
++ * This shim reproduces both halves of the contract: nothing runs until `then`
++ * / `catch` / `finally` / `requestTransaction` is called, and
++ * `requestTransaction` forwards to the real PrismaPromise so the operation
++ * joins the batch instead of running standalone.
++ */
++function lazyPrismaPromise<T>(invoke: (client: PrismaClient) => unknown): Promise<T> {
++  let pending: Promise<T> | undefined;
++  const start = (): Promise<T> =>
++    (pending ??= Promise.resolve(resolveClient()).then((client) => invoke(client) as Promise<T>));
++
++  const shim = {
++    then: <A, B>(
++      onfulfilled?: ((value: T) => A | PromiseLike<A>) | null,
++      onrejected?: ((reason: unknown) => B | PromiseLike<B>) | null,
++    ) => start().then(onfulfilled, onrejected),
++    catch: <B>(onrejected?: ((reason: unknown) => B | PromiseLike<B>) | null) =>
++      start().catch(onrejected),
++    finally: (onfinally?: (() => void) | null) => start().finally(onfinally),
++    // Called by Prisma for each element of `$transaction([...])`. Returning the
++    // real PrismaPromise's own requestTransaction result is what puts the query
++    // inside the batch. Deliberately NOT memoized via `start()`: Prisma does not
++    // memoize the batch path either, and the batch needs its own request.
++    requestTransaction: (info: unknown) =>
++      Promise.resolve(resolveClient()).then((client) => {
++        const p = invoke(client) as { requestTransaction?: (i: unknown) => unknown };
++        return typeof p?.requestTransaction === "function" ? p.requestTransaction(info) : p;
++      }),
++    [Symbol.toStringTag]: "PrismaPromise",
++  };
++  return shim as unknown as Promise<T>;
++}
++
+ const modelDelegates = new Map<string, AnyFn>();
+ 
+ function modelDelegate(model: string): AnyFn {
+@@ -35,15 +92,15 @@ function modelDelegate(model: string): AnyFn {
+   if (!delegate) {
+     delegate = new Proxy(function () {} as unknown as AnyFn, {
+       get(_target, prop) {
+-        return async (...args: unknown[]) => {
+-          const client = await getClientForRequest();
+-          const target = (client as unknown as Record<string, Record<string | symbol, AnyFn>>)[model];
+-          const fn = target?.[prop];
+-          if (typeof fn !== "function") {
+-            throw new Error(`prisma.${model}.${String(prop)} is not a function`);
+-          }
+-          return fn.apply(target, args as never[]);
+-        };
++        return (...args: unknown[]) =>
++          lazyPrismaPromise((client) => {
++            const target = (client as unknown as Record<string, Record<string | symbol, AnyFn>>)[model];
++            const fn = target?.[prop];
++            if (typeof fn !== "function") {
++              throw new Error(`prisma.${model}.${String(prop)} is not a function`);
++            }
++            return fn.apply(target, args as never[]);
++          });
+       },
+     });
+     modelDelegates.set(model, delegate);
+@@ -56,21 +113,23 @@ export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+     if (typeof prop !== "string") return undefined;
+     if (prop.startsWith("$")) {
+       // $transaction / $queryRaw / $executeRaw / $disconnect / $connect ...
+-      // $transaction(async tx => …) wraps the callback in the same AsyncLocalStorage
+-      // scope so any nested `tx.X` invocation reaches the right tenant client.
+       return async (...args: unknown[]) => {
++        const client = await resolveClient();
+         if (prop === "$transaction" && typeof args[0] === "function") {
+           const first = args[0] as (tx: unknown) => Promise<unknown>;
+-          const client = await getClientForRequest();
+           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-          return (client as any).$transaction(async (tx: unknown) => {
+-            return tenantClientStore.run(client, async () => first(tx));
+-          }, args[1] as never);
++          return (client as any).$transaction(
++            (tx: unknown) => tenantClientStore.run(client, () => first(tx)),
++            args[1] as never,
++          );
+         }
+-        const client = await getClientForRequest();
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         const fn = (client as any)[prop];
+-        return typeof fn === "function" ? fn.apply(client, args) : Promise.resolve(undefined);
++        if (typeof fn !== "function") return undefined;
++        // Pin the client for the duration of the call so the lazy elements of a
++        // `$transaction([...])` batch resolve to this same client rather than
++        // re-reading the Host header.
++        return tenantClientStore.run(client, () => fn.apply(client, args));
+       };
+     }
+     return modelDelegate(prop);
+@@ -85,7 +144,7 @@ export async function withClient<T>(client: PrismaClient, fn: () => Promise<T>):
+   return tenantClientStore.run(client, fn);
+ }
+ 
+-/** Internal — used by `getClientForRequest()` consumers that want the cached client. */
++/** The client forced by an enclosing `withClient()` / `$transaction()`, if any. */
+ export function currentTenantClient(): PrismaClient | undefined {
+   return tenantClientStore.getStore();
+ }
+diff --git a/src/lib/tenants.ts b/src/lib/tenants.ts
+index e4c632ae..49bea36c 100644
+--- a/src/lib/tenants.ts
++++ b/src/lib/tenants.ts
+@@ -1,4 +1,4 @@
+-import { PrismaClient } from "@prisma/client";
++import { PrismaClient, type TenantStatus } from "@prisma/client";
+ import { headers } from "next/headers";
+ 
+ // Control-plane client: always pointed at the PRIMARY database (DATABASE_URL)
+@@ -58,6 +58,9 @@ const negativeCache = new Map<string, CacheEntry<true>>();
+ // Cap on cached clients so a host-fuzzing attacker can't grow memory without bound.
+ const CLIENT_CACHE_MAX = 200;
+ 
++// Statuses whose tenant database has been created and can be connected to.
++const ROUTABLE_STATUSES: TenantStatus[] = ["ACTIVE", "SUSPENDED"];
++
+ // Per-dbUrl PrismaClient pool. Clients are cheap to keep alive and reuse
+ // their own connection pool internally.
+ const clientCache = new Map<string, PrismaClient>();
+@@ -105,25 +108,27 @@ export async function resolveDbUrlForHost(host: string): Promise<string | null>
+   if (negativeCache.get(normalized)?.expiresAt && negativeCache.get(normalized)!.expiresAt > now) return null;
+ 
+   let dbUrl: string | null = null;
+-  let confirmed = false;
+   try {
+     const slug = slugFromHost(normalized);
+     const where = slug ? { slug } : { customDomain: normalized };
+-    // Only ACTIVE tenants are routable.
++    // Routable = the tenant's database actually exists. That is ACTIVE *and*
++    // SUSPENDED: a suspended tenant is still allowed through the proxy to
++    // /billing to renew, and that page reads its own member count. Restricting
++    // routing to ACTIVE silently fell back to the primary (platform) database
++    // there, so the renewal page reported the wrong usage. PENDING_PROVISIONING
++    // and PROVISION_FAILED have no database yet and stay unroutable.
++    // Access control for suspended tenants is the proxy's job, not routing's.
+     const tenant = await control.tenant.findFirst({
+-      where: { ...where, status: "ACTIVE" },
++      where: { ...where, status: { in: ROUTABLE_STATUSES } },
+       select: { dbUrl: true },
+     });
+     dbUrl = tenant?.dbUrl ?? null;
+-    confirmed = true;
+   } catch {
+     // Registry unavailable — return null without caching so the next
+     // request retries the DB.
+     return null;
+   }
+ 
+-  if (!confirmed) return null;
+-
+   if (dbUrl) {
+     positiveCache.set(normalized, { value: dbUrl, expiresAt: now + jitter(POSITIVE_TTL_MS) });
+     negativeCache.delete(normalized);
+@@ -200,10 +205,11 @@ export function rootDomain(): string {
+ const recordCache = new Map<string, CacheEntry<TenantContext | null>>();
+ 
+ /**
+- * Full tenant context for a host (any status). Null when host belongs to the
+- * platform itself (apex/www) or no tenant matches. Returns all routable
+- * statuses (ACTIVE + SUSPENDED + PROVISION_FAILED + PENDING_PROVISIONING +
+- * TRIAL_EXPIRED) so the proxy can decide redirects.
++ * Full tenant context for a host, whatever its status. Null when the host
++ * belongs to the platform itself (apex/www) or no tenant matches. Unlike
++ * resolveDbUrlForHost() this does not filter by status — every TenantStatus
++ * (ACTIVE, SUSPENDED, PENDING_PROVISIONING, PROVISION_FAILED) is returned so
++ * the proxy can decide redirects.
+  */
+ export async function getTenantRecordForHost(host: string): Promise<TenantContext | null> {
+   const normalized = normalizeHost(host);
+-- 
+2.43.0
+
+

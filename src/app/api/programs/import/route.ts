@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
 import { getCurrentAcademicYear } from "@/lib/academic-year";
+import { hasSectionRW } from "@/lib/permissions";
 import type { Section } from "@prisma/client";
 
 type ProgramRow = {
@@ -34,6 +35,13 @@ export async function POST(req: NextRequest) {
   const { rows, section, dryRun }: { rows: ProgramRow[]; section: Section; dryRun?: boolean } = await req.json();
   if (!Array.isArray(rows) || !section) {
     return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
+  }
+
+  // Same gate as POST /api/programs — this writes the very same
+  // annualProgram/programActivity rows (and upserts over an existing program
+  // for the section+year), so it needs RW on the section being imported into.
+  if (!(await hasSectionRW(session, section))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const ay = await getCurrentAcademicYear();

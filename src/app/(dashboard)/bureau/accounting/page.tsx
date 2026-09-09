@@ -95,8 +95,8 @@ export default async function AccountingPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("accounting.title")}</h1>
-        <p className="text-muted-foreground">{t("accounting.subtitle")}</p>
+        <h1 className="text-2xl font-bold">{t("gov.accounting.title")}</h1>
+        <p className="text-muted-foreground">{t("gov.accounting.subtitle")}</p>
       </div>
       <AccountingClient
         year={year}

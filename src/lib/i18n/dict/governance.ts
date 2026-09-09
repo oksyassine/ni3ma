@@ -426,6 +426,9 @@ export const governance = {
     "gov.payroll.employerSignature": "توقيع المشغِّل",
     "gov.payroll.employeeSignature": "توقيع المنخرط",
     "gov.payroll.employerName": "المشغِّل",
+    "gov.payroll.employee": "المنخرط",
+    "gov.payroll.position": "المنصب",
+    "gov.payroll.grossSalary": "الأجر الإجمالي",
     "gov.payroll.cnssNumber": "رقم CNSS",
     "gov.payroll.cin": "رقم ب.و.ت",
 
@@ -1168,6 +1171,9 @@ export const governance = {
     "gov.payroll.employerSignature": "Signature employeur",
     "gov.payroll.employeeSignature": "Signature salarié",
     "gov.payroll.employerName": "L'employeur",
+    "gov.payroll.employee": "Salarié",
+    "gov.payroll.position": "Poste",
+    "gov.payroll.grossSalary": "Salaire brut",
     "gov.payroll.cnssNumber": "N° CNSS",
     "gov.payroll.cin": "N° CIN",
 

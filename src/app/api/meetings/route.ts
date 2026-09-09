@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recordAudit } from "@/lib/audit";
-import { canManageGovernance } from "@/lib/rbac";
+import { canManageGovernance, canViewGovernance } from "@/lib/rbac";
 import { revalidateBureau } from "@/lib/revalidate";
 
 const dateStr = z
@@ -28,6 +28,13 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Minutes/PV, agendas and decisions are bureau business (see canViewGovernance):
+  // maktab manages, treasurer reads. Without this any signed-in member could read
+  // every meeting's minutes, and /api/meetings has no proxy prefix gate either, so
+  // this handler is the only check.
+  if (!canViewGovernance(session.user.roles)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const meetings = await prisma.meeting.findMany({
     orderBy: { heldAt: "desc" },

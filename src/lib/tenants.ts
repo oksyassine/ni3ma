@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type TenantStatus } from "@prisma/client";
 import { headers } from "next/headers";
 
 // Control-plane client: always pointed at the PRIMARY database (DATABASE_URL)
@@ -58,6 +58,9 @@ const negativeCache = new Map<string, CacheEntry<true>>();
 // Cap on cached clients so a host-fuzzing attacker can't grow memory without bound.
 const CLIENT_CACHE_MAX = 200;
 
+// Statuses whose tenant database has been created and can be connected to.
+const ROUTABLE_STATUSES: TenantStatus[] = ["ACTIVE", "SUSPENDED"];
+
 // Per-dbUrl PrismaClient pool. Clients are cheap to keep alive and reuse
 // their own connection pool internally.
 const clientCache = new Map<string, PrismaClient>();
@@ -105,24 +108,26 @@ export async function resolveDbUrlForHost(host: string): Promise<string | null> 
   if (negativeCache.get(normalized)?.expiresAt && negativeCache.get(normalized)!.expiresAt > now) return null;
 
   let dbUrl: string | null = null;
-  let confirmed = false;
   try {
     const slug = slugFromHost(normalized);
     const where = slug ? { slug } : { customDomain: normalized };
-    // Only ACTIVE tenants are routable.
+    // Routable = the tenant's database actually exists. That is ACTIVE *and*
+    // SUSPENDED: a suspended tenant is still allowed through the proxy to
+    // /billing to renew, and that page reads its own member count. Restricting
+    // routing to ACTIVE silently fell back to the primary (platform) database
+    // there, so the renewal page reported the wrong usage. PENDING_PROVISIONING
+    // and PROVISION_FAILED have no database yet and stay unroutable.
+    // Access control for suspended tenants is the proxy's job, not routing's.
     const tenant = await control.tenant.findFirst({
-      where: { ...where, status: "ACTIVE" },
+      where: { ...where, status: { in: ROUTABLE_STATUSES } },
       select: { dbUrl: true },
     });
     dbUrl = tenant?.dbUrl ?? null;
-    confirmed = true;
   } catch {
     // Registry unavailable — return null without caching so the next
     // request retries the DB.
     return null;
   }
-
-  if (!confirmed) return null;
 
   if (dbUrl) {
     positiveCache.set(normalized, { value: dbUrl, expiresAt: now + jitter(POSITIVE_TTL_MS) });
@@ -200,10 +205,11 @@ export function rootDomain(): string {
 const recordCache = new Map<string, CacheEntry<TenantContext | null>>();
 
 /**
- * Full tenant context for a host (any status). Null when host belongs to the
- * platform itself (apex/www) or no tenant matches. Returns all routable
- * statuses (ACTIVE + SUSPENDED + PROVISION_FAILED + PENDING_PROVISIONING +
- * TRIAL_EXPIRED) so the proxy can decide redirects.
+ * Full tenant context for a host, whatever its status. Null when the host
+ * belongs to the platform itself (apex/www) or no tenant matches. Unlike
+ * resolveDbUrlForHost() this does not filter by status — every TenantStatus
+ * (ACTIVE, SUSPENDED, PENDING_PROVISIONING, PROVISION_FAILED) is returned so
+ * the proxy can decide redirects.
  */
 export async function getTenantRecordForHost(host: string): Promise<TenantContext | null> {
   const normalized = normalizeHost(host);

@@ -30,32 +30,32 @@ export default async function PublicEventPage({
 
         <dl className="grid grid-cols-2 gap-4 my-8">
           <div className="rounded-lg border bg-card p-4">
-            <dt className="text-xs text-muted-foreground">{t("events.startsAt")}</dt>
+            <dt className="text-xs text-muted-foreground">{t("gov.events.startsAt")}</dt>
             <dd className="font-bold">{fmtDate(event.startsAt, locale)}</dd>
           </div>
           {event.endsAt && (
             <div className="rounded-lg border bg-card p-4">
-              <dt className="text-xs text-muted-foreground">{t("events.endsAt")}</dt>
+              <dt className="text-xs text-muted-foreground">{t("gov.events.endsAt")}</dt>
               <dd className="font-bold">{fmtDate(event.endsAt, locale)}</dd>
             </div>
           )}
           {(event.venue || event.city) && (
             <div className="rounded-lg border bg-card p-4 col-span-2">
-              <dt className="text-xs text-muted-foreground">{t("events.venue")}</dt>
+              <dt className="text-xs text-muted-foreground">{t("gov.events.venue")}</dt>
               <dd className="font-bold">{event.venue}{event.city ? `, ${event.city}` : ""}</dd>
             </div>
           )}
           <div className="rounded-lg border bg-card p-4">
-            <dt className="text-xs text-muted-foreground">{t("events.price")}</dt>
+            <dt className="text-xs text-muted-foreground">{t("gov.events.price")}</dt>
             <dd className="font-bold">
               {Number(event.ticketPrice) > 0
-                ? `${fmtMoney(Number(event.ticketPrice), locale)} ${t("events.perTicket")}`
-                : t("events.free")}
+                ? `${fmtMoney(Number(event.ticketPrice), locale)} ${t("gov.events.perTicket")}`
+                : t("gov.events.free")}
             </dd>
           </div>
           {remaining !== null && (
             <div className="rounded-lg border bg-card p-4">
-              <dt className="text-xs text-muted-foreground">{t("events.remaining")}</dt>
+              <dt className="text-xs text-muted-foreground">{t("gov.events.remaining")}</dt>
               <dd className="font-bold">{remaining} / {event.capacity}</dd>
             </div>
           )}

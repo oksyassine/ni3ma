@@ -32,15 +32,15 @@ export default async function EventsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">{t("events.title")}</h1>
-          <p className="text-muted-foreground">{t("events.subtitle")}</p>
+          <h1 className="text-2xl font-bold">{t("gov.events.title")}</h1>
+          <p className="text-muted-foreground">{t("gov.events.subtitle")}</p>
         </div>
         {canWrite && (
           <Link
             href="/bureau/events/new"
             className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
           >
-            + {t("events.create")}
+            + {t("gov.events.create")}
           </Link>
         )}
       </div>
@@ -48,7 +48,7 @@ export default async function EventsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {events.length === 0 && (
           <p className="col-span-full text-center text-muted-foreground py-12">
-            {t("events.empty")}
+            {t("gov.events.empty")}
           </p>
         )}
         {events.map((e) => {
@@ -71,8 +71,8 @@ export default async function EventsPage() {
               <div className="space-y-1 text-xs">
                 <div>📅 {fmtDate(e.startsAt, locale)}</div>
                 {e.venue && <div>📍 {e.venue}{e.city ? `, ${e.city}` : ""}</div>}
-                <div>💰 {e.ticketPrice && Number(e.ticketPrice) > 0 ? `${fmtMoney(Number(e.ticketPrice), locale)} ${t("events.perTicket")}` : t("events.free")}</div>
-                <div>🎟 {e.tickets.length} {t("events.ticketsSold")}
+                <div>💰 {e.ticketPrice && Number(e.ticketPrice) > 0 ? `${fmtMoney(Number(e.ticketPrice), locale)} ${t("gov.events.perTicket")}` : t("gov.events.free")}</div>
+                <div>🎟 {e.tickets.length} {t("gov.events.ticketsSold")}
                   {remaining !== null && ` / ${e.capacity}`}
                 </div>
               </div>

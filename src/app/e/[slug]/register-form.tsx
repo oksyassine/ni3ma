@@ -33,14 +33,14 @@ export function EventRegisterForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? t("events.registerFailed"));
+        toast.error(data.error ?? t("gov.events.registerFailed"));
         return;
       }
       if (data.payUrl) {
         // Online payment: redirect to YouCan.
         window.location.href = data.payUrl;
       } else {
-        toast.success(t("events.registerSuccess"));
+        toast.success(t("gov.events.registerSuccess"));
         router.refresh();
       }
     } finally {
@@ -50,26 +50,26 @@ export function EventRegisterForm({
 
   return (
     <form onSubmit={submit} className="rounded-xl border bg-card p-6 space-y-4">
-      <h2 className="font-bold">{t("events.registerTitle")}</h2>
+      <h2 className="font-bold">{t("gov.events.registerTitle")}</h2>
       {priceMad > 0 && (
         <p className="text-sm text-amber-700">
-          💳 {t("events.paymentOnlineNotice")}
+          💳 {t("gov.events.paymentOnlineNotice")}
         </p>
       )}
       <div className="space-y-1.5">
-        <Label htmlFor="name">{t("events.attendeeName")}</Label>
+        <Label htmlFor="name">{t("gov.events.attendeeName")}</Label>
         <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="phone">{t("events.attendeePhone")}</Label>
+        <Label htmlFor="phone">{t("gov.events.attendeePhone")}</Label>
         <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="email">{t("events.attendeeEmail")} ({t("common.optional")})</Label>
+        <Label htmlFor="email">{t("gov.events.attendeeEmail")} ({t("common.optional")})</Label>
         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <Button type="submit" disabled={busy} className="w-full">
-        🎟 {t("events.registerSubmit")}{priceMad > 0 ? ` — ${t("events.payOnline")}` : ""}
+        🎟 {t("gov.events.registerSubmit")}{priceMad > 0 ? ` — ${t("gov.events.payOnline")}` : ""}
       </Button>
     </form>
   );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordAudit } from "@/lib/audit";
+import { isAdmin as isAdminRole, isBureauRW } from "@/lib/permissions";
 import type { Role } from "@/lib/rbac";
 
 export async function GET(req: NextRequest) {
@@ -35,6 +36,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Notes are staff annotations on a member's file. The only UI that writes
+  // them is /admin/members/[id], which the proxy restricts to ADMIN/BUREAU_RW;
+  // without a check here any signed-in member could attach notes to anyone.
+  if (!isAdminRole(session.user.roles) && !(await isBureauRW(session))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { memberId, content, isPrivate, visibleTo } = await req.json();
   if (!memberId || !content) {

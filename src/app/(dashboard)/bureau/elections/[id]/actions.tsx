@@ -52,26 +52,26 @@ export function ElectionActions({
 
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3">
-      <h2 className="text-sm font-bold">{t("elections.actions")}</h2>
+      <h2 className="text-sm font-bold">{t("gov.elections.actions")}</h2>
 
       {status === "DRAFT" && (
         <form
           className="flex flex-wrap items-end gap-2"
-          onSubmit={(e) => { e.preventDefault(); post("/api/elections", { title, electionDate: date, seats: Number(seats) }, t("elections.create")); setTitle(""); }}
+          onSubmit={(e) => { e.preventDefault(); post("/api/elections", { title, electionDate: date, seats: Number(seats) }, t("gov.elections.create")); setTitle(""); }}
         >
           <div className="space-y-1">
-            <label className="text-xs">{t("elections.colTitle")}</label>
+            <label className="text-xs">{t("gov.elections.colTitle")}</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div className="space-y-1">
-            <label className="text-xs">{t("elections.colDate")}</label>
+            <label className="text-xs">{t("gov.elections.colDate")}</label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
           <div className="space-y-1">
-            <label className="text-xs">{t("elections.seats")}</label>
+            <label className="text-xs">{t("gov.elections.seats")}</label>
             <Input type="number" min="1" max="15" value={seats} onChange={(e) => setSeats(e.target.value)} className="w-20" />
           </div>
-          <Button type="submit" disabled={busy}>{t("elections.create")}</Button>
+          <Button type="submit" disabled={busy}>{t("gov.elections.create")}</Button>
         </form>
       )}
 
@@ -80,9 +80,9 @@ export function ElectionActions({
           size="sm"
           variant="outline"
           disabled={busy || !title}
-          onClick={() => post(`/api/elections/${electionId}`, { action: "openCandidacy" }, t("elections.openCandidacy"))}
+          onClick={() => post(`/api/elections/${electionId}`, { action: "openCandidacy" }, t("gov.elections.openCandidacy"))}
         >
-          🟡 {t("elections.openCandidacy")}
+          🟡 {t("gov.elections.openCandidacy")}
         </Button>
       )}
 
@@ -91,15 +91,15 @@ export function ElectionActions({
           className="flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            post(`/api/elections/${electionId}`, { action: "addCandidacy", memberIds: candidateIds.split(",").map((s) => s.trim()).filter(Boolean) }, t("elections.addCandidacy"));
+            post(`/api/elections/${electionId}`, { action: "addCandidacy", memberIds: candidateIds.split(",").map((s) => s.trim()).filter(Boolean) }, t("gov.elections.addCandidacy"));
             setCandidateIds("");
           }}
         >
           <div className="space-y-1">
-            <label className="text-xs">{t("elections.addCandidacy")} (member ids, comma-sep)</label>
+            <label className="text-xs">{t("gov.elections.addCandidacy")} (member ids, comma-sep)</label>
             <Input value={candidateIds} onChange={(e) => setCandidateIds(e.target.value)} placeholder="cuid,cuid" />
           </div>
-          <Button type="submit" size="sm" disabled={busy}>+ {t("elections.addCandidacy")}</Button>
+          <Button type="submit" size="sm" disabled={busy}>+ {t("gov.elections.addCandidacy")}</Button>
         </form>
       )}
 
@@ -108,9 +108,9 @@ export function ElectionActions({
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => post(`/api/elections/${electionId}`, { action: "closeCandidacy" }, t("elections.closeCandidacy"))}
+          onClick={() => post(`/api/elections/${electionId}`, { action: "closeCandidacy" }, t("gov.elections.closeCandidacy"))}
         >
-          ⏹ {t("elections.closeCandidacy")}
+          ⏹ {t("gov.elections.closeCandidacy")}
         </Button>
       )}
 
@@ -119,9 +119,9 @@ export function ElectionActions({
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => post(`/api/elections/${electionId}`, { action: "openVoting", eligibleVoters }, t("elections.openVoting"))}
+          onClick={() => post(`/api/elections/${electionId}`, { action: "openVoting", eligibleVoters }, t("gov.elections.openVoting"))}
         >
-          🟢 {t("elections.openVoting")}
+          🟢 {t("gov.elections.openVoting")}
         </Button>
       )}
 
@@ -130,15 +130,15 @@ export function ElectionActions({
           className="flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            post(`/api/elections/${electionId}`, { action: "castVote", ballot: ballot.split(",").map((s) => s.trim()).filter(Boolean) }, t("elections.castVote"));
+            post(`/api/elections/${electionId}`, { action: "castVote", ballot: ballot.split(",").map((s) => s.trim()).filter(Boolean) }, t("gov.elections.castVote"));
             setBallot("");
           }}
         >
           <div className="space-y-1">
-            <label className="text-xs">{t("elections.castVote")} (candidacy ids, ranked)</label>
+            <label className="text-xs">{t("gov.elections.castVote")} (candidacy ids, ranked)</label>
             <Input value={ballot} onChange={(e) => setBallot(e.target.value)} placeholder="cuid,cuid" />
           </div>
-          <Button type="submit" size="sm" disabled={busy}>🗳 {t("elections.castVote")}</Button>
+          <Button type="submit" size="sm" disabled={busy}>🗳 {t("gov.elections.castVote")}</Button>
         </form>
       )}
 
@@ -147,9 +147,9 @@ export function ElectionActions({
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => post(`/api/elections/${electionId}`, { action: "closeVoting" }, t("elections.closeVoting"))}
+          onClick={() => post(`/api/elections/${electionId}`, { action: "closeVoting" }, t("gov.elections.closeVoting"))}
         >
-          ⏹ {t("elections.closeVoting")}
+          ⏹ {t("gov.elections.closeVoting")}
         </Button>
       )}
 
@@ -158,9 +158,9 @@ export function ElectionActions({
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => post(`/api/elections/${electionId}`, { action: "signMinutes" }, t("elections.signMinutes"))}
+          onClick={() => post(`/api/elections/${electionId}`, { action: "signMinutes" }, t("gov.elections.signMinutes"))}
         >
-          📜 {t("elections.signMinutes")}
+          📜 {t("gov.elections.signMinutes")}
         </Button>
       )}
 
@@ -169,9 +169,9 @@ export function ElectionActions({
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => post(`/api/elections/${electionId}`, { action: "publish" }, t("elections.publish"))}
+          onClick={() => post(`/api/elections/${electionId}`, { action: "publish" }, t("gov.elections.publish"))}
         >
-          📢 {t("elections.publish")}
+          📢 {t("gov.elections.publish")}
         </Button>
       )}
     </div>

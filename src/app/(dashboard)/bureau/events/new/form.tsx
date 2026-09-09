@@ -62,7 +62,7 @@ export function CreateEventForm() {
       <CardContent className="pt-6 space-y-4">
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="title">{t("events.title")}</Label>
+            <Label htmlFor="title">{t("gov.events.title")}</Label>
             <Input id="title" required value={title} onChange={(e) => {
               setTitle(e.target.value);
               if (!slug) setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60));
@@ -73,36 +73,36 @@ export function CreateEventForm() {
             <Input id="slug" required value={slug} onChange={(e) => setSlug(e.target.value)} dir="ltr" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="description">{t("events.description")}</Label>
+            <Label htmlFor="description">{t("gov.events.description")}</Label>
             <Textarea id="description" required rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="startsAt">{t("events.startsAt")}</Label>
+              <Label htmlFor="startsAt">{t("gov.events.startsAt")}</Label>
               <Input id="startsAt" type="datetime-local" required value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="endsAt">{t("events.endsAt")}</Label>
+              <Label htmlFor="endsAt">{t("gov.events.endsAt")}</Label>
               <Input id="endsAt" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="venue">{t("events.venue")}</Label>
+              <Label htmlFor="venue">{t("gov.events.venue")}</Label>
               <Input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="city">{t("events.city")}</Label>
+              <Label htmlFor="city">{t("gov.events.city")}</Label>
               <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="capacity">{t("events.capacity")}</Label>
+              <Label htmlFor="capacity">{t("gov.events.capacity")}</Label>
               <Input id="capacity" type="number" min="0" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ticketPrice">{t("events.price")} (MAD)</Label>
+              <Label htmlFor="ticketPrice">{t("gov.events.price")} (MAD)</Label>
               <Input id="ticketPrice" type="number" min="0" step="0.01" value={ticketPrice} onChange={(e) => setTicketPrice(e.target.value)} />
             </div>
             <div className="space-y-1.5">
@@ -111,16 +111,16 @@ export function CreateEventForm() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="paymentMode">{t("events.paymentMode")}</Label>
+            <Label htmlFor="paymentMode">{t("gov.events.paymentMode")}</Label>
             <select
               id="paymentMode"
               value={paymentMode}
               onChange={(e) => setPaymentMode(e.target.value as "FREE" | "ONLINE" | "ONSITE")}
               className="h-9 px-3 rounded-md border bg-background"
             >
-              <option value="FREE">{t("events.paymentModeFree")}</option>
-              <option value="ONLINE">{t("events.paymentModeOnline")}</option>
-              <option value="ONSITE">{t("events.paymentModeOnsite")}</option>
+              <option value="FREE">{t("gov.events.paymentModeFree")}</option>
+              <option value="ONLINE">{t("gov.events.paymentModeOnline")}</option>
+              <option value="ONSITE">{t("gov.events.paymentModeOnsite")}</option>
             </select>
           </div>
           <Button type="submit" disabled={busy} className="w-full">

@@ -29,12 +29,12 @@ export default async function ElectionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">{t("elections.title")}</h1>
-          <p className="text-muted-foreground">{t("elections.subtitle")}</p>
+          <h1 className="text-2xl font-bold">{t("gov.elections.title")}</h1>
+          <p className="text-muted-foreground">{t("gov.elections.subtitle")}</p>
         </div>
         {canWrite && (
           <form action="/api/elections" method="post">
-            <Button type="submit">+ {t("elections.create")}</Button>
+            <Button type="submit">+ {t("gov.elections.create")}</Button>
           </form>
         )}
       </div>
@@ -43,12 +43,12 @@ export default async function ElectionsPage() {
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-xs">
             <tr>
-              <th className="p-3 text-start">{t("elections.colTitle")}</th>
-              <th className="p-3 text-start">{t("elections.colDate")}</th>
-              <th className="p-3 text-start">{t("elections.colSeats")}</th>
-              <th className="p-3 text-start">{t("elections.colCandidacies")}</th>
-              <th className="p-3 text-start">{t("elections.colVotes")}</th>
-              <th className="p-3 text-start">{t("elections.colStatus")}</th>
+              <th className="p-3 text-start">{t("gov.elections.colTitle")}</th>
+              <th className="p-3 text-start">{t("gov.elections.colDate")}</th>
+              <th className="p-3 text-start">{t("gov.elections.colSeats")}</th>
+              <th className="p-3 text-start">{t("gov.elections.colCandidacies")}</th>
+              <th className="p-3 text-start">{t("gov.elections.colVotes")}</th>
+              <th className="p-3 text-start">{t("gov.elections.colStatus")}</th>
               <th></th>
             </tr>
           </thead>
@@ -56,7 +56,7 @@ export default async function ElectionsPage() {
             {elections.length === 0 && (
               <tr>
                 <td colSpan={7} className="p-6 text-center text-muted-foreground">
-                  {t("elections.empty")}
+                  {t("gov.elections.empty")}
                 </td>
               </tr>
             )}

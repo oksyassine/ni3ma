@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recordAudit } from "@/lib/audit";
-import { canManageGovernance } from "@/lib/rbac";
+import { canManageGovernance, canViewGovernance } from "@/lib/rbac";
 
 const dateStr = z
   .string()
@@ -47,6 +47,12 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Grants carry funder names, amounts and contact details — bureau business
+  // (see canViewGovernance): maktab manages, treasurer reads. /api/grants has no
+  // proxy prefix gate, so this handler is the only check.
+  if (!canViewGovernance(session.user.roles)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const grants = await prisma.grant.findMany({
     orderBy: { createdAt: "desc" },
